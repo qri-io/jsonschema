@@ -1,0 +1,29 @@
+version: '2'
+jobs:
+  build:
+    working_directory: /go/src/github.com/qri-io/jsonschema
+    docker:
+      - image: circleci/golang:1.9
+        environment:
+          GOLANG_ENV: test
+          PORT: 3000
+    environment:
+      TEST_RESULTS: /tmp/test-results
+    steps:
+      - checkout
+      - run: mkdir -p $TEST_RESULTS
+      - run: go get github.com/jstemmer/go-junit-report github.com/golang/lint/golint
+      - run:
+          name: Install deps
+          command: >
+            go get -v -d -u
+            github.com/jstemmer/go-junit-report 
+      - run: 
+          name: Run Lint Tests
+          command: golint ./...
+      - run:
+          name: Run Tests
+          command: go test -v -race -coverprofile=coverage.txt -covermode=atomic
+      - run:
+          name: Publish coverage info to codecov.io
+          command: bash <(curl -s https://codecov.io/bash)
