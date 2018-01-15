@@ -15,6 +15,11 @@ func (i *If) Validate(data interface{}) error {
 	return nil
 }
 
+// JSONProp implements JSON property name indexing for If
+func (i If) JSONProp(name string) interface{} {
+	return Schema(i).JSONProp(name)
+}
+
 // UnmarshalJSON implements the json.Unmarshaler interface for If
 func (i *If) UnmarshalJSON(data []byte) error {
 	var sch Schema
@@ -35,6 +40,11 @@ func (t *Then) Validate(data interface{}) error {
 	return nil
 }
 
+// JSONProp implements JSON property name indexing for Then
+func (t Then) JSONProp(name string) interface{} {
+	return Schema(t).JSONProp(name)
+}
+
 // UnmarshalJSON implements the json.Unmarshaler interface for Then
 func (t *Then) UnmarshalJSON(data []byte) error {
 	var sch Schema
@@ -53,6 +63,11 @@ type Else Schema
 // Validate implements the Validator interface for Else
 func (e *Else) Validate(data interface{}) error {
 	return nil
+}
+
+// JSONProp implements JSON property name indexing for Else
+func (e Else) JSONProp(name string) interface{} {
+	return Schema(e).JSONProp(name)
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface for Else

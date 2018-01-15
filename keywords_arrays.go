@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strconv"
 )
 
 // Items MUST be either a valid JSON Schema or an array of valid JSON Schemas.
@@ -27,20 +28,40 @@ func (it Items) Validate(data interface{}) error {
 		if it.single {
 			for i, elem := range arr {
 				if err := it.Schemas[0].Validate(elem); err != nil {
-					return fmt.Errorf("element %d: %s", i, err.Error())
+					return fmt.Errorf("element %d %s", i, err.Error())
 				}
 			}
 		} else {
 			for i, vs := range it.Schemas {
 				if i < len(arr) {
 					if err := vs.Validate(arr[i]); err != nil {
-						return fmt.Errorf("element %d: %s", i, err.Error())
+						return fmt.Errorf("element %d %s", i, err.Error())
 					}
 				}
 			}
 		}
 	}
 	return nil
+}
+
+// JSONProp implements JSON property name indexing for Items
+func (it Items) JSONProp(name string) interface{} {
+	idx, err := strconv.Atoi(name)
+	if err != nil {
+		return nil
+	}
+	if idx > len(it.Schemas) || idx < 0 {
+		return nil
+	}
+	return it.Schemas[idx]
+}
+
+func (it Items) JSONChildren() (res map[string]JSONPather) {
+	res = map[string]JSONPather{}
+	for i, sch := range it.Schemas {
+		res[strconv.Itoa(i)] = sch
+	}
+	return
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface for Items
@@ -92,6 +113,11 @@ func (a *AdditionalItems) Validate(data interface{}) error {
 		}
 	}
 	return nil
+}
+
+// JSONProp implements JSON property name indexing for AdditionalItems
+func (a *AdditionalItems) JSONProp(name string) interface{} {
+	return a.Schema.JSONProp(name)
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface for AdditionalItems
@@ -173,6 +199,11 @@ func (c *Contains) Validate(data interface{}) error {
 		return fmt.Errorf("expected %v to contain at least one of: %s", data, c)
 	}
 	return nil
+}
+
+// JSONProp implements JSON property name indexing for Contains
+func (m Contains) JSONProp(name string) interface{} {
+	return Schema(m).JSONProp(name)
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface for Contains

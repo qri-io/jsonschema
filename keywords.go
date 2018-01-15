@@ -4,7 +4,43 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strconv"
 )
+
+// primitiveTypes is a map of strings to check types against
+var primitiveTypes = map[string]bool{
+	"null":    true,
+	"boolean": true,
+	"object":  true,
+	"array":   true,
+	"number":  true,
+	"string":  true,
+	"integer": true,
+}
+
+// DataType gives the primitive json type of a value, plus the special case
+// "integer" for when numbers are whole
+func DataType(data interface{}) string {
+	switch v := data.(type) {
+	case nil:
+		return "null"
+	case bool:
+		return "boolean"
+	case float64:
+		if float64(int(v)) == v {
+			return "integer"
+		}
+		return "number"
+	case string:
+		return "string"
+	case []interface{}:
+		return "array"
+	case map[string]interface{}:
+		return "object"
+	default:
+		return "unknown"
+	}
+}
 
 // Type specifies one of the six json primitive types.
 // The value of this keyword MUST be either a string or an array.
@@ -22,18 +58,27 @@ func (t Type) Validate(data interface{}) error {
 			return nil
 		}
 	}
-	return fmt.Errorf(`expected "%v" to be a %s`, data, jt)
+	if len(t) == 1 {
+		return fmt.Errorf(`expected "%v" to be of type %s`, data, t[0])
+	} else {
+		str := ""
+		for _, ts := range t {
+			str += ts + ","
+		}
+		return fmt.Errorf(`expected "%v" to be one of type: %s`, data, str[:len(str)-1])
+	}
 }
 
-// primitiveTypes is a map of strings to check types against
-var primitiveTypes = map[string]bool{
-	"null":    true,
-	"boolean": true,
-	"object":  true,
-	"array":   true,
-	"number":  true,
-	"string":  true,
-	"integer": true,
+// JSONProp implements JSON property name indexing for Type
+func (t Type) JSONProp(name string) interface{} {
+	idx, err := strconv.Atoi(name)
+	if err != nil {
+		return nil
+	}
+	if idx > len(t) || idx < 0 {
+		return nil
+	}
+	return t[idx]
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface for Type
@@ -93,10 +138,40 @@ func (e Enum) Validate(data interface{}) error {
 	return fmt.Errorf("expected %s to be one of %s", data)
 }
 
+// JSONProp implements JSON property name indexing for Enum
+func (e Enum) JSONProp(name string) interface{} {
+	idx, err := strconv.Atoi(name)
+	if err != nil {
+		return nil
+	}
+	if idx > len(e) || idx < 0 {
+		return nil
+	}
+	return e[idx]
+}
+
 // Const MAY be of any type, including null.
 // An instance validates successfully against this keyword if its
 // value is equal to the value of the keyword.
 type Const []byte
+
+// Validate implements the validate interface for Const
+func (c Const) Validate(data interface{}) error {
+	var con interface{}
+	if err := json.Unmarshal(c, &con); err != nil {
+		return err
+	}
+
+	if !reflect.DeepEqual(con, data) {
+		return fmt.Errorf(`%s must equal %s`, string(c), data)
+	}
+	return nil
+}
+
+// JSONProp implements JSON property name indexing for Const
+func (c Const) JSONProp(name string) interface{} {
+	return nil
+}
 
 // String implements the Stringer interface for Const
 func (c Const) String() string {
@@ -106,17 +181,5 @@ func (c Const) String() string {
 // UnmarshalJSON implements the json.Unmarshaler interface for Const
 func (c *Const) UnmarshalJSON(data []byte) error {
 	*c = data
-	return nil
-}
-
-// Validate implements the validate interface for Const
-func (c Const) Validate(data interface{}) error {
-	var con interface{}
-	if err := json.Unmarshal(c, &con); err != nil {
-		return err
-	}
-	if !reflect.DeepEqual(con, data) {
-		return fmt.Errorf(`%s must equal %s`, string(c), data)
-	}
 	return nil
 }

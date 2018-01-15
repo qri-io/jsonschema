@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"strconv"
 )
 
 // MaxProperties MUST be a non-negative integer.
@@ -52,6 +53,18 @@ func (r Required) Validate(data interface{}) error {
 	return nil
 }
 
+// JSONProp implements JSON property name indexing for Required
+func (r Required) JSONProp(name string) interface{} {
+	idx, err := strconv.Atoi(name)
+	if err != nil {
+		return nil
+	}
+	if idx > len(r) || idx < 0 {
+		return nil
+	}
+	return r[idx]
+}
+
 // Properties MUST be an object. Each value of this object MUST be a valid JSON Schema.
 // This keyword determines how child instances validate for objects, and does not directly validate
 // the immediate instance itself.
@@ -66,12 +79,25 @@ func (p Properties) Validate(data interface{}) error {
 		for key, val := range obj {
 			if p[key] != nil {
 				if err := p[key].Validate(val); err != nil {
-					return err
+					return fmt.Errorf(`"%s" property %s`, key, err)
 				}
 			}
 		}
 	}
 	return nil
+}
+
+// JSONProp implements JSON property name indexing for Properties
+func (p Properties) JSONProp(name string) interface{} {
+	return p[name]
+}
+
+func (p Properties) JSONChildren() (res map[string]JSONPather) {
+	res = map[string]JSONPather{}
+	for key, sch := range p {
+		res[key] = sch
+	}
+	return
 }
 
 // PatternProperties determines how child instances validate for objects, and does not directly validate the immediate instance itself.
@@ -102,6 +128,16 @@ func (p PatternProperties) Validate(data interface{}) error {
 					}
 				}
 			}
+		}
+	}
+	return nil
+}
+
+// JSONProp implements JSON property name indexing for PatternProperties
+func (p PatternProperties) JSONProp(name string) interface{} {
+	for _, pp := range p {
+		if pp.key == name {
+			return pp.schema
 		}
 	}
 	return nil
@@ -139,8 +175,8 @@ func (p *PatternProperties) UnmarshalJSON(data []byte) error {
 // For all such properties, validation succeeds if the child instance validates against the "additionalProperties" schema.
 // Omitting this keyword has the same behavior as an empty schema.
 type AdditionalProperties struct {
-	properties Properties
-	patterns   PatternProperties
+	properties *Properties
+	patterns   *PatternProperties
 	Schema     Schema
 }
 
@@ -149,14 +185,18 @@ func (ap AdditionalProperties) Validate(data interface{}) error {
 	if obj, ok := data.(map[string]interface{}); ok {
 	KEYS:
 		for key, val := range obj {
-			for propKey := range ap.properties {
-				if propKey == key {
-					continue KEYS
+			if ap.properties != nil {
+				for propKey := range *ap.properties {
+					if propKey == key {
+						continue KEYS
+					}
 				}
 			}
-			for _, ptn := range ap.patterns {
-				if ptn.re.Match([]byte(key)) {
-					continue KEYS
+			if ap.patterns != nil {
+				for _, ptn := range *ap.patterns {
+					if ptn.re.Match([]byte(key)) {
+						continue KEYS
+					}
 				}
 			}
 			if err := ap.Schema.Validate(val); err != nil {
@@ -195,6 +235,11 @@ func (d Dependencies) Validate(data interface{}) error {
 	return nil
 }
 
+// JSONProp implements JSON property name indexing for Dependencies
+func (d Dependencies) JSONProp(name string) interface{} {
+	return d[name]
+}
+
 // PropertyNames checks if every property name in the instance validates against the provided schema
 // if the instance is an object.
 // Note the property name that the schema is testing will always be a string.
@@ -212,6 +257,11 @@ func (p PropertyNames) Validate(data interface{}) error {
 		}
 	}
 	return nil
+}
+
+// JSONProp implements JSON property name indexing for Properties
+func (p PropertyNames) JSONProp(name string) interface{} {
+	return Schema(p).JSONProp(name)
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface for PropertyNames
