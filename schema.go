@@ -7,10 +7,17 @@ package jsonschema
 
 import (
 	"encoding/json"
+	"fmt"
+	"github.com/qri-io/jsonpointer"
+	// "io/ioutil"
+	"net/http"
+	"net/url"
 )
 
 // Validator is an interface for anything that can validate
+// JSON-Schema keywords are all validators
 type Validator interface {
+	// Validate checks decoded JSON data against a given constraint
 	Validate(data interface{}) error
 }
 
@@ -19,13 +26,167 @@ type RootSchema struct {
 	Schema
 	// The "$schema" keyword is both used as a JSON Schema version identifier and the location of a
 	// resource which is itself a JSON Schema, which describes any schema written for this particular version.
-	// The value of this keyword MUST be a URI [RFC3986] (containing a scheme) and this URI MUST be normalized. The current schema MUST be valid against the meta-schema identified by this URI.
+	// The value of this keyword MUST be a URI [RFC3986] (containing a scheme) and this URI MUST be normalized.
+	// The current schema MUST be valid against the meta-schema identified by this URI.
 	// If this URI identifies a retrievable resource, that resource SHOULD be of media type "application/schema+json".
-	// The "$schema" keyword SHOULD be used in a root schema. It MUST NOT appear in subschemas.
-	// [CREF2]
+	// The "$schema" keyword SHOULD be used in a root schema.
 	// Values for this property are defined in other documents and by other parties. JSON Schema implementations SHOULD implement support for current and previous published drafts of JSON Schema vocabularies as deemed reasonable.
 	SchemaURI string `json:"$schema"`
 }
+
+// UnmarshalJSON implements the json.Unmarshaler interface for RootSchema
+func (rs *RootSchema) UnmarshalJSON(data []byte) error {
+	sch := &Schema{}
+	if err := json.Unmarshal(data, sch); err != nil {
+		return err
+	}
+
+	suri := struct {
+		SchemaURI string `json:"$schema"`
+	}{}
+	if err := json.Unmarshal(data, &suri); err != nil {
+		return err
+	}
+
+	root := &RootSchema{
+		Schema:    *sch,
+		SchemaURI: suri.SchemaURI,
+	}
+
+	// collect IDs for internal referencing:
+	ids := map[string]*Schema{}
+	if err := walkJSON(sch, func(elem JSONPather) error {
+		if sch, ok := elem.(*Schema); ok {
+
+			if sch.ID != "" {
+				ids[sch.ID] = sch
+				if u, err := url.Parse(sch.ID); err == nil {
+					ids[u.Path[1:]] = sch
+				}
+			}
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	// pass a pointer to the schema component in here (instead of the RootSchema struct)
+	// to ensure root is evaluated for references
+	if err := walkJSON(sch, func(elem JSONPather) error {
+		if sch, ok := elem.(*Schema); ok {
+			if sch.Ref != "" {
+				if ids[sch.Ref] != nil {
+					sch.ref = ids[sch.Ref]
+					return nil
+				}
+
+				ptr, err := jsonpointer.Parse(sch.Ref)
+				if err != nil {
+					return fmt.Errorf("error evaluating json pointer: %s: %s", err.Error(), sch.Ref)
+				}
+				res, err := root.evalJSONValidatorPointer(ptr)
+				if err != nil {
+					return err
+				}
+				if val, ok := res.(Validator); ok {
+					sch.ref = val
+				} else {
+					return fmt.Errorf("%s : %s, %v is not a json pointer to a json schema", sch.Ref, ptr.String(), ptr)
+				}
+			}
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	*rs = RootSchema{
+		Schema:    *sch,
+		SchemaURI: suri.SchemaURI,
+	}
+	return nil
+}
+
+// FetchRemoteReferences grabs any url-based schema references that cannot
+// be locally resolved via network requests
+func (rs *RootSchema) FetchRemoteReferences() error {
+	sch := &rs.Schema
+
+	// collect IDs for internal referencing:
+	refs := map[string]*Schema{}
+	if err := walkJSON(sch, func(elem JSONPather) error {
+		if sch, ok := elem.(*Schema); ok {
+			ref := sch.Ref
+			if ref != "" {
+				if refs[ref] == nil {
+					if u, err := url.Parse(ref); err == nil {
+						if res, err := http.Get(u.String()); err == nil {
+							s := &RootSchema{}
+							if err := json.NewDecoder(res.Body).Decode(s); err != nil {
+								return err
+							}
+							refs[ref] = &s.Schema
+							sch.ref = refs[ref]
+						}
+					}
+				}
+			}
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	// pass a pointer to the schema component in here (instead of the RootSchema struct)
+	// to ensure root is evaluated for references
+	if err := walkJSON(sch, func(elem JSONPather) error {
+		if sch, ok := elem.(*Schema); ok {
+			if sch.Ref != "" && refs[sch.Ref] != nil {
+				if refs[sch.Ref] != nil {
+					fmt.Println("using remote ref:", sch.Ref)
+					sch.ref = refs[sch.Ref]
+				}
+				return nil
+			}
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	rs.Schema = *sch
+	return nil
+}
+
+// ValidateBytes performs schema validation against a slice of json byte data
+func (rs *RootSchema) ValidateBytes(data []byte) error {
+	var doc interface{}
+	if err := json.Unmarshal(data, &doc); err != nil {
+		return err
+	}
+	return rs.Validate(doc)
+}
+
+func (rs *RootSchema) evalJSONValidatorPointer(ptr jsonpointer.Pointer) (res interface{}, err error) {
+	res = rs
+	for _, token := range ptr {
+		if adr, ok := res.(JSONPather); ok {
+			res = adr.JSONProp(token)
+		} else if !ok {
+			err = fmt.Errorf("invalid pointer: %s", ptr)
+			return
+		}
+	}
+	return
+}
+
+type schemaType int
+
+const (
+	schemaTypeObject schemaType = iota
+	schemaTypeFalse
+	schemaTypeTrue
+)
 
 // Schema is the root JSON-schema struct
 // A JSON Schema vocabulary is a set of keywords defined for a particular purpose.
@@ -53,6 +214,8 @@ type RootSchema struct {
 // Meta-schemas are used to validate JSON Schemas and specify which vocabulary it is using. [CREF1]
 // A JSON Schema MUST be an object or a boolean.
 type Schema struct {
+	// internal tracking for true/false/{...} schemas
+	schemaType schemaType
 	// The "$id" keyword defines a URI for the schema,
 	// and the base URI that other URI references within the schema are resolved against.
 	// A subschema's "$id" is resolved against the base URI of its parent schema.
@@ -124,53 +287,95 @@ type Schema struct {
 	// might get stuck in an infinite recursive loop trying to validate the instance.
 	// Schemas SHOULD NOT make use of infinite recursive nesting like this; the behavior is undefined.
 	Ref string `json:"$ref,omitempty"`
+	// Format functions as both an annotation (Section 3.3) and as an assertion (Section 3.2).
+	// While no special effort is required to implement it as an annotation conveying semantic meaning,
+	// implementing validation is non-trivial.
+	Format string `json:"format,omitempty"`
+
+	ref Validator
 
 	// Definitions provides a standardized location for schema authors to inline re-usable JSON Schemas
 	// into a more general schema. The keyword does not directly affect the validation result.
-	Definitions map[string]*Schema `json:"definitions,omitempty"`
+	Definitions Definitions `json:"definitions,omitempty"`
 
-	Type  Type  `json:"type,omitempty"`
-	Enum  Enum  `json:"enum,omitempty"`
-	Const Const `json:"const,omitempty"`
+	// TODO - currently a bit of a hack to handle arbitrary JSON data outside the spec
+	extraDefinitions Definitions
 
-	MultipleOf       *MultipleOf       `json:"multipleOf,omitempty"`
-	Maximum          *Maximum          `json:"maximum,omitempty"`
-	ExclusiveMaximum *ExclusiveMaximum `json:"exclusiveMaximum,omitempty"`
-	Minimum          *Minimum          `json:"minimum,omitempty"`
-	ExclusiveMinimum *ExclusiveMinimum `json:"exclusiveMinimum,omitempty"`
-
-	MaxLength *MaxLength `json:"maxLength,omitempty"`
-	MinLength *MinLength `json:"minLength,omitempty"`
-	Pattern   *Pattern   `json:"pattern,omitempty"`
-
-	AllOf AllOf `json:"allOf,omitempty"`
-	AnyOf AnyOf `json:"anyOf,omitempty"`
-	OneOf OneOf `json:"oneOf,omitempty"`
-	Not   *Not  `json:"not,omitempty"`
-
-	Items           *Items           `json:"items,omitempty"`
-	AdditionalItems *AdditionalItems `json:"additionalItems,omitempty"`
-	MaxItems        *MaxItems        `json:"maxItems,omitempty"`
-	MinItems        *MinItems        `json:"minItems,omitempty"`
-	UniqueItems     *UniqueItems     `json:"uniqueItems,omitempty"`
-	Contains        *Contains        `json:"contains,omitempty"`
-
-	MaxProperties        *MaxProperties        `json:"maxProperties,omitempty"`
-	MinProperties        *MinProperties        `json:"minProperties,omitempty"`
-	Required             Required              `json:"required,omitempty"`
-	Properties           Properties            `json:"properties,omitempty"`
-	PatternProperties    PatternProperties     `json:"patternProperties,omitempty"`
-	AdditionalProperties *AdditionalProperties `json:"additionalProperties,omitempty"`
-	Dependencies         *Dependencies         `json:"dependencies,omitempty"`
-	PropertyNames        *PropertyNames        `json:"propertyNames,omitempty"`
-
-	If   *If   `json:"if,omitempty"`
-	Then *Then `json:"then,omitempty"`
-	Else *Else `json:"else,omitempty"`
+	Validators map[string]Validator
 }
 
 // _schema is an internal struct for encoding & decoding purposes
-type _schema Schema
+type _schema struct {
+	ID          string             `json:"$id,omitempty"`
+	Title       string             `json:"title,omitempty"`
+	Description string             `json:"description,omitempty"`
+	Default     interface{}        `json:"default,omitempty"`
+	Examples    []interface{}      `json:"examples,omitempty"`
+	ReadOnly    bool               `json:"readOnly,omitempty"`
+	WriteOnly   bool               `json:"writeOnly,omitempty"`
+	Comment     string             `json:"comment,omitempty"`
+	Ref         string             `json:"$ref,omitempty"`
+	Definitions map[string]*Schema `json:"definitions,omitempty"`
+	Format      string             `json:"format,omitempty"`
+}
+
+// JSONProp implements the JSONPather for Schema
+func (s Schema) JSONProp(name string) interface{} {
+	switch name {
+	case "$id":
+		return s.ID
+	case "title":
+		return s.Title
+	case "description":
+		return s.Description
+	case "default":
+		return s.Default
+	case "examples":
+		return s.Examples
+	case "readOnly":
+		return s.ReadOnly
+	case "writeOnly":
+		return s.WriteOnly
+	case "comment":
+		return s.Comment
+	case "$ref":
+		return s.Ref
+	case "definitions":
+		return s.Definitions
+	case "format":
+		return s.Format
+	default:
+		prop := s.Validators[name]
+		if prop == nil && s.extraDefinitions[name] != nil {
+			prop = s.extraDefinitions[name]
+		}
+		return prop
+	}
+}
+
+// JSONChildren implements the JSONContainer interface for Schema
+func (s *Schema) JSONChildren() (ch map[string]JSONPather) {
+	ch = map[string]JSONPather{}
+
+	if s.extraDefinitions != nil {
+		for key, val := range s.extraDefinitions {
+			ch[key] = val
+		}
+	}
+
+	if s.Definitions != nil {
+		ch["definitions"] = s.Definitions
+	}
+
+	if s.Validators != nil {
+		for key, val := range s.Validators {
+			if jp, ok := val.(JSONPather); ok {
+				ch[key] = jp
+			}
+		}
+	}
+	return
+}
 
 // UnmarshalJSON implements the json.Unmarshaler interface for Schema
 func (s *Schema) UnmarshalJSON(data []byte) error {
@@ -179,146 +384,178 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &b); err == nil {
 		if b {
 			// boolean true Always passes validation, as if the empty schema {}
-			*s = Schema{}
+			*s = Schema{schemaType: schemaTypeTrue}
 			return nil
 		}
 		// boolean false Always fails validation, as if the schema { "not":{} }
-		*s = Schema{Not: &Not{}}
+		*s = Schema{schemaType: schemaTypeFalse, Validators: map[string]Validator{"not": &Not{}}}
 		return nil
 	}
 
-	sch := &_schema{}
-	if err := json.Unmarshal(data, sch); err != nil {
+	_s := _schema{}
+	if err := json.Unmarshal(data, &_s); err != nil {
 		return err
 	}
 
-	if sch.Items != nil && sch.AdditionalItems != nil && !sch.Items.single {
-		sch.AdditionalItems.startIndex = len(sch.Items.Schemas)
+	sch := &Schema{
+		ID:          _s.ID,
+		Title:       _s.Title,
+		Description: _s.Description,
+		Default:     _s.Default,
+		Examples:    _s.Examples,
+		ReadOnly:    _s.ReadOnly,
+		WriteOnly:   _s.WriteOnly,
+		Comment:     _s.Comment,
+		Ref:         _s.Ref,
+		Definitions: _s.Definitions,
+		Format:      _s.Format,
+		Validators:  map[string]Validator{},
 	}
 
-	if sch.Properties != nil && sch.AdditionalProperties != nil {
-		sch.AdditionalProperties.properties = sch.Properties
+	// if a reference is present everything else is *supposed to be* ignored
+	// but the tests seem to require that this is not the case
+	// I'd like to do this:
+	// if sch.Ref != "" {
+	// 	*s = Schema{Ref: sch.Ref}
+	// 	return nil
+	// }
+	// but returning the full struct makes tests pass, because things like
+	// testdata/draft7/ref.json#/4/schema
+	// mean we should return the full object
+
+	valprops := map[string]json.RawMessage{}
+	if err := json.Unmarshal(data, &valprops); err != nil {
+		return err
 	}
 
-	if sch.PatternProperties != nil && sch.AdditionalProperties != nil {
-		sch.AdditionalProperties.patterns = sch.PatternProperties
+	for prop, rawmsg := range valprops {
+		var val Validator
+		// TODO - it'd be great if users could override this with their
+		// own definitions & validator extensions. That would require
+		// converting this switch case to a function that maps string
+		// props to validator factory functions
+		switch prop {
+		// skip any already-parsed props
+		case "$schema", "$id", "title", "description", "default", "examples", "readOnly", "writeOnly", "comment", "$ref", "definitions", "format":
+			continue
+		case "type":
+			val = new(Type)
+		case "enum":
+			val = new(Enum)
+		case "const":
+			val = new(Const)
+		case "multipleOf":
+			val = new(MultipleOf)
+		case "maximum":
+			val = new(Maximum)
+		case "exclusiveMaximum":
+			val = new(ExclusiveMaximum)
+		case "minimum":
+			val = new(Minimum)
+		case "exclusiveMinimum":
+			val = new(ExclusiveMinimum)
+		case "maxLength":
+			val = new(MaxLength)
+		case "minLength":
+			val = new(MinLength)
+		case "pattern":
+			val = new(Pattern)
+		case "allOf":
+			val = new(AllOf)
+		case "anyOf":
+			val = new(AnyOf)
+		case "oneOf":
+			val = new(OneOf)
+		case "not":
+			val = new(Not)
+		case "items":
+			val = new(Items)
+		case "additionalItems":
+			val = new(AdditionalItems)
+		case "maxItems":
+			val = new(MaxItems)
+		case "minItems":
+			val = new(MinItems)
+		case "uniqueItems":
+			val = new(UniqueItems)
+		case "contains":
+			val = new(Contains)
+		case "maxProperties":
+			val = new(MaxProperties)
+		case "minProperties":
+			val = new(MinProperties)
+		case "required":
+			val = new(Required)
+		case "properties":
+			val = new(Properties)
+		case "patternProperties":
+			val = new(PatternProperties)
+		case "additionalProperties":
+			val = new(AdditionalProperties)
+		case "dependencies":
+			val = new(Dependencies)
+		case "propertyNames":
+			val = new(PropertyNames)
+		case "if":
+			val = new(If)
+		case "then":
+			val = new(Then)
+		case "else":
+			val = new(Else)
+		default:
+			// assume non-specified props are "extra definitions"
+			if sch.extraDefinitions == nil {
+				sch.extraDefinitions = Definitions{}
+			}
+			s := new(Schema)
+			if err := json.Unmarshal(rawmsg, s); err != nil {
+				return fmt.Errorf("error unmarshaling %s from json: %s", prop, err.Error())
+			}
+			sch.extraDefinitions[prop] = s
+			continue
+		}
+		if err := json.Unmarshal(rawmsg, val); err != nil {
+			return fmt.Errorf("error unmarshaling %s from json: %s", prop, err.Error())
+		}
+		sch.Validators[prop] = val
+	}
+
+	if sch.Validators["if"] != nil {
+		if ite, ok := sch.Validators["if"].(*If); ok {
+			if s, ok := sch.Validators["then"].(*Then); ok {
+				ite.Then = s
+			}
+			if s, ok := sch.Validators["else"].(*Else); ok {
+				ite.Else = s
+			}
+		}
+	}
+
+	// TODO - replace all these assertions with methods on Schema that return proper types
+	if sch.Validators["items"] != nil && sch.Validators["additionalItems"] != nil && !sch.Validators["items"].(*Items).single {
+		sch.Validators["additionalItems"].(*AdditionalItems).startIndex = len(sch.Validators["items"].(*Items).Schemas)
+	}
+	if sch.Validators["properties"] != nil && sch.Validators["additionalProperties"] != nil {
+		sch.Validators["additionalProperties"].(*AdditionalProperties).properties = sch.Validators["properties"].(*Properties)
+	}
+	if sch.Validators["patternProperties"] != nil && sch.Validators["additionalProperties"] != nil {
+		sch.Validators["additionalProperties"].(*AdditionalProperties).patterns = sch.Validators["patternProperties"].(*PatternProperties)
 	}
 
 	*s = Schema(*sch)
 	return nil
 }
 
-// Validators returns a schemas non-nil validators as a slice
-func (s *Schema) Validators() (vs []Validator) {
-	if s.Type != nil {
-		vs = append(vs, s.Type)
-	}
-	if s.Const != nil {
-		vs = append(vs, s.Const)
-	}
-	if s.Enum != nil {
-		vs = append(vs, s.Enum)
-	}
-
-	if s.MultipleOf != nil {
-		vs = append(vs, s.MultipleOf)
-	}
-	if s.Maximum != nil {
-		vs = append(vs, s.Maximum)
-	}
-	if s.ExclusiveMaximum != nil {
-		vs = append(vs, s.ExclusiveMaximum)
-	}
-	if s.Minimum != nil {
-		vs = append(vs, s.Minimum)
-	}
-	if s.ExclusiveMinimum != nil {
-		vs = append(vs, s.ExclusiveMinimum)
-	}
-
-	if s.MaxLength != nil {
-		vs = append(vs, s.MaxLength)
-	}
-	if s.MinLength != nil {
-		vs = append(vs, s.MinLength)
-	}
-	if s.Pattern != nil {
-		vs = append(vs, s.Pattern)
-	}
-
-	if s.AllOf != nil {
-		vs = append(vs, s.AllOf)
-	}
-	if s.AnyOf != nil {
-		vs = append(vs, s.AnyOf)
-	}
-	if s.OneOf != nil {
-		vs = append(vs, s.OneOf)
-	}
-	if s.Not != nil {
-		vs = append(vs, s.Not)
-	}
-
-	if s.Items != nil {
-		vs = append(vs, s.Items)
-	}
-	if s.AdditionalItems != nil {
-		vs = append(vs, s.AdditionalItems)
-	}
-	if s.MaxItems != nil {
-		vs = append(vs, s.MaxItems)
-	}
-	if s.MinItems != nil {
-		vs = append(vs, s.MinItems)
-	}
-	if s.UniqueItems != nil {
-		vs = append(vs, s.UniqueItems)
-	}
-	if s.Contains != nil {
-		vs = append(vs, s.Contains)
-	}
-
-	if s.MaxProperties != nil {
-		vs = append(vs, s.MaxProperties)
-	}
-	if s.MinProperties != nil {
-		vs = append(vs, s.MinProperties)
-	}
-	if s.Required != nil {
-		vs = append(vs, s.Required)
-	}
-	if s.Properties != nil {
-		vs = append(vs, s.Properties)
-	}
-	if s.PatternProperties != nil {
-		vs = append(vs, s.PatternProperties)
-	}
-	if s.AdditionalProperties != nil {
-		vs = append(vs, s.AdditionalProperties)
-	}
-	if s.Dependencies != nil {
-		vs = append(vs, s.Dependencies)
-	}
-	if s.PropertyNames != nil {
-		vs = append(vs, s.PropertyNames)
-	}
-
-	if s.If != nil {
-		vs = append(vs, s.If)
-	}
-	if s.Then != nil {
-		vs = append(vs, s.Then)
-	}
-	if s.Else != nil {
-		vs = append(vs, s.Else)
-	}
-
-	return
-}
-
 // Validate uses the schema to check an instance, returning error on the first error
 func (s *Schema) Validate(data interface{}) error {
-	for _, v := range s.Validators() {
+	if s.Ref != "" && s.ref != nil {
+		return s.ref.Validate(data)
+	}
+
+	// TODO - so far all default.json tests pass when no use of "default" is made.
+	// Is this correct?
+
+	for _, v := range s.Validators {
 		if err := v.Validate(data); err != nil {
 			return err
 		}
@@ -326,26 +563,22 @@ func (s *Schema) Validate(data interface{}) error {
 	return nil
 }
 
-// DataType gives the primitive json type of a value, plus the special case
-// "integer" for when numbers are whole
-func DataType(data interface{}) string {
-	switch v := data.(type) {
-	case nil:
-		return "null"
-	case bool:
-		return "boolean"
-	case float64:
-		if float64(int(v)) == v {
-			return "integer"
-		}
-		return "number"
-	case string:
-		return "string"
-	case []interface{}:
-		return "array"
-	case map[string]interface{}:
-		return "object"
-	default:
-		return "unknown"
+// Definitions implements a map of schemas while also satsfying the JSON
+// traversal methods
+type Definitions map[string]*Schema
+
+// JSONProp implements the JSONPather for Definitions
+func (d Definitions) JSONProp(name string) interface{} {
+	return d[name]
+}
+
+// JSONChildren implements the JSONContainer interface for Definitions
+func (d Definitions) JSONChildren() (r map[string]JSONPather) {
+	r = map[string]JSONPather{}
+	// fmt.Println("getting children for definitions:", d)
+	for key, val := range d {
+		// fmt.Println("definition child:", key, val)
+		r[key] = val
 	}
+	return
 }

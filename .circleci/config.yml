@@ -18,6 +18,7 @@ jobs:
           command: >
             go get -v -d -u
             github.com/jstemmer/go-junit-report 
+            github.com/qri-io/jsonpointer
       - run: 
           name: Run Lint Tests
           command: golint ./...

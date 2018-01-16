@@ -3,6 +3,7 @@ package jsonschema
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 )
 
 // AllOf MUST be a non-empty array. Each item of the array MUST be a valid JSON Schema.
@@ -19,6 +20,27 @@ func (a AllOf) Validate(data interface{}) error {
 	return nil
 }
 
+// JSONProp implements JSON property name indexing for AllOf
+func (a AllOf) JSONProp(name string) interface{} {
+	idx, err := strconv.Atoi(name)
+	if err != nil {
+		return nil
+	}
+	if idx > len(a) || idx < 0 {
+		return nil
+	}
+	return a[idx]
+}
+
+// JSONChildren implements the JSONContainer interface for AllOf
+func (a AllOf) JSONChildren() (res map[string]JSONPather) {
+	res = map[string]JSONPather{}
+	for i, sch := range a {
+		res[strconv.Itoa(i)] = sch
+	}
+	return
+}
+
 // AnyOf MUST be a non-empty array. Each item of the array MUST be a valid JSON Schema.
 // An instance validates successfully against this keyword if it validates successfully against at
 // least one schema defined by this keyword's value.
@@ -32,6 +54,27 @@ func (a AnyOf) Validate(data interface{}) error {
 		}
 	}
 	return fmt.Errorf("value did not match any specified anyOf schemas: %v", data)
+}
+
+// JSONProp implements JSON property name indexing for AnyOf
+func (a AnyOf) JSONProp(name string) interface{} {
+	idx, err := strconv.Atoi(name)
+	if err != nil {
+		return nil
+	}
+	if idx > len(a) || idx < 0 {
+		return nil
+	}
+	return a[idx]
+}
+
+// JSONChildren implements the JSONContainer interface for AnyOf
+func (a AnyOf) JSONChildren() (res map[string]JSONPather) {
+	res = map[string]JSONPather{}
+	for i, sch := range a {
+		res[strconv.Itoa(i)] = sch
+	}
+	return
 }
 
 // OneOf MUST be a non-empty array. Each item of the array MUST be a valid JSON Schema.
@@ -55,6 +98,27 @@ func (o OneOf) Validate(data interface{}) error {
 	return nil
 }
 
+// JSONProp implements JSON property name indexing for OneOf
+func (o OneOf) JSONProp(name string) interface{} {
+	idx, err := strconv.Atoi(name)
+	if err != nil {
+		return nil
+	}
+	if idx > len(o) || idx < 0 {
+		return nil
+	}
+	return o[idx]
+}
+
+// JSONChildren implements the JSONContainer interface for OneOf
+func (o OneOf) JSONChildren() (res map[string]JSONPather) {
+	res = map[string]JSONPather{}
+	for i, sch := range o {
+		res[strconv.Itoa(i)] = sch
+	}
+	return
+}
+
 // Not MUST be a valid JSON Schema.
 // An instance is valid against this keyword if it fails to validate successfully against the schema defined
 // by this keyword.
@@ -68,6 +132,11 @@ func (n *Not) Validate(data interface{}) error {
 		return fmt.Errorf("not clause")
 	}
 	return nil
+}
+
+// JSONProp implements JSON property name indexing for Not
+func (n Not) JSONProp(name string) interface{} {
+	return Schema(n).JSONProp(name)
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface for Not

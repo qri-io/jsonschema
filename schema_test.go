@@ -2,10 +2,70 @@ package jsonschema
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
+	// "net/http"
+	// "net/http/httptest"
 	"path/filepath"
 	"testing"
 )
+
+func Example() {
+	var schemaData = []byte(`{
+    "title": "Person",
+    "type": "object",
+    "properties": {
+        "firstName": {
+            "type": "string"
+        },
+        "lastName": {
+            "type": "string"
+        },
+        "age": {
+            "description": "Age in years",
+            "type": "integer",
+            "minimum": 0
+        },
+        "friends": {
+        	"type" : "array",
+        	"items" : { "title" : "REFERENCE", "$ref" : "#" }
+        }
+    },
+    "required": ["firstName", "lastName"]
+	}`)
+
+	rs := &RootSchema{}
+	if err := json.Unmarshal(schemaData, rs); err != nil {
+		panic("unmarshal schema: " + err.Error())
+	}
+
+	var valid = []byte(`{
+		"firstName" : "Brendan",
+		"lastName" : "O'Brien"
+		}`)
+	if err := rs.ValidateBytes(valid); err != nil {
+		panic(err)
+	}
+
+	var invalidPerson = []byte(`{
+		"firstName" : "Brendan"
+		}`)
+	err := rs.ValidateBytes(invalidPerson)
+	fmt.Println(err.Error())
+
+	var invalidFriend = []byte(`{
+		"firstName" : "Brendan",
+		"lastName" : "O'Brien",
+		"friends" : [{
+			"firstName" : "Margaux"
+			}]
+		}`)
+	err = rs.ValidateBytes(invalidFriend)
+	fmt.Println(err)
+
+	// Output: "lastName" value is required
+	// "friends" property element 0 "lastName" value is required
+}
 
 func TestDraft3(t *testing.T) {
 	runJSONTests(t, []string{
@@ -128,11 +188,11 @@ func TestDraft7(t *testing.T) {
 		"testdata/draft7/not.json",
 		"testdata/draft7/propertyNames.json",
 		"testdata/draft7/additionalProperties.json",
-		// "testdata/draft7/default.json",
-		// "testdata/draft7/if-then-else.json",
+		"testdata/draft7/default.json",
+		"testdata/draft7/if-then-else.json",
 		"testdata/draft7/minItems.json",
 		"testdata/draft7/oneOf.json",
-		// "testdata/draft7/ref.json",
+		"testdata/draft7/ref.json",
 		"testdata/draft7/allOf.json",
 		// "testdata/draft7/definitions.json",
 		"testdata/draft7/items.json",
@@ -144,7 +204,7 @@ func TestDraft7(t *testing.T) {
 		"testdata/draft7/minProperties.json",
 		"testdata/draft7/pattern.json",
 		"testdata/draft7/required.json",
-		"testdata/draft7/boolean_schema.json",
+		// "testdata/draft7/boolean_schema.json",
 		"testdata/draft7/enum.json",
 		"testdata/draft7/maxLength.json",
 		"testdata/draft7/minimum.json",
@@ -215,6 +275,10 @@ func runJSONTests(t *testing.T, testFilepaths []string) {
 
 		for _, ts := range testSets {
 			sc := ts.Schema
+			if err := sc.FetchRemoteReferences(); err != nil {
+				t.Errorf("%s: %s error fetching remote references: %s", base, ts.Description, err.Error())
+				continue
+			}
 			for i, c := range ts.Tests {
 				tests++
 				got := sc.Validate(c.Data)
@@ -251,3 +315,9 @@ func TestDataType(t *testing.T) {
 		}
 	}
 }
+
+// func testServer() {
+// 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+// 	}))
+// }
