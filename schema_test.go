@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-func Example() {
+func ExampleBasic() {
 	var schemaData = []byte(`{
     "title": "Person",
     "type": "object",
@@ -180,6 +180,24 @@ func TestDraft6(t *testing.T) {
 }
 
 func TestDraft7(t *testing.T) {
+	prev := SchemaPool
+	defer func() { SchemaPool = prev }()
+
+	path := "testdata/draft-07_schema.json"
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		t.Errorf("error reading %s: %s", path, err.Error())
+		return
+	}
+
+	rsch := &RootSchema{}
+	if err := json.Unmarshal(data, rsch); err != nil {
+		t.Errorf("error unmarshaling schema: %s", err.Error())
+		return
+	}
+
+	SchemaPool["http://json-schema.org/draft-07/schema#"] = &rsch.Schema
+
 	runJSONTests(t, []string{
 		"testdata/draft7/additionalItems.json",
 		"testdata/draft7/contains.json",
@@ -194,7 +212,7 @@ func TestDraft7(t *testing.T) {
 		"testdata/draft7/oneOf.json",
 		"testdata/draft7/ref.json",
 		"testdata/draft7/allOf.json",
-		// "testdata/draft7/definitions.json",
+		"testdata/draft7/definitions.json",
 		"testdata/draft7/items.json",
 		"testdata/draft7/minLength.json",
 		// "testdata/draft7/refRemote.json",
@@ -204,7 +222,7 @@ func TestDraft7(t *testing.T) {
 		"testdata/draft7/minProperties.json",
 		"testdata/draft7/pattern.json",
 		"testdata/draft7/required.json",
-		// "testdata/draft7/boolean_schema.json",
+		"testdata/draft7/boolean_schema.json",
 		"testdata/draft7/enum.json",
 		"testdata/draft7/maxLength.json",
 		"testdata/draft7/minimum.json",

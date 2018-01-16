@@ -37,6 +37,11 @@ func (i If) JSONProp(name string) interface{} {
 	return Schema(i.Schema).JSONProp(name)
 }
 
+// JSONChildren implements the JSONContainer interface for If
+func (i If) JSONChildren() (res map[string]JSONPather) {
+	return i.Schema.JSONChildren()
+}
+
 // UnmarshalJSON implements the json.Unmarshaler interface for If
 func (i *If) UnmarshalJSON(data []byte) error {
 	var sch Schema
@@ -62,6 +67,11 @@ func (t Then) JSONProp(name string) interface{} {
 	return Schema(t).JSONProp(name)
 }
 
+// JSONChildren implements the JSONContainer interface for If
+func (t Then) JSONChildren() (res map[string]JSONPather) {
+	return Schema(t).JSONChildren()
+}
+
 // UnmarshalJSON implements the json.Unmarshaler interface for Then
 func (t *Then) UnmarshalJSON(data []byte) error {
 	var sch Schema
@@ -85,6 +95,11 @@ func (e *Else) Validate(data interface{}) error {
 // JSONProp implements JSON property name indexing for Else
 func (e Else) JSONProp(name string) interface{} {
 	return Schema(e).JSONProp(name)
+}
+
+// JSONChildren implements the JSONContainer interface for Else
+func (e Else) JSONChildren() (res map[string]JSONPather) {
+	return Schema(e).JSONChildren()
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface for Else

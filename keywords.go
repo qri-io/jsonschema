@@ -123,9 +123,9 @@ type Enum []Const
 func (e Enum) String() string {
 	str := "["
 	for _, c := range e {
-		str += ", " + c.String()
+		str += c.String() + ", "
 	}
-	return str + "]"
+	return str[:len(str)-2] + "]"
 }
 
 // Validate implements the Validator interface for Enum
@@ -148,6 +148,15 @@ func (e Enum) JSONProp(name string) interface{} {
 		return nil
 	}
 	return e[idx]
+}
+
+// JSONChildren implements the JSONContainer interface for Enum
+func (e Enum) JSONChildren() (res map[string]JSONPather) {
+	res = map[string]JSONPather{}
+	for i, bs := range e {
+		res[strconv.Itoa(i)] = bs
+	}
+	return
 }
 
 // Const MAY be of any type, including null.

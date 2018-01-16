@@ -121,6 +121,14 @@ func (a *AdditionalItems) JSONProp(name string) interface{} {
 	return a.Schema.JSONProp(name)
 }
 
+// JSONChildren implements the JSONContainer interface for AdditionalItems
+func (a *AdditionalItems) JSONChildren() (res map[string]JSONPather) {
+	if a.Schema == nil {
+		return map[string]JSONPather{}
+	}
+	return a.Schema.JSONChildren()
+}
+
 // UnmarshalJSON implements the json.Unmarshaler interface for AdditionalItems
 func (a *AdditionalItems) UnmarshalJSON(data []byte) error {
 	sch := &Schema{}
@@ -205,6 +213,11 @@ func (c *Contains) Validate(data interface{}) error {
 // JSONProp implements JSON property name indexing for Contains
 func (c Contains) JSONProp(name string) interface{} {
 	return Schema(c).JSONProp(name)
+}
+
+// JSONChildren implements the JSONContainer interface for Contains
+func (c Contains) JSONChildren() (res map[string]JSONPather) {
+	return Schema(c).JSONChildren()
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface for Contains

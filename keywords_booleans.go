@@ -139,6 +139,15 @@ func (n Not) JSONProp(name string) interface{} {
 	return Schema(n).JSONProp(name)
 }
 
+// JSONChildren implements the JSONContainer interface for Not
+func (n Not) JSONChildren() (res map[string]JSONPather) {
+	if n.Ref != "" {
+		s := Schema(n)
+		return map[string]JSONPather{"$ref": &s}
+	}
+	return Schema(n).JSONChildren()
+}
+
 // UnmarshalJSON implements the json.Unmarshaler interface for Not
 func (n *Not) UnmarshalJSON(data []byte) error {
 	var sch Schema
