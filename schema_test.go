@@ -10,8 +10,6 @@ import (
 	"testing"
 )
 
-var _ JSONPather = &Schema{}
-
 func Example() {
 	var schemaData = []byte(`{
     "title": "Person",
@@ -45,14 +43,14 @@ func Example() {
 		"firstName" : "Brendan",
 		"lastName" : "O'Brien"
 		}`)
-	if err := rs.ValdiateBytes(valid); err != nil {
+	if err := rs.ValidateBytes(valid); err != nil {
 		panic(err)
 	}
 
 	var invalidPerson = []byte(`{
 		"firstName" : "Brendan"
 		}`)
-	err := rs.ValdiateBytes(invalidPerson)
+	err := rs.ValidateBytes(invalidPerson)
 	fmt.Println(err.Error())
 
 	var invalidFriend = []byte(`{
@@ -62,7 +60,7 @@ func Example() {
 			"firstName" : "Margaux"
 			}]
 		}`)
-	err = rs.ValdiateBytes(invalidFriend)
+	err = rs.ValidateBytes(invalidFriend)
 	fmt.Println(err)
 
 	// Output: "lastName" value is required
@@ -183,41 +181,41 @@ func TestDraft6(t *testing.T) {
 
 func TestDraft7(t *testing.T) {
 	runJSONTests(t, []string{
-		// "testdata/draft7/additionalItems.json",
-		// "testdata/draft7/contains.json",
-		// "testdata/draft7/exclusiveMinimum.json",
-		// "testdata/draft7/maximum.json",
-		// "testdata/draft7/not.json",
-		// "testdata/draft7/propertyNames.json",
-		// "testdata/draft7/additionalProperties.json",
-		// "testdata/draft7/default.json",
-		// "testdata/draft7/if-then-else.json",
-		// "testdata/draft7/minItems.json",
-		// "testdata/draft7/oneOf.json",
+		"testdata/draft7/additionalItems.json",
+		"testdata/draft7/contains.json",
+		"testdata/draft7/exclusiveMinimum.json",
+		"testdata/draft7/maximum.json",
+		"testdata/draft7/not.json",
+		"testdata/draft7/propertyNames.json",
+		"testdata/draft7/additionalProperties.json",
+		"testdata/draft7/default.json",
+		"testdata/draft7/if-then-else.json",
+		"testdata/draft7/minItems.json",
+		"testdata/draft7/oneOf.json",
 		"testdata/draft7/ref.json",
-		// "testdata/draft7/allOf.json",
+		"testdata/draft7/allOf.json",
 		// "testdata/draft7/definitions.json",
-		// "testdata/draft7/items.json",
-		// "testdata/draft7/minLength.json",
+		"testdata/draft7/items.json",
+		"testdata/draft7/minLength.json",
 		// "testdata/draft7/refRemote.json",
-		// "testdata/draft7/anyOf.json",
+		"testdata/draft7/anyOf.json",
 		// "testdata/draft7/dependencies.json",
-		// "testdata/draft7/maxItems.json",
-		// "testdata/draft7/minProperties.json",
-		// "testdata/draft7/pattern.json",
-		// "testdata/draft7/required.json",
+		"testdata/draft7/maxItems.json",
+		"testdata/draft7/minProperties.json",
+		"testdata/draft7/pattern.json",
+		"testdata/draft7/required.json",
 		// "testdata/draft7/boolean_schema.json",
-		// "testdata/draft7/enum.json",
-		// "testdata/draft7/maxLength.json",
-		// "testdata/draft7/minimum.json",
-		// "testdata/draft7/patternProperties.json",
-		// "testdata/draft7/type.json",
-		// "testdata/draft7/const.json",
-		// "testdata/draft7/exclusiveMaximum.json",
-		// "testdata/draft7/maxProperties.json",
-		// "testdata/draft7/multipleOf.json",
-		// "testdata/draft7/properties.json",
-		// "testdata/draft7/uniqueItems.json",
+		"testdata/draft7/enum.json",
+		"testdata/draft7/maxLength.json",
+		"testdata/draft7/minimum.json",
+		"testdata/draft7/patternProperties.json",
+		"testdata/draft7/type.json",
+		"testdata/draft7/const.json",
+		"testdata/draft7/exclusiveMaximum.json",
+		"testdata/draft7/maxProperties.json",
+		"testdata/draft7/multipleOf.json",
+		"testdata/draft7/properties.json",
+		"testdata/draft7/uniqueItems.json",
 
 		// "testdata/draft7/optional/bignum.json",
 		// "testdata/draft7/optional/content.json",
@@ -277,6 +275,10 @@ func runJSONTests(t *testing.T, testFilepaths []string) {
 
 		for _, ts := range testSets {
 			sc := ts.Schema
+			if err := sc.FetchRemoteReferences(); err != nil {
+				t.Errorf("%s: %s error fetching remote references: %s", base, ts.Description, err.Error())
+				continue
+			}
 			for i, c := range ts.Tests {
 				tests++
 				got := sc.Validate(c.Data)

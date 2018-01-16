@@ -92,6 +92,7 @@ func (p Properties) JSONProp(name string) interface{} {
 	return p[name]
 }
 
+// JSONChildren implements the JSONContainer interface for Properties
 func (p Properties) JSONChildren() (res map[string]JSONPather) {
 	res = map[string]JSONPather{}
 	for key, sch := range p {

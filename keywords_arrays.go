@@ -56,6 +56,7 @@ func (it Items) JSONProp(name string) interface{} {
 	return it.Schemas[idx]
 }
 
+// JSONChildren implements the JSONContainer interface for Items
 func (it Items) JSONChildren() (res map[string]JSONPather) {
 	res = map[string]JSONPather{}
 	for i, sch := range it.Schemas {
@@ -202,8 +203,8 @@ func (c *Contains) Validate(data interface{}) error {
 }
 
 // JSONProp implements JSON property name indexing for Contains
-func (m Contains) JSONProp(name string) interface{} {
-	return Schema(m).JSONProp(name)
+func (c Contains) JSONProp(name string) interface{} {
+	return Schema(c).JSONProp(name)
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface for Contains

@@ -60,13 +60,13 @@ func (t Type) Validate(data interface{}) error {
 	}
 	if len(t) == 1 {
 		return fmt.Errorf(`expected "%v" to be of type %s`, data, t[0])
-	} else {
-		str := ""
-		for _, ts := range t {
-			str += ts + ","
-		}
-		return fmt.Errorf(`expected "%v" to be one of type: %s`, data, str[:len(str)-1])
 	}
+
+	str := ""
+	for _, ts := range t {
+		str += ts + ","
+	}
+	return fmt.Errorf(`expected "%v" to be one of type: %s`, data, str[:len(str)-1])
 }
 
 // JSONProp implements JSON property name indexing for Type

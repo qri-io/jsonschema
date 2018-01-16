@@ -4,17 +4,19 @@ package jsonschema
 // 	"fmt"
 // )
 
+// JSONPather makes validators traversible by JSON-pointers,
+// which is required to support references in JSON schemas.
 type JSONPather interface {
-	// JSONProp makes validators traversible by JSON-pointers,
-	// which is required to support references in JSON schemas.
-	// for a given JSON property name the validator must
-	// return any matching property of that name
+	// JSONProp take a string references for a given JSON property
+	// implementations must return any matching property of that name
 	// or nil if no such subproperty exists.
 	// Note this also applies to array values, which are expected to interpret
 	// valid numbers as an array index
 	JSONProp(name string) interface{}
 }
 
+// JSONContainer is an interface that enables tree traversal by listing
+// the immideate children of an object
 type JSONContainer interface {
 	// JSONChildren should return all immidiate children of this element
 	JSONChildren() map[string]JSONPather
