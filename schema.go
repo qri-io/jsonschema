@@ -15,7 +15,6 @@ import (
 
 // DefaultSchemaPool is a package level map of schemas by identifier
 // remote references are cached here.
-// TODO - should add methods to control caching behavior
 var DefaultSchemaPool = Definitions{}
 
 // RootSchema is a top-level Schema.
@@ -482,25 +481,25 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 	}
 
 	if sch.Validators["if"] != nil {
-		if ite, ok := sch.Validators["if"].(*If); ok {
-			if s, ok := sch.Validators["then"].(*Then); ok {
-				ite.Then = s
+		if ite, ok := sch.Validators["if"].(*iif); ok {
+			if s, ok := sch.Validators["then"].(*then); ok {
+				ite.then = s
 			}
-			if s, ok := sch.Validators["else"].(*Else); ok {
-				ite.Else = s
+			if s, ok := sch.Validators["else"].(*els); ok {
+				ite.els = s
 			}
 		}
 	}
 
 	// TODO - replace all these assertions with methods on Schema that return proper types
-	if sch.Validators["items"] != nil && sch.Validators["additionalItems"] != nil && !sch.Validators["items"].(*Items).single {
-		sch.Validators["additionalItems"].(*AdditionalItems).startIndex = len(sch.Validators["items"].(*Items).Schemas)
+	if sch.Validators["items"] != nil && sch.Validators["additionalItems"] != nil && !sch.Validators["items"].(*items).single {
+		sch.Validators["additionalItems"].(*additionalItems).startIndex = len(sch.Validators["items"].(*items).Schemas)
 	}
 	if sch.Validators["properties"] != nil && sch.Validators["additionalProperties"] != nil {
-		sch.Validators["additionalProperties"].(*AdditionalProperties).properties = sch.Validators["properties"].(*Properties)
+		sch.Validators["additionalProperties"].(*additionalProperties).properties = sch.Validators["properties"].(*properties)
 	}
 	if sch.Validators["patternProperties"] != nil && sch.Validators["additionalProperties"] != nil {
-		sch.Validators["additionalProperties"].(*AdditionalProperties).patterns = sch.Validators["patternProperties"].(*PatternProperties)
+		sch.Validators["additionalProperties"].(*additionalProperties).patterns = sch.Validators["patternProperties"].(*patternProperties)
 	}
 
 	*s = Schema(*sch)

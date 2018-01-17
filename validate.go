@@ -1,23 +1,23 @@
 package jsonschema
 
 // Validator is an interface for anything that can validate.
-// JSON-Schema keywords are all validators
+// JSON-Schema keywords are all examples of validators
 type Validator interface {
 	// Validate checks decoded JSON data against a given constraint
 	Validate(data interface{}) error
 }
 
-// ValMaker is a function that generates instances of a validator
-// This will be passed directly to json.Marshal, so it should be a pointer
+// ValMaker is a function that generates instances of a validator.
+// Calls to ValMaker will be passed directly to json.Marshal, so it should be a pointer
 type ValMaker func() Validator
 
 // DefaultValidators is a map of JSON keywords to Validators
 // to draw from when decoding schemas
 var DefaultValidators = map[string]ValMaker{
 	// standard keywords
-	"type":  newType,
+	"type":  newTipe,
 	"enum":  newEnum,
-	"const": newConst,
+	"const": newKonst,
 
 	// numeric keywords
 	"multipleOf":       newMultipleOf,
@@ -56,9 +56,9 @@ var DefaultValidators = map[string]ValMaker{
 	"propertyNames":        newPropertyNames,
 
 	// conditional keywords
-	"if":   newIf,
+	"if":   newIif,
 	"then": newThen,
-	"else": newElse,
+	"else": newEls,
 }
 
 // RegisterValidator adds a validator to DefaultValidators
