@@ -8,3 +8,14 @@
 
 ### 🚧🚧 Under Construction 🚧🚧
 golang implementation of http://json-schema.org/
+
+
+### Getting Involved
+
+We would love involvement from more people! If you notice any errors or would
+like to submit changes, please see our
+[Contributing Guidelines](./.github/CONTRIBUTING.md).
+
+### Developing
+
+We've set up a separate document for [developer guidelines](https://github.com/qri-io/jsonschema/blob/master/DEVELOPERS.md)!
