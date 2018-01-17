@@ -14,6 +14,10 @@ type If struct {
 	Else   *Else
 }
 
+func newIf() Validator {
+	return &If{}
+}
+
 // Validate implements the Validator interface for If
 func (i *If) Validate(data interface{}) error {
 	if err := i.Schema.Validate(data); err == nil {
@@ -57,6 +61,10 @@ func (i *If) UnmarshalJSON(data []byte) error {
 // When "if" is absent, or the instance fails to validate against its subschema, validation against this keyword always succeeds. Implementations SHOULD avoid attempting to validate against the subschema in these cases.
 type Then Schema
 
+func newThen() Validator {
+	return &Then{}
+}
+
 // Validate implements the Validator interface for Then
 func (t *Then) Validate(data interface{}) error {
 	return nil
@@ -86,6 +94,10 @@ func (t *Then) UnmarshalJSON(data []byte) error {
 // When present alongside of "if", the instance successfully validates against this keyword if it fails to validate against the "if"'s subschema, and successfully validates against this keyword's subschema.
 // When "if" is absent, or the instance successfully validates against its subschema, validation against this keyword always succeeds. Implementations SHOULD avoid attempting to validate against the subschema in these cases.
 type Else Schema
+
+func newElse() Validator {
+	return &Else{}
+}
 
 // Validate implements the Validator interface for Else
 func (e *Else) Validate(data interface{}) error {

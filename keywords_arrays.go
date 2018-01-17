@@ -22,6 +22,10 @@ type Items struct {
 	Schemas []*Schema
 }
 
+func newItems() Validator {
+	return &Items{}
+}
+
 // Validate implements the Validator interface for Items
 func (it Items) Validate(data interface{}) error {
 	if arr, ok := data.([]interface{}); ok {
@@ -99,6 +103,10 @@ type AdditionalItems struct {
 	Schema     *Schema
 }
 
+func newAdditionalItems() Validator {
+	return &AdditionalItems{}
+}
+
 // Validate implements the Validator interface for AdditionalItems
 func (a *AdditionalItems) Validate(data interface{}) error {
 	if a.startIndex >= 0 {
@@ -145,6 +153,10 @@ func (a *AdditionalItems) UnmarshalJSON(data []byte) error {
 // An array instance is valid against "maxItems" if its size is less than, or equal to, the value of this keyword.
 type MaxItems int
 
+func newMaxItems() Validator {
+	return new(MaxItems)
+}
+
 // Validate implements the Validator interface for MaxItems
 func (m MaxItems) Validate(data interface{}) error {
 	if arr, ok := data.([]interface{}); ok {
@@ -159,6 +171,10 @@ func (m MaxItems) Validate(data interface{}) error {
 // An array instance is valid against "minItems" if its size is greater than, or equal to, the value of this keyword.
 // Omitting this keyword has the same behavior as a value of 0.
 type MinItems int
+
+func newMinItems() Validator {
+	return new(MinItems)
+}
 
 // Validate implements the Validator interface for MinItems
 func (m MinItems) Validate(data interface{}) error {
@@ -175,6 +191,10 @@ func (m MinItems) Validate(data interface{}) error {
 // boolean value true, the instance validates successfully if all of its elements are unique.
 // Omitting this keyword has the same behavior as a value of false.
 type UniqueItems bool
+
+func newUniqueItems() Validator {
+	return new(UniqueItems)
+}
 
 // Validate implements the Validator interface for UniqueItems
 func (u *UniqueItems) Validate(data interface{}) error {
@@ -195,6 +215,10 @@ func (u *UniqueItems) Validate(data interface{}) error {
 // Contains validates that an array instance is valid against "contains" if at
 // least one of its elements is valid against the given schema.
 type Contains Schema
+
+func newContains() Validator {
+	return &Contains{}
+}
 
 // Validate implements the Validator interface for Contains
 func (c *Contains) Validate(data interface{}) error {

@@ -50,6 +50,10 @@ func DataType(data interface{}) string {
 // An instance validates if and only if the instance is in any of the sets listed for this keyword.
 type Type []string
 
+func newType() Validator {
+	return &Type{}
+}
+
 // Validate checks to see if input data satisfies the type constraint
 func (t Type) Validate(data interface{}) error {
 	jt := DataType(data)
@@ -119,6 +123,10 @@ func (t Type) MarshalJSON() ([]byte, error) {
 // Elements in the array might be of any value, including null.
 type Enum []Const
 
+func newEnum() Validator {
+	return &Enum{}
+}
+
 // String implements the stringer interface for Enum
 func (e Enum) String() string {
 	str := "["
@@ -163,6 +171,10 @@ func (e Enum) JSONChildren() (res map[string]JSONPather) {
 // An instance validates successfully against this keyword if its
 // value is equal to the value of the keyword.
 type Const []byte
+
+func newConst() Validator {
+	return &Const{}
+}
 
 // Validate implements the validate interface for Const
 func (c Const) Validate(data interface{}) error {

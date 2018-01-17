@@ -9,6 +9,10 @@ import (
 // by this keyword's value results in an integer.
 type MultipleOf float64
 
+func newMultipleOf() Validator {
+	return new(MultipleOf)
+}
+
 // Validate implements the Validator interface for MultipleOf
 func (m MultipleOf) Validate(data interface{}) error {
 	if num, ok := data.(float64); ok {
@@ -25,6 +29,10 @@ func (m MultipleOf) Validate(data interface{}) error {
 // If the instance is a number, then this keyword validates only if the instance is less than or exactly equal to "maximum".
 type Maximum float64
 
+func newMaximum() Validator {
+	return new(Maximum)
+}
+
 // Validate implements the Validator interface for Maximum
 func (m Maximum) Validate(data interface{}) error {
 	if num, ok := data.(float64); ok {
@@ -40,6 +48,10 @@ func (m Maximum) Validate(data interface{}) error {
 // strictly less than (not equal to) "exclusiveMaximum".
 type ExclusiveMaximum float64
 
+func newExclusiveMaximum() Validator {
+	return new(ExclusiveMaximum)
+}
+
 // Validate implements the Validator interface for ExclusiveMaximum
 func (m ExclusiveMaximum) Validate(data interface{}) error {
 	if num, ok := data.(float64); ok {
@@ -54,6 +66,10 @@ func (m ExclusiveMaximum) Validate(data interface{}) error {
 // If the instance is a number, then this keyword validates only if the instance is greater than or exactly equal to "minimum".
 type Minimum float64
 
+func newMinimum() Validator {
+	return new(Minimum)
+}
+
 // Validate implements the Validator interface for Minimum
 func (m Minimum) Validate(data interface{}) error {
 	if num, ok := data.(float64); ok {
@@ -67,6 +83,10 @@ func (m Minimum) Validate(data interface{}) error {
 // ExclusiveMinimum MUST be number, representing an exclusive lower limit for a numeric instance.
 // If the instance is a number, then the instance is valid only if it has a value strictly greater than (not equal to) "exclusiveMinimum".
 type ExclusiveMinimum float64
+
+func newExclusiveMinimum() Validator {
+	return new(ExclusiveMinimum)
+}
 
 // Validate implements the Validator interface for ExclusiveMinimum
 func (m ExclusiveMinimum) Validate(data interface{}) error {

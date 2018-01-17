@@ -11,6 +11,10 @@ import (
 // An object instance is valid against "maxProperties" if its number of properties is less than, or equal to, the value of this keyword.
 type MaxProperties int
 
+func newMaxProperties() Validator {
+	return new(MaxProperties)
+}
+
 // Validate implements the validator interface for MaxProperties
 func (m MaxProperties) Validate(data interface{}) error {
 	if obj, ok := data.(map[string]interface{}); ok {
@@ -26,6 +30,10 @@ func (m MaxProperties) Validate(data interface{}) error {
 // Omitting this keyword has the same behavior as a value of 0.
 type MinProperties int
 
+func newMinProperties() Validator {
+	return new(MinProperties)
+}
+
 // Validate implements the validator interface for MinProperties
 func (m MinProperties) Validate(data interface{}) error {
 	if obj, ok := data.(map[string]interface{}); ok {
@@ -40,6 +48,10 @@ func (m MinProperties) Validate(data interface{}) error {
 // The value of this keyword MUST be an array. Elements of this array, if any, MUST be strings, and MUST be unique.
 // Omitting this keyword has the same behavior as an empty array.
 type Required []string
+
+func newRequired() Validator {
+	return &Required{}
+}
 
 // Validate implements the validator interface for Required
 func (r Required) Validate(data interface{}) error {
@@ -72,6 +84,10 @@ func (r Required) JSONProp(name string) interface{} {
 // keyword's value, the child instance for that name successfully validates against the corresponding schema.
 // Omitting this keyword has the same behavior as an empty object.
 type Properties map[string]*Schema
+
+func newProperties() Validator {
+	return &Properties{}
+}
 
 // Validate implements the validator interface for Properties
 func (p Properties) Validate(data interface{}) error {
@@ -111,6 +127,10 @@ func (p Properties) JSONChildren() (res map[string]JSONPather) {
 // Each property value of this object MUST be a valid JSON Schema.
 // Omitting this keyword has the same behavior as an empty object.
 type PatternProperties []patternSchema
+
+func newPatternProperties() Validator {
+	return &PatternProperties{}
+}
 
 type patternSchema struct {
 	key    string
@@ -190,6 +210,10 @@ type AdditionalProperties struct {
 	Schema     *Schema
 }
 
+func newAdditionalProperties() Validator {
+	return &AdditionalProperties{}
+}
+
 // Validate implements the validator interface for AdditionalProperties
 func (ap AdditionalProperties) Validate(data interface{}) error {
 	if obj, ok := data.(map[string]interface{}); ok {
@@ -253,6 +277,10 @@ func (ap *AdditionalProperties) JSONChildren() (res map[string]JSONPather) {
 // in the dependency value must be a property that exists in the instance.
 // Omitting this keyword has the same behavior as an empty object.
 type Dependencies map[string]Dependency
+
+func newDependencies() Validator {
+	return &Dependencies{}
+}
 
 // Validate implements the validator interface for Dependencies
 func (d Dependencies) Validate(data interface{}) error {
@@ -327,6 +355,10 @@ func (d *Dependency) UnmarshalJSON(data []byte) error {
 // Note the property name that the schema is testing will always be a string.
 // Omitting this keyword has the same behavior as an empty schema.
 type PropertyNames Schema
+
+func newPropertyNames() Validator {
+	return &PropertyNames{}
+}
 
 // Validate implements the validator interface for PropertyNames
 func (p PropertyNames) Validate(data interface{}) error {

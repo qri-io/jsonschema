@@ -12,6 +12,10 @@ import (
 // The length of a string instance is defined as the number of its characters as defined by RFC 7159 [RFC7159].
 type MaxLength int
 
+func newMaxLength() Validator {
+	return new(MaxLength)
+}
+
 // Validate implements the Validator interface for MaxLength
 func (m MaxLength) Validate(data interface{}) error {
 	if str, ok := data.(string); ok {
@@ -28,6 +32,10 @@ func (m MaxLength) Validate(data interface{}) error {
 // Omitting this keyword has the same behavior as a value of 0.
 type MinLength int
 
+func newMinLength() Validator {
+	return new(MinLength)
+}
+
 // Validate implements the Validator interface for MinLength
 func (m MinLength) Validate(data interface{}) error {
 	if str, ok := data.(string); ok {
@@ -43,6 +51,10 @@ func (m MinLength) Validate(data interface{}) error {
 // A string instance is considered valid if the regular expression matches the instance successfully.
 // Recall: regular expressions are not implicitly anchored.
 type Pattern regexp.Regexp
+
+func newPattern() Validator {
+	return &Pattern{}
+}
 
 // Validate implements the Validator interface for Pattern
 func (p Pattern) Validate(data interface{}) error {
