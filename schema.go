@@ -13,7 +13,10 @@ import (
 	"net/url"
 )
 
-var SchemaPool = Definitions{}
+// DefaultSchemaPool is a package level map of schemas by identifier
+// remote references are cached here.
+// TODO - should add methods to control caching behavior
+var DefaultSchemaPool = Definitions{}
 
 // Validator is an interface for anything that can validate
 // JSON-Schema keywords are all validators
@@ -121,18 +124,12 @@ func (rs *RootSchema) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (rs *RootSchema) Validate(data interface{}) error {
-	// fmt.Printf("%p <- root address. ref: %s. validators: %v\n", rs, rs.Ref, rs.Validators)
-	return rs.Schema.Validate(data)
-}
-
 // FetchRemoteReferences grabs any url-based schema references that cannot
 // be locally resolved via network requests
 func (rs *RootSchema) FetchRemoteReferences() error {
 	sch := &rs.Schema
 
-	refs := SchemaPool
-	// refs := map[string]*Schema{}
+	refs := DefaultSchemaPool
 
 	if err := walkJSON(sch, func(elem JSONPather) error {
 		if sch, ok := elem.(*Schema); ok {
@@ -140,7 +137,6 @@ func (rs *RootSchema) FetchRemoteReferences() error {
 			if ref != "" {
 				if refs[ref] == nil && ref[0] != '#' {
 					if u, err := url.Parse(ref); err == nil {
-						fmt.Println("getting remote ref:", sch.Ref)
 						if res, err := http.Get(u.String()); err == nil {
 							s := &RootSchema{}
 							if err := json.NewDecoder(res.Body).Decode(s); err != nil {
@@ -152,7 +148,6 @@ func (rs *RootSchema) FetchRemoteReferences() error {
 				}
 
 				if refs[ref] != nil {
-					// fmt.Printf("%p - remote ptr ref -> %p\n", sch, refs[ref])
 					sch.ref = refs[ref]
 				}
 			}
@@ -330,18 +325,11 @@ type Schema struct {
 
 // Validate uses the schema to check an instance, returning error on the first error
 func (s *Schema) Validate(data interface{}) error {
-	// fmt.Printf("%p, %s, %p, %#v, %v\n", s, s.Ref, s.ref, s, data)
-	// if s.Ref != "" && s.ref == nil {
-	// 	fmt.Println("pool:", s.Ref, SchemaPool[s.Ref].ref)
-	// }
 	if s.Ref != "" && s.ref != nil {
-		// fmt.Println("using reference", s.Ref)
 		return s.ref.Validate(data)
+	} else if s.Ref != "" && s.ref == nil {
+		return fmt.Errorf("%s reference is nil for data: %v", s.Ref, data)
 	}
-	// if s.Ref != "" && s.ref == nil {
-	// 	panic(fmt.Sprintf("%s reference is nil for data: %v", s.Ref, data))
-	// 	return fmt.Errorf("%s reference is nil for data: %v", s.Ref, data)
-	// }
 
 	// TODO - so far all default.json tests pass when no use of "default" is made.
 	// Is this correct?

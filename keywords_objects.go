@@ -258,9 +258,10 @@ type Dependencies map[string]Dependency
 func (d Dependencies) Validate(data interface{}) error {
 	if obj, ok := data.(map[string]interface{}); ok {
 		for key, val := range d {
-			// fmt.Println(key, obj[key])
 			if obj[key] != nil {
-				val.Validate(obj)
+				if err := val.Validate(obj); err != nil {
+					return err
+				}
 			}
 		}
 	}
