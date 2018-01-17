@@ -7,8 +7,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/qri-io/jsonschema)](https://goreportcard.com/report/github.com/qri-io/jsonschema)
 
 ### 🚧🚧 Under Construction 🚧🚧
-golang implementation of http://json-schema.org/
-
+golang implementation of the [JSON Schema Specification](http://json-schema.org/), which lets you write JSON that validates some other json. Rad.
 
 ### Getting Involved
 
@@ -20,7 +19,7 @@ like to submit changes, please see our
 
 We've set up a separate document for [developer guidelines](https://github.com/qri-io/jsonschema/blob/master/DEVELOPERS.md)!
 
-## Usage
+## Basic Usage
 
 Here's a quick example pulled from the [godoc](https://godoc.org/github.com/qri-io/jsonschema):
 
@@ -67,6 +66,7 @@ func main() {
     "firstName" : "George",
     "lastName" : "Michael"
     }`)
+
 	if err := rs.ValidateBytes(valid); err != nil {
 		panic(err)
 	}
@@ -88,3 +88,12 @@ func main() {
 	fmt.Println(err)
 }
 ```
+
+## Custom Validators
+
+The [godoc](https://godoc.org/github.com/qri-io/jsonschema) gives an example of how to supply your own validators to extend the standard keywords supported by the spec.
+
+It involves two steps that should happen _before_ allocating any RootSchema instances that use the validator:
+1. create a custom type that implements the `Validator` interface
+2. call RegisterValidator with the keyword you'd like to detect in JSON, and a `ValMaker` function.
+

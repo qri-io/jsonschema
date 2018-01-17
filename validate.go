@@ -61,7 +61,9 @@ var DefaultValidators = map[string]ValMaker{
 	"else": newEls,
 }
 
-// RegisterValidator adds a validator to DefaultValidators
+// RegisterValidator adds a validator to DefaultValidators.
+// Custom Validators should satisfy the validator interface,
+// and be able to get cleanly endcode/decode to JSON
 func RegisterValidator(propName string, maker ValMaker) {
 	// TODO - should this call the function and panic if
 	// the result can't be fed to json.Umarshal?
