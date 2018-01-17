@@ -56,6 +56,11 @@ func (i *iif) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// MarshalJSON implements json.Marshaler for iif
+func (i iif) MarshalJSON() ([]byte, error) {
+	return json.Marshal(i.Schema)
+}
+
 // then MUST be a valid JSON Schema.
 // When present alongside of "if", the instance successfully validates against this keyword if it validates against both the "if"'s subschema and this keyword's subschema.
 // When "if" is absent, or the instance fails to validate against its subschema, validation against this keyword always succeeds. Implementations SHOULD avoid attempting to validate against the subschema in these cases.
@@ -90,6 +95,11 @@ func (t *then) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// MarshalJSON implements json.Marshaler for then
+func (t then) MarshalJSON() ([]byte, error) {
+	return json.Marshal(Schema(t))
+}
+
 // els MUST be a valid JSON Schema.
 // When present alongside of "if", the instance successfully validates against this keyword if it fails to validate against the "if"'s subschema, and successfully validates against this keyword's subschema.
 // When "if" is absent, or the instance successfully validates against its subschema, validation against this keyword always succeeds. Implementations SHOULD avoid attempting to validate against the subschema in these cases.
@@ -122,4 +132,9 @@ func (e *els) UnmarshalJSON(data []byte) error {
 	}
 	*e = els(sch)
 	return nil
+}
+
+// MarshalJSON implements json.Marshaler for els
+func (e els) MarshalJSON() ([]byte, error) {
+	return json.Marshal(Schema(e))
 }

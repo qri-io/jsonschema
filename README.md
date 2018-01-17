@@ -6,8 +6,16 @@
 [![CI](https://img.shields.io/circleci/project/github/qri-io/jsonschema.svg?style=flat-square)](https://circleci.com/gh/qri-io/jsonschema)
 [![Go Report Card](https://goreportcard.com/badge/github.com/qri-io/jsonschema)](https://goreportcard.com/report/github.com/qri-io/jsonschema)
 
-### 🚧🚧 Under Construction 🚧🚧
 golang implementation of the [JSON Schema Specification](http://json-schema.org/), which lets you write JSON that validates some other json. Rad.
+
+### 🚧 New Package Alert 🚧
+This is a very new implementation and hasn't been tested by things that aren't computers. If you run into issues, please file an... issue, and we'll all work together to address it.
+
+### Package Features
+
+* Encode schemas back to JSON
+* Supply Your own Custom Validators
+* Uses Standard Go idioms
 
 ### Getting Involved
 
@@ -96,4 +104,56 @@ The [godoc](https://godoc.org/github.com/qri-io/jsonschema) gives an example of 
 It involves two steps that should happen _before_ allocating any RootSchema instances that use the validator:
 1. create a custom type that implements the `Validator` interface
 2. call RegisterValidator with the keyword you'd like to detect in JSON, and a `ValMaker` function.
+
+
+```go
+package main
+
+import (
+  "encoding/json"
+  "fmt"
+  "github.com/qri-io/jsonschema"
+)
+
+// your custom validator
+type IsFoo bool
+
+// newIsFoo is a jsonschama.ValMaker
+func newIsFoo() jsonschema.Validator {
+  return new(IsFoo)
+}
+
+// Validate implements jsonschema.Validator
+func (f IsFoo) Validate(data interface{}) error {
+  if str, ok := data.(string); ok {
+    if str != "foo" {
+      return fmt.Errorf("'%s' is not foo. It should be foo. plz make '%s' == foo. plz", str, str)
+    }
+  }
+  return nil
+}
+
+func main() {
+  // register a custom validator by supplying a function
+  // that creates new instances of your Validator.
+  jsonschema.RegisterValidator("foo", newIsFoo)
+
+  schBytes := []byte(`{ "foo": true }`)
+
+  // parse a schema that uses your custom keyword
+  rs := new(jsonschema.RootSchema)
+  if err := json.Unmarshal(schBytes, rs); err != nil {
+    // Real programs handle errors.
+    panic(err)
+  }
+
+  // validate some JSON
+  err := rs.ValidateBytes([]byte(`"bar"`))
+
+  // print le error
+  fmt.Println(err.Error())
+
+  // Output: 'bar' is not foo. It should be foo. plz make 'bar' == foo. plz
+}
+```
 

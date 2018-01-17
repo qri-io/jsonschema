@@ -1,0 +1,12 @@
+{
+  "allOf": [
+    false
+  ],
+  "anyOf": [
+    {}
+  ],
+  "not": false,
+  "oneOf": [
+    true
+  ]
+}

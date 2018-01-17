@@ -1,0 +1,19 @@
+{
+  "additionalProperties": {},
+  "dependencies": {
+    "bat": false,
+    "foo": [
+      "bar",
+      "baz"
+    ]
+  },
+  "maxProperties": 1,
+  "minProperties": 2,
+  "patternProperties": {},
+  "properties": {},
+  "propertyNames": false,
+  "required": [
+    "foo",
+    "bar"
+  ]
+}
