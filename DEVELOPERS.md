@@ -1,7 +1,6 @@
 # Developing go-jsonschema
 
 * [Development Setup](#setup)
-* [Coding Rules](#rules)
 * [Commit Message Guidelines](#commits)
 * [Writing Documentation](#documentation)
 
@@ -43,18 +42,6 @@ cd jsonschema
 go install
 ```
 
-## <a name="rules"></a> Coding Rules
-
-To ensure consistency throughout the source code, keep these rules in mind as you are working:
-
-* We use [standardJS](style) coding style, please use standard to lint any changes before committing:
-
-```shell
-# Use standard to lint files
-standard
-```
-
-The output will point you to which files/lines need to be changed in order to meet the standardJS formatting.
 
 ## <a name="commits"></a> Git Commit Guidelines
 
