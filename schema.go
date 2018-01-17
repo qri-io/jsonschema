@@ -15,15 +15,7 @@ import (
 
 // DefaultSchemaPool is a package level map of schemas by identifier
 // remote references are cached here.
-// TODO - should add methods to control caching behavior
 var DefaultSchemaPool = Definitions{}
-
-// Validator is an interface for anything that can validate
-// JSON-Schema keywords are all validators
-type Validator interface {
-	// Validate checks decoded JSON data against a given constraint
-	Validate(data interface{}) error
-}
 
 // RootSchema is a top-level Schema.
 type RootSchema struct {
@@ -62,8 +54,6 @@ func (rs *RootSchema) UnmarshalJSON(data []byte) error {
 		SchemaURI: suri.SchemaURI,
 	}
 
-	// fmt.Printf("%p <- root schema address pre-walk. root address: %p. Ref: %s, validators: %s\n", sch, root, sch.Ref, sch.Validators)
-
 	// collect IDs for internal referencing:
 	ids := map[string]*Schema{}
 	if err := walkJSON(sch, func(elem JSONPather) error {
@@ -87,10 +77,8 @@ func (rs *RootSchema) UnmarshalJSON(data []byte) error {
 	if err := walkJSON(sch, func(elem JSONPather) error {
 		if sch, ok := elem.(*Schema); ok {
 			if sch.Ref != "" {
-				// fmt.Printf("%p %s\n", sch, sch.Ref)
 				if ids[sch.Ref] != nil {
 					sch.ref = ids[sch.Ref]
-					// fmt.Printf("%p - id ref -> %p\n", sch, ids[sch.Ref])
 					return nil
 				}
 
@@ -103,7 +91,6 @@ func (rs *RootSchema) UnmarshalJSON(data []byte) error {
 					return err
 				}
 				if val, ok := res.(Validator); ok {
-					// fmt.Printf("%p - ptr ref -> %p\n", sch, val)
 					sch.ref = val
 				} else {
 					return fmt.Errorf("%s : %s, %v is not a json pointer to a json schema", sch.Ref, ptr.String(), ptr)
@@ -114,8 +101,6 @@ func (rs *RootSchema) UnmarshalJSON(data []byte) error {
 	}); err != nil {
 		return err
 	}
-
-	// fmt.Printf("%p <- root schema address post-walk. Ref: %s, validators: %s\n", sch, sch.Ref, sch.Validators)
 
 	*rs = RootSchema{
 		Schema:    *sch,
@@ -469,89 +454,25 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 
 	for prop, rawmsg := range valprops {
 		var val Validator
-		// TODO - it'd be great if users could override this with their
-		// own definitions & validator extensions. That would require
-		// converting this switch case to a function that maps string
-		// props to validator factory functions
-		switch prop {
-		// skip any already-parsed props
-		case "$schema", "$id", "title", "description", "default", "examples", "readOnly", "writeOnly", "comment", "$ref", "definitions", "format":
-			continue
-		case "type":
-			val = new(Type)
-		case "enum":
-			val = new(Enum)
-		case "const":
-			val = new(Const)
-		case "multipleOf":
-			val = new(MultipleOf)
-		case "maximum":
-			val = new(Maximum)
-		case "exclusiveMaximum":
-			val = new(ExclusiveMaximum)
-		case "minimum":
-			val = new(Minimum)
-		case "exclusiveMinimum":
-			val = new(ExclusiveMinimum)
-		case "maxLength":
-			val = new(MaxLength)
-		case "minLength":
-			val = new(MinLength)
-		case "pattern":
-			val = new(Pattern)
-		case "allOf":
-			val = new(AllOf)
-		case "anyOf":
-			val = new(AnyOf)
-		case "oneOf":
-			val = new(OneOf)
-		case "not":
-			val = new(Not)
-		case "items":
-			val = new(Items)
-		case "additionalItems":
-			val = new(AdditionalItems)
-		case "maxItems":
-			val = new(MaxItems)
-		case "minItems":
-			val = new(MinItems)
-		case "uniqueItems":
-			val = new(UniqueItems)
-		case "contains":
-			val = new(Contains)
-		case "maxProperties":
-			val = new(MaxProperties)
-		case "minProperties":
-			val = new(MinProperties)
-		case "required":
-			val = new(Required)
-		case "properties":
-			val = new(Properties)
-		case "patternProperties":
-			val = new(PatternProperties)
-		case "additionalProperties":
-			val = new(AdditionalProperties)
-		case "dependencies":
-			val = new(Dependencies)
-		case "propertyNames":
-			val = new(PropertyNames)
-		case "if":
-			val = new(If)
-		case "then":
-			val = new(Then)
-		case "else":
-			val = new(Else)
-		default:
-			// assume non-specified props are "extra definitions"
-			if sch.extraDefinitions == nil {
-				sch.extraDefinitions = Definitions{}
+		if mk, ok := DefaultValidators[prop]; ok {
+			val = mk()
+		} else {
+			switch prop {
+			// skip any already-parsed props
+			case "$schema", "$id", "title", "description", "default", "examples", "readOnly", "writeOnly", "comment", "$ref", "definitions", "format":
+				continue
+			default:
+				// assume non-specified props are "extra definitions"
+				if sch.extraDefinitions == nil {
+					sch.extraDefinitions = Definitions{}
+				}
+				s := new(Schema)
+				if err := json.Unmarshal(rawmsg, s); err != nil {
+					return fmt.Errorf("error unmarshaling %s from json: %s", prop, err.Error())
+				}
+				sch.extraDefinitions[prop] = s
+				continue
 			}
-			s := new(Schema)
-			if err := json.Unmarshal(rawmsg, s); err != nil {
-				return fmt.Errorf("error unmarshaling %s from json: %s", prop, err.Error())
-			}
-			sch.extraDefinitions[prop] = s
-			continue
 		}
 		if err := json.Unmarshal(rawmsg, val); err != nil {
 			return fmt.Errorf("error unmarshaling %s from json: %s", prop, err.Error())
@@ -560,25 +481,25 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 	}
 
 	if sch.Validators["if"] != nil {
-		if ite, ok := sch.Validators["if"].(*If); ok {
-			if s, ok := sch.Validators["then"].(*Then); ok {
-				ite.Then = s
+		if ite, ok := sch.Validators["if"].(*iif); ok {
+			if s, ok := sch.Validators["then"].(*then); ok {
+				ite.then = s
 			}
-			if s, ok := sch.Validators["else"].(*Else); ok {
-				ite.Else = s
+			if s, ok := sch.Validators["else"].(*els); ok {
+				ite.els = s
 			}
 		}
 	}
 
 	// TODO - replace all these assertions with methods on Schema that return proper types
-	if sch.Validators["items"] != nil && sch.Validators["additionalItems"] != nil && !sch.Validators["items"].(*Items).single {
-		sch.Validators["additionalItems"].(*AdditionalItems).startIndex = len(sch.Validators["items"].(*Items).Schemas)
+	if sch.Validators["items"] != nil && sch.Validators["additionalItems"] != nil && !sch.Validators["items"].(*items).single {
+		sch.Validators["additionalItems"].(*additionalItems).startIndex = len(sch.Validators["items"].(*items).Schemas)
 	}
 	if sch.Validators["properties"] != nil && sch.Validators["additionalProperties"] != nil {
-		sch.Validators["additionalProperties"].(*AdditionalProperties).properties = sch.Validators["properties"].(*Properties)
+		sch.Validators["additionalProperties"].(*additionalProperties).properties = sch.Validators["properties"].(*properties)
 	}
 	if sch.Validators["patternProperties"] != nil && sch.Validators["additionalProperties"] != nil {
-		sch.Validators["additionalProperties"].(*AdditionalProperties).patterns = sch.Validators["patternProperties"].(*PatternProperties)
+		sch.Validators["additionalProperties"].(*additionalProperties).patterns = sch.Validators["patternProperties"].(*patternProperties)
 	}
 
 	*s = Schema(*sch)

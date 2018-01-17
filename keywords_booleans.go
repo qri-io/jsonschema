@@ -10,6 +10,10 @@ import (
 // An instance validates successfully against this keyword if it validates successfully against all schemas defined by this keyword's value.
 type AllOf []*Schema
 
+func newAllOf() Validator {
+	return &AllOf{}
+}
+
 // Validate implements the validator interface for AllOf
 func (a AllOf) Validate(data interface{}) error {
 	for i, sch := range a {
@@ -46,6 +50,10 @@ func (a AllOf) JSONChildren() (res map[string]JSONPather) {
 // least one schema defined by this keyword's value.
 type AnyOf []*Schema
 
+func newAnyOf() Validator {
+	return &AnyOf{}
+}
+
 // Validate implements the validator interface for AnyOf
 func (a AnyOf) Validate(data interface{}) error {
 	for _, sch := range a {
@@ -80,6 +88,10 @@ func (a AnyOf) JSONChildren() (res map[string]JSONPather) {
 // OneOf MUST be a non-empty array. Each item of the array MUST be a valid JSON Schema.
 // An instance validates successfully against this keyword if it validates successfully against exactly one schema defined by this keyword's value.
 type OneOf []*Schema
+
+func newOneOf() Validator {
+	return &OneOf{}
+}
 
 // Validate implements the validator interface for OneOf
 func (o OneOf) Validate(data interface{}) error {
@@ -123,6 +135,10 @@ func (o OneOf) JSONChildren() (res map[string]JSONPather) {
 // An instance is valid against this keyword if it fails to validate successfully against the schema defined
 // by this keyword.
 type Not Schema
+
+func newNot() Validator {
+	return &Not{}
+}
 
 // Validate implements the validator interface for Not
 func (n *Not) Validate(data interface{}) error {

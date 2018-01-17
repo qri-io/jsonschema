@@ -7,12 +7,16 @@ import (
 	"strconv"
 )
 
-// MaxProperties MUST be a non-negative integer.
+// maxProperties MUST be a non-negative integer.
 // An object instance is valid against "maxProperties" if its number of properties is less than, or equal to, the value of this keyword.
-type MaxProperties int
+type maxProperties int
 
-// Validate implements the validator interface for MaxProperties
-func (m MaxProperties) Validate(data interface{}) error {
+func newMaxProperties() Validator {
+	return new(maxProperties)
+}
+
+// Validate implements the validator interface for maxProperties
+func (m maxProperties) Validate(data interface{}) error {
 	if obj, ok := data.(map[string]interface{}); ok {
 		if len(obj) > int(m) {
 			return fmt.Errorf("%d object properties exceed %d maximum", len(obj), m)
@@ -21,13 +25,17 @@ func (m MaxProperties) Validate(data interface{}) error {
 	return nil
 }
 
-// MinProperties MUST be a non-negative integer.
-// An object instance is valid against "minProperties" if its number of properties is greater than, or equal to, the value of this keyword.
+// minproperties MUST be a non-negative integer.
+// An object instance is valid against "minproperties" if its number of properties is greater than, or equal to, the value of this keyword.
 // Omitting this keyword has the same behavior as a value of 0.
-type MinProperties int
+type minproperties int
 
-// Validate implements the validator interface for MinProperties
-func (m MinProperties) Validate(data interface{}) error {
+func newMinProperties() Validator {
+	return new(minproperties)
+}
+
+// Validate implements the validator interface for minproperties
+func (m minproperties) Validate(data interface{}) error {
 	if obj, ok := data.(map[string]interface{}); ok {
 		if len(obj) < int(m) {
 			return fmt.Errorf("%d object properties below %d minimum", len(obj), m)
@@ -36,13 +44,17 @@ func (m MinProperties) Validate(data interface{}) error {
 	return nil
 }
 
-// Required ensures that for a given object instance, every item in the array is the name of a property in the instance.
+// required ensures that for a given object instance, every item in the array is the name of a property in the instance.
 // The value of this keyword MUST be an array. Elements of this array, if any, MUST be strings, and MUST be unique.
 // Omitting this keyword has the same behavior as an empty array.
-type Required []string
+type required []string
 
-// Validate implements the validator interface for Required
-func (r Required) Validate(data interface{}) error {
+func newRequired() Validator {
+	return &required{}
+}
+
+// Validate implements the validator interface for required
+func (r required) Validate(data interface{}) error {
 	if obj, ok := data.(map[string]interface{}); ok {
 		for _, key := range r {
 			if val, ok := obj[key]; val == nil && !ok {
@@ -53,8 +65,8 @@ func (r Required) Validate(data interface{}) error {
 	return nil
 }
 
-// JSONProp implements JSON property name indexing for Required
-func (r Required) JSONProp(name string) interface{} {
+// JSONProp implements JSON property name indexing for required
+func (r required) JSONProp(name string) interface{} {
 	idx, err := strconv.Atoi(name)
 	if err != nil {
 		return nil
@@ -65,16 +77,20 @@ func (r Required) JSONProp(name string) interface{} {
 	return r[idx]
 }
 
-// Properties MUST be an object. Each value of this object MUST be a valid JSON Schema.
+// properties MUST be an object. Each value of this object MUST be a valid JSON Schema.
 // This keyword determines how child instances validate for objects, and does not directly validate
 // the immediate instance itself.
 // Validation succeeds if, for each name that appears in both the instance and as a name within this
 // keyword's value, the child instance for that name successfully validates against the corresponding schema.
 // Omitting this keyword has the same behavior as an empty object.
-type Properties map[string]*Schema
+type properties map[string]*Schema
 
-// Validate implements the validator interface for Properties
-func (p Properties) Validate(data interface{}) error {
+func newProperties() Validator {
+	return &properties{}
+}
+
+// Validate implements the validator interface for properties
+func (p properties) Validate(data interface{}) error {
 	if obj, ok := data.(map[string]interface{}); ok {
 		for key, val := range obj {
 			if p[key] != nil {
@@ -87,13 +103,13 @@ func (p Properties) Validate(data interface{}) error {
 	return nil
 }
 
-// JSONProp implements JSON property name indexing for Properties
-func (p Properties) JSONProp(name string) interface{} {
+// JSONProp implements JSON property name indexing for properties
+func (p properties) JSONProp(name string) interface{} {
 	return p[name]
 }
 
-// JSONChildren implements the JSONContainer interface for Properties
-func (p Properties) JSONChildren() (res map[string]JSONPather) {
+// JSONChildren implements the JSONContainer interface for properties
+func (p properties) JSONChildren() (res map[string]JSONPather) {
 	res = map[string]JSONPather{}
 	for key, sch := range p {
 		res[key] = sch
@@ -101,7 +117,7 @@ func (p Properties) JSONChildren() (res map[string]JSONPather) {
 	return
 }
 
-// PatternProperties determines how child instances validate for objects, and does not directly validate the immediate instance itself.
+// patternProperties determines how child instances validate for objects, and does not directly validate the immediate instance itself.
 // Validation of the primitive instance type against this keyword always succeeds.
 // Validation succeeds if, for each instance name that matches any regular expressions that appear as a property name in this
 // keyword's value, the child instance for that name successfully validates against each schema that corresponds to a matching
@@ -110,7 +126,11 @@ func (p Properties) JSONChildren() (res map[string]JSONPather) {
 // according to the ECMA 262 regular expression dialect.
 // Each property value of this object MUST be a valid JSON Schema.
 // Omitting this keyword has the same behavior as an empty object.
-type PatternProperties []patternSchema
+type patternProperties []patternSchema
+
+func newPatternProperties() Validator {
+	return &patternProperties{}
+}
 
 type patternSchema struct {
 	key    string
@@ -118,8 +138,8 @@ type patternSchema struct {
 	schema *Schema
 }
 
-// Validate implements the validator interface for PatternProperties
-func (p PatternProperties) Validate(data interface{}) error {
+// Validate implements the validator interface for patternProperties
+func (p patternProperties) Validate(data interface{}) error {
 	if obj, ok := data.(map[string]interface{}); ok {
 		for key, val := range obj {
 			for _, ptn := range p {
@@ -134,8 +154,8 @@ func (p PatternProperties) Validate(data interface{}) error {
 	return nil
 }
 
-// JSONProp implements JSON property name indexing for PatternProperties
-func (p PatternProperties) JSONProp(name string) interface{} {
+// JSONProp implements JSON property name indexing for patternProperties
+func (p patternProperties) JSONProp(name string) interface{} {
 	for _, pp := range p {
 		if pp.key == name {
 			return pp.schema
@@ -144,8 +164,8 @@ func (p PatternProperties) JSONProp(name string) interface{} {
 	return nil
 }
 
-// JSONChildren implements the JSONContainer interface for PatternProperties
-func (p PatternProperties) JSONChildren() (res map[string]JSONPather) {
+// JSONChildren implements the JSONContainer interface for patternProperties
+func (p patternProperties) JSONChildren() (res map[string]JSONPather) {
 	res = map[string]JSONPather{}
 	for i, pp := range p {
 		res[strconv.Itoa(i)] = pp.schema
@@ -153,14 +173,14 @@ func (p PatternProperties) JSONChildren() (res map[string]JSONPather) {
 	return
 }
 
-// UnmarshalJSON implements the json.Unmarshaler interface for PatternProperties
-func (p *PatternProperties) UnmarshalJSON(data []byte) error {
+// UnmarshalJSON implements the json.Unmarshaler interface for patternProperties
+func (p *patternProperties) UnmarshalJSON(data []byte) error {
 	var props map[string]*Schema
 	if err := json.Unmarshal(data, &props); err != nil {
 		return err
 	}
 
-	ptn := make(PatternProperties, len(props))
+	ptn := make(patternProperties, len(props))
 	i := 0
 	for key, sch := range props {
 		re, err := regexp.Compile(key)
@@ -179,19 +199,23 @@ func (p *PatternProperties) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// AdditionalProperties determines how child instances validate for objects, and does not directly validate the immediate instance itself.
+// additionalProperties determines how child instances validate for objects, and does not directly validate the immediate instance itself.
 // Validation with "additionalProperties" applies only to the child values of instance names that do not match any names in "properties",
-// and do not match any regular expression in "patternProperties".
+// and do not match any regular expression in "patternproperties".
 // For all such properties, validation succeeds if the child instance validates against the "additionalProperties" schema.
 // Omitting this keyword has the same behavior as an empty schema.
-type AdditionalProperties struct {
-	properties *Properties
-	patterns   *PatternProperties
+type additionalProperties struct {
+	properties *properties
+	patterns   *patternProperties
 	Schema     *Schema
 }
 
-// Validate implements the validator interface for AdditionalProperties
-func (ap AdditionalProperties) Validate(data interface{}) error {
+func newAdditionalProperties() Validator {
+	return &additionalProperties{}
+}
+
+// Validate implements the validator interface for additionalProperties
+func (ap additionalProperties) Validate(data interface{}) error {
 	if obj, ok := data.(map[string]interface{}); ok {
 	KEYS:
 		for key, val := range obj {
@@ -217,31 +241,31 @@ func (ap AdditionalProperties) Validate(data interface{}) error {
 	return nil
 }
 
-// UnmarshalJSON implements the json.Unmarshaler interface for AdditionalProperties
-func (ap *AdditionalProperties) UnmarshalJSON(data []byte) error {
+// UnmarshalJSON implements the json.Unmarshaler interface for additionalProperties
+func (ap *additionalProperties) UnmarshalJSON(data []byte) error {
 	sch := &Schema{}
 	if err := json.Unmarshal(data, sch); err != nil {
 		return err
 	}
 	// fmt.Println("unmarshal:", sch.Ref)
-	*ap = AdditionalProperties{Schema: sch}
+	*ap = additionalProperties{Schema: sch}
 	return nil
 }
 
-// JSONProp implements JSON property name indexing for AdditionalProperties
-func (ap *AdditionalProperties) JSONProp(name string) interface{} {
+// JSONProp implements JSON property name indexing for additionalProperties
+func (ap *additionalProperties) JSONProp(name string) interface{} {
 	return ap.Schema.JSONProp(name)
 }
 
-// JSONChildren implements the JSONContainer interface for AdditionalProperties
-func (ap *AdditionalProperties) JSONChildren() (res map[string]JSONPather) {
+// JSONChildren implements the JSONContainer interface for additionalProperties
+func (ap *additionalProperties) JSONChildren() (res map[string]JSONPather) {
 	if ap.Schema.Ref != "" {
 		return map[string]JSONPather{"$ref": ap.Schema}
 	}
 	return ap.Schema.JSONChildren()
 }
 
-// Dependencies : [CREF1]
+// dependencies : [CREF1]
 // This keyword specifies rules that are evaluated if the instance is an object and contains a
 // certain property.
 // This keyword's value MUST be an object. Each property specifies a dependency.
@@ -252,10 +276,14 @@ func (ap *AdditionalProperties) JSONChildren() (res map[string]JSONPather) {
 // and MUST be unique. If the dependency key is a property in the instance, each of the items
 // in the dependency value must be a property that exists in the instance.
 // Omitting this keyword has the same behavior as an empty object.
-type Dependencies map[string]Dependency
+type dependencies map[string]dependency
 
-// Validate implements the validator interface for Dependencies
-func (d Dependencies) Validate(data interface{}) error {
+func newDependencies() Validator {
+	return &dependencies{}
+}
+
+// Validate implements the validator interface for dependencies
+func (d dependencies) Validate(data interface{}) error {
 	if obj, ok := data.(map[string]interface{}); ok {
 		for key, val := range d {
 			if obj[key] != nil {
@@ -268,13 +296,13 @@ func (d Dependencies) Validate(data interface{}) error {
 	return nil
 }
 
-// JSONProp implements JSON property name indexing for Dependencies
-func (d Dependencies) JSONProp(name string) interface{} {
+// JSONProp implements JSON property name indexing for dependencies
+func (d dependencies) JSONProp(name string) interface{} {
 	return d[name]
 }
 
-// JSONChildren implements the JSONContainer interface for Dependencies
-// func (d Dependencies) JSONChildren() (res map[string]JSONPather) {
+// JSONChildren implements the JSONContainer interface for dependencies
+// func (d dependencies) JSONChildren() (res map[string]JSONPather) {
 // 	res = map[string]JSONPather{}
 // 	for key, dep := range d {
 // 		if dep.schema != nil {
@@ -284,14 +312,14 @@ func (d Dependencies) JSONProp(name string) interface{} {
 // 	return
 // }
 
-// Dependency is an instance used only in the dependencies proprty
-type Dependency struct {
+// dependency is an instance used only in the dependencies proprty
+type dependency struct {
 	schema *Schema
 	props  []string
 }
 
-// Validate implements the validator interface for Dependency
-func (d Dependency) Validate(data interface{}) error {
+// Validate implements the validator interface for dependency
+func (d dependency) Validate(data interface{}) error {
 	if obj, ok := data.(map[string]interface{}); ok {
 		if d.schema != nil {
 			return d.schema.Validate(data)
@@ -306,30 +334,34 @@ func (d Dependency) Validate(data interface{}) error {
 	return nil
 }
 
-// UnmarshalJSON implements the json.Unmarshaler interface for Dependencies
-func (d *Dependency) UnmarshalJSON(data []byte) error {
+// UnmarshalJSON implements the json.Unmarshaler interface for dependencies
+func (d *dependency) UnmarshalJSON(data []byte) error {
 	props := []string{}
 	if err := json.Unmarshal(data, &props); err == nil {
-		*d = Dependency{props: props}
+		*d = dependency{props: props}
 		return nil
 	}
 	sch := &Schema{}
 	err := json.Unmarshal(data, sch)
 
 	if err == nil {
-		*d = Dependency{schema: sch}
+		*d = dependency{schema: sch}
 	}
 	return err
 }
 
-// PropertyNames checks if every property name in the instance validates against the provided schema
+// propertyNames checks if every property name in the instance validates against the provided schema
 // if the instance is an object.
 // Note the property name that the schema is testing will always be a string.
 // Omitting this keyword has the same behavior as an empty schema.
-type PropertyNames Schema
+type propertyNames Schema
 
-// Validate implements the validator interface for PropertyNames
-func (p PropertyNames) Validate(data interface{}) error {
+func newPropertyNames() Validator {
+	return &propertyNames{}
+}
+
+// Validate implements the validator interface for propertyNames
+func (p propertyNames) Validate(data interface{}) error {
 	sch := Schema(p)
 	if obj, ok := data.(map[string]interface{}); ok {
 		for key := range obj {
@@ -341,22 +373,22 @@ func (p PropertyNames) Validate(data interface{}) error {
 	return nil
 }
 
-// JSONProp implements JSON property name indexing for Properties
-func (p PropertyNames) JSONProp(name string) interface{} {
+// JSONProp implements JSON property name indexing for properties
+func (p propertyNames) JSONProp(name string) interface{} {
 	return Schema(p).JSONProp(name)
 }
 
-// JSONChildren implements the JSONContainer interface for PropertyNames
-func (p PropertyNames) JSONChildren() (res map[string]JSONPather) {
+// JSONChildren implements the JSONContainer interface for propertyNames
+func (p propertyNames) JSONChildren() (res map[string]JSONPather) {
 	return Schema(p).JSONChildren()
 }
 
-// UnmarshalJSON implements the json.Unmarshaler interface for PropertyNames
-func (p *PropertyNames) UnmarshalJSON(data []byte) error {
+// UnmarshalJSON implements the json.Unmarshaler interface for propertyNames
+func (p *propertyNames) UnmarshalJSON(data []byte) error {
 	var sch Schema
 	if err := json.Unmarshal(data, &sch); err != nil {
 		return err
 	}
-	*p = PropertyNames(sch)
+	*p = propertyNames(sch)
 	return nil
 }
