@@ -1,9 +1,5 @@
 package jsonschema
 
-// import (
-// 	"fmt"
-// )
-
 // JSONPather makes validators traversible by JSON-pointers,
 // which is required to support references in JSON schemas.
 type JSONPather interface {
@@ -28,9 +24,7 @@ func walkJSON(elem JSONPather, fn func(elem JSONPather) error) error {
 	}
 
 	if con, ok := elem.(JSONContainer); ok {
-		// fmt.Println(con)
 		for _, ch := range con.JSONChildren() {
-			// fmt.Println("child:", key, ch)
 			if err := walkJSON(ch, fn); err != nil {
 				return err
 			}

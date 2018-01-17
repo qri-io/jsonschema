@@ -9,10 +9,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/qri-io/jsonpointer"
-	// "io/ioutil"
 	"net/http"
 	"net/url"
 )
+
+// DefaultSchemaPool is a package level map of schemas by identifier
+// remote references are cached here.
+// TODO - should add methods to control caching behavior
+var DefaultSchemaPool = Definitions{}
 
 // Validator is an interface for anything that can validate
 // JSON-Schema keywords are all validators
@@ -41,6 +45,11 @@ func (rs *RootSchema) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	if sch.schemaType == schemaTypeFalse || sch.schemaType == schemaTypeTrue {
+		*rs = RootSchema{Schema: *sch}
+		return nil
+	}
+
 	suri := struct {
 		SchemaURI string `json:"$schema"`
 	}{}
@@ -53,13 +62,16 @@ func (rs *RootSchema) UnmarshalJSON(data []byte) error {
 		SchemaURI: suri.SchemaURI,
 	}
 
+	// fmt.Printf("%p <- root schema address pre-walk. root address: %p. Ref: %s, validators: %s\n", sch, root, sch.Ref, sch.Validators)
+
 	// collect IDs for internal referencing:
 	ids := map[string]*Schema{}
 	if err := walkJSON(sch, func(elem JSONPather) error {
 		if sch, ok := elem.(*Schema); ok {
-
 			if sch.ID != "" {
 				ids[sch.ID] = sch
+
+				// For the record, I think this is rediculous.
 				if u, err := url.Parse(sch.ID); err == nil {
 					ids[u.Path[1:]] = sch
 				}
@@ -75,8 +87,10 @@ func (rs *RootSchema) UnmarshalJSON(data []byte) error {
 	if err := walkJSON(sch, func(elem JSONPather) error {
 		if sch, ok := elem.(*Schema); ok {
 			if sch.Ref != "" {
+				// fmt.Printf("%p %s\n", sch, sch.Ref)
 				if ids[sch.Ref] != nil {
 					sch.ref = ids[sch.Ref]
+					// fmt.Printf("%p - id ref -> %p\n", sch, ids[sch.Ref])
 					return nil
 				}
 
@@ -89,6 +103,7 @@ func (rs *RootSchema) UnmarshalJSON(data []byte) error {
 					return err
 				}
 				if val, ok := res.(Validator); ok {
+					// fmt.Printf("%p - ptr ref -> %p\n", sch, val)
 					sch.ref = val
 				} else {
 					return fmt.Errorf("%s : %s, %v is not a json pointer to a json schema", sch.Ref, ptr.String(), ptr)
@@ -99,6 +114,8 @@ func (rs *RootSchema) UnmarshalJSON(data []byte) error {
 	}); err != nil {
 		return err
 	}
+
+	// fmt.Printf("%p <- root schema address post-walk. Ref: %s, validators: %s\n", sch, sch.Ref, sch.Validators)
 
 	*rs = RootSchema{
 		Schema:    *sch,
@@ -112,13 +129,13 @@ func (rs *RootSchema) UnmarshalJSON(data []byte) error {
 func (rs *RootSchema) FetchRemoteReferences() error {
 	sch := &rs.Schema
 
-	// collect IDs for internal referencing:
-	refs := map[string]*Schema{}
+	refs := DefaultSchemaPool
+
 	if err := walkJSON(sch, func(elem JSONPather) error {
 		if sch, ok := elem.(*Schema); ok {
 			ref := sch.Ref
 			if ref != "" {
-				if refs[ref] == nil {
+				if refs[ref] == nil && ref[0] != '#' {
 					if u, err := url.Parse(ref); err == nil {
 						if res, err := http.Get(u.String()); err == nil {
 							s := &RootSchema{}
@@ -126,9 +143,12 @@ func (rs *RootSchema) FetchRemoteReferences() error {
 								return err
 							}
 							refs[ref] = &s.Schema
-							sch.ref = refs[ref]
 						}
 					}
+				}
+
+				if refs[ref] != nil {
+					sch.ref = refs[ref]
 				}
 			}
 		}
@@ -139,20 +159,19 @@ func (rs *RootSchema) FetchRemoteReferences() error {
 
 	// pass a pointer to the schema component in here (instead of the RootSchema struct)
 	// to ensure root is evaluated for references
-	if err := walkJSON(sch, func(elem JSONPather) error {
-		if sch, ok := elem.(*Schema); ok {
-			if sch.Ref != "" && refs[sch.Ref] != nil {
-				if refs[sch.Ref] != nil {
-					fmt.Println("using remote ref:", sch.Ref)
-					sch.ref = refs[sch.Ref]
-				}
-				return nil
-			}
-		}
-		return nil
-	}); err != nil {
-		return err
-	}
+	// if err := walkJSON(sch, func(elem JSONPather) error {
+	// 	if sch, ok := elem.(*Schema); ok {
+	// 		if sch.Ref != "" && refs[sch.Ref] != nil {
+	// 			if refs[sch.Ref] != nil {
+	// 				sch.ref = refs[sch.Ref]
+	// 			}
+	// 			return nil
+	// 		}
+	// 	}
+	// 	return nil
+	// }); err != nil {
+	// 	return err
+	// }
 
 	rs.Schema = *sch
 	return nil
@@ -304,19 +323,23 @@ type Schema struct {
 	Validators map[string]Validator
 }
 
-// _schema is an internal struct for encoding & decoding purposes
-type _schema struct {
-	ID          string             `json:"$id,omitempty"`
-	Title       string             `json:"title,omitempty"`
-	Description string             `json:"description,omitempty"`
-	Default     interface{}        `json:"default,omitempty"`
-	Examples    []interface{}      `json:"examples,omitempty"`
-	ReadOnly    bool               `json:"readOnly,omitempty"`
-	WriteOnly   bool               `json:"writeOnly,omitempty"`
-	Comment     string             `json:"comment,omitempty"`
-	Ref         string             `json:"$ref,omitempty"`
-	Definitions map[string]*Schema `json:"definitions,omitempty"`
-	Format      string             `json:"format,omitempty"`
+// Validate uses the schema to check an instance, returning error on the first error
+func (s *Schema) Validate(data interface{}) error {
+	if s.Ref != "" && s.ref != nil {
+		return s.ref.Validate(data)
+	} else if s.Ref != "" && s.ref == nil {
+		return fmt.Errorf("%s reference is nil for data: %v", s.Ref, data)
+	}
+
+	// TODO - so far all default.json tests pass when no use of "default" is made.
+	// Is this correct?
+
+	for _, v := range s.Validators {
+		if err := v.Validate(data); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // JSONProp implements the JSONPather for Schema
@@ -354,7 +377,7 @@ func (s Schema) JSONProp(name string) interface{} {
 }
 
 // JSONChildren implements the JSONContainer interface for Schema
-func (s *Schema) JSONChildren() (ch map[string]JSONPather) {
+func (s Schema) JSONChildren() (ch map[string]JSONPather) {
 	ch = map[string]JSONPather{}
 
 	if s.extraDefinitions != nil {
@@ -374,7 +397,23 @@ func (s *Schema) JSONChildren() (ch map[string]JSONPather) {
 			}
 		}
 	}
+
 	return
+}
+
+// _schema is an internal struct for encoding & decoding purposes
+type _schema struct {
+	ID          string             `json:"$id,omitempty"`
+	Title       string             `json:"title,omitempty"`
+	Description string             `json:"description,omitempty"`
+	Default     interface{}        `json:"default,omitempty"`
+	Examples    []interface{}      `json:"examples,omitempty"`
+	ReadOnly    bool               `json:"readOnly,omitempty"`
+	WriteOnly   bool               `json:"writeOnly,omitempty"`
+	Comment     string             `json:"comment,omitempty"`
+	Ref         string             `json:"$ref,omitempty"`
+	Definitions map[string]*Schema `json:"definitions,omitempty"`
+	Format      string             `json:"format,omitempty"`
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface for Schema
@@ -546,23 +585,6 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// Validate uses the schema to check an instance, returning error on the first error
-func (s *Schema) Validate(data interface{}) error {
-	if s.Ref != "" && s.ref != nil {
-		return s.ref.Validate(data)
-	}
-
-	// TODO - so far all default.json tests pass when no use of "default" is made.
-	// Is this correct?
-
-	for _, v := range s.Validators {
-		if err := v.Validate(data); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // Definitions implements a map of schemas while also satsfying the JSON
 // traversal methods
 type Definitions map[string]*Schema
@@ -575,9 +597,7 @@ func (d Definitions) JSONProp(name string) interface{} {
 // JSONChildren implements the JSONContainer interface for Definitions
 func (d Definitions) JSONChildren() (r map[string]JSONPather) {
 	r = map[string]JSONPather{}
-	// fmt.Println("getting children for definitions:", d)
 	for key, val := range d {
-		// fmt.Println("definition child:", key, val)
 		r[key] = val
 	}
 	return
