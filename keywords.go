@@ -48,7 +48,10 @@ func DataType(data interface{}) string {
 // String values MUST be one of the six primitive types ("null", "boolean", "object", "array", "number", or "string"), or
 // "integer" which matches any number with a zero fractional part.
 // An instance validates if and only if the instance is in any of the sets listed for this keyword.
-type tipe []string
+type tipe struct {
+	strVal bool // set to true if tipe decoded from a string, false if an array
+	vals   []string
+}
 
 func newTipe() Validator {
 	return &tipe{}
@@ -57,17 +60,17 @@ func newTipe() Validator {
 // Validate checks to see if input data satisfies the type constraint
 func (t tipe) Validate(data interface{}) error {
 	jt := DataType(data)
-	for _, typestr := range t {
+	for _, typestr := range t.vals {
 		if jt == typestr || jt == "integer" && typestr == "number" {
 			return nil
 		}
 	}
-	if len(t) == 1 {
-		return fmt.Errorf(`expected "%v" to be of type %s`, data, t[0])
+	if len(t.vals) == 1 {
+		return fmt.Errorf(`expected "%v" to be of type %s`, data, t.vals[0])
 	}
 
 	str := ""
-	for _, ts := range t {
+	for _, ts := range t.vals {
 		str += ts + ","
 	}
 	return fmt.Errorf(`expected "%v" to be one of type: %s`, data, str[:len(str)-1])
@@ -79,27 +82,27 @@ func (t tipe) JSONProp(name string) interface{} {
 	if err != nil {
 		return nil
 	}
-	if idx > len(t) || idx < 0 {
+	if idx > len(t.vals) || idx < 0 {
 		return nil
 	}
-	return t[idx]
+	return t.vals[idx]
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface for tipe
 func (t *tipe) UnmarshalJSON(data []byte) error {
 	var single string
 	if err := json.Unmarshal(data, &single); err == nil {
-		*t = tipe{single}
+		*t = tipe{strVal: true, vals: []string{single}}
 	} else {
 		var set []string
 		if err := json.Unmarshal(data, &set); err == nil {
-			*t = tipe(set)
+			*t = tipe{vals: set}
 		} else {
 			return err
 		}
 	}
 
-	for _, pr := range *t {
+	for _, pr := range t.vals {
 		if !primitiveTypes[pr] {
 			return fmt.Errorf(`"%s" is not a valid type`, pr)
 		}
@@ -109,12 +112,10 @@ func (t *tipe) UnmarshalJSON(data []byte) error {
 
 // MarshalJSON implements the json.Marshaler interface for tipe
 func (t tipe) MarshalJSON() ([]byte, error) {
-	if len(t) == 1 {
-		return json.Marshal(t[0])
-	} else if len(t) > 1 {
-		return json.Marshal([]string(t))
+	if t.strVal {
+		return json.Marshal(t.vals[0])
 	}
-	return []byte(`""`), nil
+	return json.Marshal(t.vals)
 }
 
 // enum validates successfully against this keyword if its value is equal to one of the
@@ -170,7 +171,7 @@ func (e enum) JSONChildren() (res map[string]JSONPather) {
 // konst MAY be of any type, including null.
 // An instance validates successfully against this keyword if its
 // value is equal to the value of the keyword.
-type konst []byte
+type konst json.RawMessage
 
 func newKonst() Validator {
 	return &konst{}
@@ -203,4 +204,9 @@ func (c konst) String() string {
 func (c *konst) UnmarshalJSON(data []byte) error {
 	*c = data
 	return nil
+}
+
+// MarshalJSON implements json.Marshaler for konst
+func (c konst) MarshalJSON() ([]byte, error) {
+	return json.Marshal(json.RawMessage(c))
 }

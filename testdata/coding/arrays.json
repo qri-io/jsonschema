@@ -1,0 +1,7 @@
+{
+  "items":           1,
+  "additionalItems": 3,
+  "maxItems":        2,
+  "minItems":        1,
+  "uniqueItems":     {}
+}

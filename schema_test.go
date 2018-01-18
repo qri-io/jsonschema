@@ -1,8 +1,10 @@
 package jsonschema
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/sergi/go-diff/diffmatchpatch"
 	"io/ioutil"
 	// "net/http"
 	// "net/http/httptest"
@@ -346,6 +348,54 @@ func TestDataType(t *testing.T) {
 		got := DataType(c.data)
 		if got != c.expect {
 			t.Errorf("case %d result mismatch. expected: '%s', got: '%s'", i, c.expect, got)
+		}
+	}
+}
+
+func TestJSONCoding(t *testing.T) {
+	cases := []string{
+		"testdata/coding/false.json",
+		"testdata/coding/true.json",
+		"testdata/coding/std.json",
+		"testdata/coding/booleans.json",
+		"testdata/coding/conditionals.json",
+		"testdata/coding/numeric.json",
+		"testdata/coding/objects.json",
+		"testdata/coding/strings.json",
+	}
+
+	for i, c := range cases {
+		data, err := ioutil.ReadFile(c)
+		if err != nil {
+			t.Errorf("case %d error reading file: %s", i, err.Error())
+			continue
+		}
+
+		rs := &RootSchema{}
+		if err := json.Unmarshal(data, rs); err != nil {
+			t.Errorf("case %d error unmarshaling from json: %s", i, err.Error())
+			continue
+		}
+
+		output, err := json.MarshalIndent(rs, "", "  ")
+		if err != nil {
+			t.Errorf("case %d error marshaling to JSON: %s", i, err.Error())
+			continue
+		}
+
+		if !bytes.Equal(data, output) {
+			dmp := diffmatchpatch.New()
+			diffs := dmp.DiffMain(string(data), string(output), true)
+			if len(diffs) == 0 {
+				t.Logf("case %d bytes were unequal but computed no difference between results")
+				continue
+			}
+
+			t.Errorf("case %d %s mismatch:\n", i, c)
+			t.Errorf("diff:\n%s", dmp.DiffPrettyText(diffs))
+			t.Errorf("expected:\n%s", string(data))
+			t.Errorf("got:\n%s", string(output))
+			continue
 		}
 	}
 }

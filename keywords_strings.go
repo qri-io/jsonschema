@@ -82,3 +82,10 @@ func (p *pattern) UnmarshalJSON(data []byte) error {
 	*p = pattern(*ptn)
 	return nil
 }
+
+// MarshalJSON implements json.Marshaler for pattern
+func (p pattern) MarshalJSON() ([]byte, error) {
+	re := regexp.Regexp(p)
+	rep := &re
+	return json.Marshal(rep.String())
+}

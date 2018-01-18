@@ -1,0 +1,14 @@
+{
+  "const": "2",
+  "enum": [
+    "a",
+    1,
+    "c",
+    "b",
+    {
+      "foo": "bar"
+    },
+    false
+  ],
+  "type": "integer"
+}

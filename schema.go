@@ -142,22 +142,6 @@ func (rs *RootSchema) FetchRemoteReferences() error {
 		return err
 	}
 
-	// pass a pointer to the schema component in here (instead of the RootSchema struct)
-	// to ensure root is evaluated for references
-	// if err := walkJSON(sch, func(elem JSONPather) error {
-	// 	if sch, ok := elem.(*Schema); ok {
-	// 		if sch.Ref != "" && refs[sch.Ref] != nil {
-	// 			if refs[sch.Ref] != nil {
-	// 				sch.ref = refs[sch.Ref]
-	// 			}
-	// 			return nil
-	// 		}
-	// 	}
-	// 	return nil
-	// }); err != nil {
-	// 	return err
-	// }
-
 	rs.Schema = *sch
 	return nil
 }
@@ -258,7 +242,7 @@ type Schema struct {
 	// These keywords can be used to assist in user interface instance generation.
 	// In particular, an application MAY choose to use a widget that hides input values as they are typed for write-only fields.
 	// Omitting these keywords has the same behavior as values of false.
-	ReadOnly bool `json:"readOnly,omitempty"`
+	ReadOnly *bool `json:"readOnly,omitempty"`
 	// If "writeOnly" has a value of boolean true, it indicates that the value is never present when the
 	// instance is retrieved from the owning authority.
 	// It can be present when sent to the owning authority to update or create the document
@@ -267,7 +251,7 @@ type Schema struct {
 	// An instance document that is marked as "writeOnly" for the entire document MAY be returned as a
 	// blank document of some sort, or MAY produce an error upon retrieval, or have the retrieval request
 	// ignored, at the authority's discretion.
-	WriteOnly bool `json:"writeOnly,omitempty"`
+	WriteOnly *bool `json:"writeOnly,omitempty"`
 	// This keyword is reserved for comments from schema authors to readers or maintainers of the schema.
 	// The value of this keyword MUST be a string.
 	// Implementations MUST NOT present this string to end users.
@@ -393,8 +377,8 @@ type _schema struct {
 	Description string             `json:"description,omitempty"`
 	Default     interface{}        `json:"default,omitempty"`
 	Examples    []interface{}      `json:"examples,omitempty"`
-	ReadOnly    bool               `json:"readOnly,omitempty"`
-	WriteOnly   bool               `json:"writeOnly,omitempty"`
+	ReadOnly    *bool              `json:"readOnly,omitempty"`
+	WriteOnly   *bool              `json:"writeOnly,omitempty"`
 	Comment     string             `json:"comment,omitempty"`
 	Ref         string             `json:"$ref,omitempty"`
 	Definitions map[string]*Schema `json:"definitions,omitempty"`
@@ -412,7 +396,7 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 			return nil
 		}
 		// boolean false Always fails validation, as if the schema { "not":{} }
-		*s = Schema{schemaType: schemaTypeFalse, Validators: map[string]Validator{"not": &Not{}}}
+		*s = Schema{schemaType: schemaTypeFalse, Validators: map[string]Validator{"not": &not{}}}
 		return nil
 	}
 
@@ -504,6 +488,63 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 
 	*s = Schema(*sch)
 	return nil
+}
+
+// MarshalJSON implements the json.Marshaler interface for Schema
+func (s Schema) MarshalJSON() ([]byte, error) {
+	switch s.schemaType {
+	case schemaTypeFalse:
+		return []byte("false"), nil
+	case schemaTypeTrue:
+		return []byte("true"), nil
+	default:
+		obj := map[string]interface{}{}
+
+		if s.ID != "" {
+			obj["$id"] = s.ID
+		}
+		if s.Title != "" {
+			obj["title"] = s.Title
+		}
+		if s.Description != "" {
+			obj["description"] = s.Description
+		}
+		if s.Default != nil {
+			obj["default"] = s.Default
+		}
+		if s.Examples != nil {
+			obj["examples"] = s.Examples
+		}
+		if s.ReadOnly != nil {
+			obj["readOnly"] = s.ReadOnly
+		}
+		if s.WriteOnly != nil {
+			obj["writeOnly"] = s.WriteOnly
+		}
+		if s.Comment != "" {
+			obj["comment"] = s.Comment
+		}
+		if s.Ref != "" {
+			obj["$ref"] = s.Ref
+		}
+		if s.Definitions != nil {
+			obj["definitions"] = s.Definitions
+		}
+		if s.Format != "" {
+			obj["format"] = s.Format
+		}
+		if s.Definitions != nil {
+			obj["definitions"] = s.Definitions
+		}
+
+		for k, v := range s.Validators {
+			obj[k] = v
+		}
+		for k, v := range s.extraDefinitions {
+			obj[k] = v
+		}
+		return json.Marshal(obj)
+	}
 }
 
 // Definitions implements a map of schemas while also satsfying the JSON

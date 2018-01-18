@@ -25,17 +25,17 @@ func (m maxProperties) Validate(data interface{}) error {
 	return nil
 }
 
-// minproperties MUST be a non-negative integer.
-// An object instance is valid against "minproperties" if its number of properties is greater than, or equal to, the value of this keyword.
+// minProperties MUST be a non-negative integer.
+// An object instance is valid against "minProperties" if its number of properties is greater than, or equal to, the value of this keyword.
 // Omitting this keyword has the same behavior as a value of 0.
-type minproperties int
+type minProperties int
 
 func newMinProperties() Validator {
-	return new(minproperties)
+	return new(minProperties)
 }
 
-// Validate implements the validator interface for minproperties
-func (m minproperties) Validate(data interface{}) error {
+// Validate implements the validator interface for minProperties
+func (m minProperties) Validate(data interface{}) error {
 	if obj, ok := data.(map[string]interface{}); ok {
 		if len(obj) < int(m) {
 			return fmt.Errorf("%d object properties below %d minimum", len(obj), m)
@@ -199,6 +199,15 @@ func (p *patternProperties) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// MarshalJSON implements json.Marshaler for patternProperties
+func (p patternProperties) MarshalJSON() ([]byte, error) {
+	obj := map[string]interface{}{}
+	for _, prop := range p {
+		obj[prop.key] = prop.schema
+	}
+	return json.Marshal(obj)
+}
+
 // additionalProperties determines how child instances validate for objects, and does not directly validate the immediate instance itself.
 // Validation with "additionalProperties" applies only to the child values of instance names that do not match any names in "properties",
 // and do not match any regular expression in "patternproperties".
@@ -263,6 +272,11 @@ func (ap *additionalProperties) JSONChildren() (res map[string]JSONPather) {
 		return map[string]JSONPather{"$ref": ap.Schema}
 	}
 	return ap.Schema.JSONChildren()
+}
+
+// MarshalJSON implements json.Marshaler for additionalProperties
+func (ap additionalProperties) MarshalJSON() ([]byte, error) {
+	return json.Marshal(ap.Schema)
 }
 
 // dependencies : [CREF1]
@@ -350,6 +364,14 @@ func (d *dependency) UnmarshalJSON(data []byte) error {
 	return err
 }
 
+// MarshalJSON implements json.Marshaler for dependency
+func (d dependency) MarshalJSON() ([]byte, error) {
+	if d.schema != nil {
+		return json.Marshal(d.schema)
+	}
+	return json.Marshal(d.props)
+}
+
 // propertyNames checks if every property name in the instance validates against the provided schema
 // if the instance is an object.
 // Note the property name that the schema is testing will always be a string.
@@ -391,4 +413,9 @@ func (p *propertyNames) UnmarshalJSON(data []byte) error {
 	}
 	*p = propertyNames(sch)
 	return nil
+}
+
+// MarshalJSON implements json.Marshaler for propertyNames
+func (p propertyNames) MarshalJSON() ([]byte, error) {
+	return json.Marshal(Schema(p))
 }
