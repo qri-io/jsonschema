@@ -193,7 +193,7 @@ func TestDraft6(t *testing.T) {
 		// "testdata/draft6/optional/bignum.json",
 		// "testdata/draft6/optional/ecmascript-regex.json",
 		// "testdata/draft6/optional/format.json",
-		// "testdata/draft6/optional/zeroTerminatedFloats.json",
+		"testdata/draft6/optional/zeroTerminatedFloats.json",
 	})
 }
 
@@ -255,8 +255,8 @@ func TestDraft7(t *testing.T) {
 
 		// "testdata/draft7/optional/bignum.json",
 		// "testdata/draft7/optional/content.json",
-		// "testdata/draft7/optional/ecmascript-regex.json",
-		// "testdata/draft7/optional/zeroTerminatedFloats.json",
+		"testdata/draft7/optional/ecmascript-regex.json",
+		"testdata/draft7/optional/zeroTerminatedFloats.json",
 		// "testdata/draft7/optional/format/date-time.json",
 		// "testdata/draft7/optional/format/hostname.json",
 		// "testdata/draft7/optional/format/ipv4.json",
