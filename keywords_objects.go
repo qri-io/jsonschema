@@ -16,10 +16,12 @@ func newMaxProperties() Validator {
 }
 
 // Validate implements the validator interface for maxProperties
-func (m maxProperties) Validate(data interface{}) error {
+func (m maxProperties) Validate(data interface{}) []ValError {
 	if obj, ok := data.(map[string]interface{}); ok {
 		if len(obj) > int(m) {
-			return fmt.Errorf("%d object properties exceed %d maximum", len(obj), m)
+			return []ValError{
+				{Message: fmt.Sprintf("%d object properties exceed %d maximum", len(obj), m)},
+			}
 		}
 	}
 	return nil
@@ -35,10 +37,12 @@ func newMinProperties() Validator {
 }
 
 // Validate implements the validator interface for minProperties
-func (m minProperties) Validate(data interface{}) error {
+func (m minProperties) Validate(data interface{}) []ValError {
 	if obj, ok := data.(map[string]interface{}); ok {
 		if len(obj) < int(m) {
-			return fmt.Errorf("%d object properties below %d minimum", len(obj), m)
+			return []ValError{
+				{Message: fmt.Sprintf("%d object properties below %d minimum", len(obj), m)},
+			}
 		}
 	}
 	return nil
@@ -54,11 +58,13 @@ func newRequired() Validator {
 }
 
 // Validate implements the validator interface for required
-func (r required) Validate(data interface{}) error {
+func (r required) Validate(data interface{}) []ValError {
 	if obj, ok := data.(map[string]interface{}); ok {
 		for _, key := range r {
 			if val, ok := obj[key]; val == nil && !ok {
-				return fmt.Errorf(`"%s" value is required`, key)
+				return []ValError{
+					{Message: fmt.Sprintf(`"%s" value is required`, key)},
+				}
 			}
 		}
 	}
@@ -90,12 +96,14 @@ func newProperties() Validator {
 }
 
 // Validate implements the validator interface for properties
-func (p properties) Validate(data interface{}) error {
+func (p properties) Validate(data interface{}) []ValError {
 	if obj, ok := data.(map[string]interface{}); ok {
 		for key, val := range obj {
 			if p[key] != nil {
 				if err := p[key].Validate(val); err != nil {
-					return fmt.Errorf(`"%s" property %s`, key, err)
+					return []ValError{
+						{Message: fmt.Sprintf(`"%s" property %s`, key, err)},
+					}
 				}
 			}
 		}
@@ -139,19 +147,20 @@ type patternSchema struct {
 }
 
 // Validate implements the validator interface for patternProperties
-func (p patternProperties) Validate(data interface{}) error {
+func (p patternProperties) Validate(data interface{}) (errs []ValError) {
 	if obj, ok := data.(map[string]interface{}); ok {
 		for key, val := range obj {
 			for _, ptn := range p {
 				if ptn.re.Match([]byte(key)) {
-					if err := ptn.schema.Validate(val); err != nil {
-						return fmt.Errorf("object key %s pattern prop %s error: %s", key, ptn.key, err.Error())
+					if ves := ptn.schema.Validate(val); len(ves) > 0 {
+						// fmt.Sprintf("object key %s pattern prop %s error: %s", key, ptn.key, err.Error())
+						errs = append(errs, ves...)
 					}
 				}
 			}
 		}
 	}
-	return nil
+	return
 }
 
 // JSONProp implements JSON property name indexing for patternProperties
@@ -224,7 +233,7 @@ func newAdditionalProperties() Validator {
 }
 
 // Validate implements the validator interface for additionalProperties
-func (ap additionalProperties) Validate(data interface{}) error {
+func (ap additionalProperties) Validate(data interface{}) []ValError {
 	if obj, ok := data.(map[string]interface{}); ok {
 	KEYS:
 		for key, val := range obj {
@@ -242,8 +251,9 @@ func (ap additionalProperties) Validate(data interface{}) error {
 					}
 				}
 			}
-			if err := ap.Schema.Validate(val); err != nil {
-				return fmt.Errorf("object key %s additionalProperties error: %s", key, err.Error())
+			if ves := ap.Schema.Validate(val); len(ves) > 0 {
+				// fmt.Sprintf("object key %s additionalProperties error: %s", key, err.Error())
+				return ves
 			}
 		}
 	}
@@ -297,17 +307,17 @@ func newDependencies() Validator {
 }
 
 // Validate implements the validator interface for dependencies
-func (d dependencies) Validate(data interface{}) error {
+func (d dependencies) Validate(data interface{}) (errs []ValError) {
 	if obj, ok := data.(map[string]interface{}); ok {
 		for key, val := range d {
 			if obj[key] != nil {
-				if err := val.Validate(obj); err != nil {
-					return err
+				if ves := val.Validate(obj); len(ves) > 0 {
+					errs = append(errs, ves...)
 				}
 			}
 		}
 	}
-	return nil
+	return
 }
 
 // JSONProp implements JSON property name indexing for dependencies
@@ -333,19 +343,19 @@ type dependency struct {
 }
 
 // Validate implements the validator interface for dependency
-func (d dependency) Validate(data interface{}) error {
+func (d dependency) Validate(data interface{}) (errs []ValError) {
 	if obj, ok := data.(map[string]interface{}); ok {
 		if d.schema != nil {
 			return d.schema.Validate(data)
 		} else if len(d.props) > 0 {
 			for _, k := range d.props {
 				if obj[k] == nil {
-					return fmt.Errorf("dependency property %s is required", k)
+					errs = append(errs, ValError{Message: fmt.Sprintf("dependency property %s is required", k)})
 				}
 			}
 		}
 	}
-	return nil
+	return
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface for dependencies
@@ -383,16 +393,16 @@ func newPropertyNames() Validator {
 }
 
 // Validate implements the validator interface for propertyNames
-func (p propertyNames) Validate(data interface{}) error {
+func (p propertyNames) Validate(data interface{}) (errs []ValError) {
 	sch := Schema(p)
 	if obj, ok := data.(map[string]interface{}); ok {
 		for key := range obj {
-			if err := sch.Validate(key); err != nil {
-				return fmt.Errorf("invalid propertyName: %s", err.Error())
+			if ves := sch.Validate(key); len(ves) > 0 {
+				errs = append(errs, ves...)
 			}
 		}
 	}
-	return nil
+	return
 }
 
 // JSONProp implements JSON property name indexing for properties

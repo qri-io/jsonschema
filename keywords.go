@@ -58,7 +58,7 @@ func newTipe() Validator {
 }
 
 // Validate checks to see if input data satisfies the type constraint
-func (t tipe) Validate(data interface{}) error {
+func (t tipe) Validate(data interface{}) (errs []ValError) {
 	jt := DataType(data)
 	for _, typestr := range t.vals {
 		if jt == typestr || jt == "integer" && typestr == "number" {
@@ -66,14 +66,20 @@ func (t tipe) Validate(data interface{}) error {
 		}
 	}
 	if len(t.vals) == 1 {
-		return fmt.Errorf(`expected "%v" to be of type %s`, data, t.vals[0])
+		errs = append(errs, ValError{
+			Message: fmt.Sprintf(`expected "%v" to be of type %s`, data, t.vals[0]),
+		})
+		return
 	}
 
 	str := ""
 	for _, ts := range t.vals {
 		str += ts + ","
 	}
-	return fmt.Errorf(`expected "%v" to be one of type: %s`, data, str[:len(str)-1])
+	errs = append(errs, ValError{
+		Message: fmt.Sprintf(`expected "%v" to be one of type: %s`, data, str[:len(str)-1]),
+	})
+	return
 }
 
 // JSONProp implements JSON property name indexing for tipe
@@ -138,13 +144,15 @@ func (e enum) String() string {
 }
 
 // Validate implements the Validator interface for enum
-func (e enum) Validate(data interface{}) error {
+func (e enum) Validate(data interface{}) []ValError {
 	for _, v := range e {
 		if err := v.Validate(data); err == nil {
 			return nil
 		}
 	}
-	return fmt.Errorf("expected %s to be one of %s", data)
+	return []ValError{
+		{Message: fmt.Sprintf("expected %s to be one of %s", data)},
+	}
 }
 
 // JSONProp implements JSON property name indexing for enum
@@ -178,14 +186,18 @@ func newKonst() Validator {
 }
 
 // Validate implements the validate interface for konst
-func (c konst) Validate(data interface{}) error {
+func (c konst) Validate(data interface{}) []ValError {
 	var con interface{}
 	if err := json.Unmarshal(c, &con); err != nil {
-		return err
+		return []ValError{
+			{Message: err.Error()},
+		}
 	}
 
 	if !reflect.DeepEqual(con, data) {
-		return fmt.Errorf(`%s must equal %s`, string(c), data)
+		return []ValError{
+			{Message: fmt.Sprintf(`%s must equal %s`, string(c), data)},
+		}
 	}
 	return nil
 }

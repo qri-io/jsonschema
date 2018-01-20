@@ -19,7 +19,7 @@ func newIif() Validator {
 }
 
 // Validate implements the Validator interface for iif
-func (i *iif) Validate(data interface{}) error {
+func (i *iif) Validate(data interface{}) []ValError {
 	if err := i.Schema.Validate(data); err == nil {
 		if i.then != nil {
 			s := Schema(*i.then)
@@ -71,7 +71,7 @@ func newThen() Validator {
 }
 
 // Validate implements the Validator interface for then
-func (t *then) Validate(data interface{}) error {
+func (t *then) Validate(data interface{}) []ValError {
 	return nil
 }
 
@@ -110,7 +110,7 @@ func newEls() Validator {
 }
 
 // Validate implements the Validator interface for els
-func (e *els) Validate(data interface{}) error {
+func (e *els) Validate(data interface{}) []ValError {
 	return nil
 }
 

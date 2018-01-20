@@ -52,8 +52,8 @@ func ExampleBasic() {
 	var invalidPerson = []byte(`{
 		"firstName" : "Prince"
 		}`)
-	err := rs.ValidateBytes(invalidPerson)
-	fmt.Println(err.Error())
+	errs := rs.ValidateBytes(invalidPerson)
+	fmt.Println(errs[0].Error())
 
 	var invalidFriend = []byte(`{
 		"firstName" : "Jay",
@@ -62,11 +62,11 @@ func ExampleBasic() {
 			"firstName" : "Nas"
 			}]
 		}`)
-	err = rs.ValidateBytes(invalidFriend)
-	fmt.Println(err)
+	errs = rs.ValidateBytes(invalidFriend)
+	fmt.Println(errs[0].Error())
 
 	// Output: "lastName" value is required
-	// "friends" property element 0 "lastName" value is required
+	// "friends" property ["lastName" value is required]
 }
 
 func TestDraft3(t *testing.T) {
@@ -318,7 +318,7 @@ func runJSONTests(t *testing.T, testFilepaths []string) {
 			for i, c := range ts.Tests {
 				tests++
 				got := sc.Validate(c.Data)
-				valid := got == nil
+				valid := len(got) == 0
 				if valid != c.Valid {
 					t.Errorf("%s: %s test case %d: %s. error: %s", base, ts.Description, i, c.Description, got)
 				} else {
