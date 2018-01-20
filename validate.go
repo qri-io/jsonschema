@@ -59,6 +59,9 @@ var DefaultValidators = map[string]ValMaker{
 	"if":   newIif,
 	"then": newThen,
 	"else": newEls,
+
+	//optional formats
+	"format": newFormat,
 }
 
 // RegisterValidator adds a validator to DefaultValidators.
