@@ -12,10 +12,12 @@ func newIsFoo() Validator {
 	return new(IsFoo)
 }
 
-func (f IsFoo) Validate(data interface{}) error {
+func (f IsFoo) Validate(data interface{}) []ValError {
 	if str, ok := data.(string); ok {
 		if str != "foo" {
-			return fmt.Errorf("'%s' is not foo. It should be foo. plz make '%s' == foo. plz", str, str)
+			return []ValError{
+				{Message: fmt.Sprintf("'%s' is not foo. It should be foo. plz make '%s' == foo. plz", str, str)},
+			}
 		}
 	}
 	return nil
@@ -34,15 +36,15 @@ func ExampleCustomValidator() {
 		panic(err)
 	}
 
-	err := rs.ValidateBytes([]byte(`"bar"`))
-	fmt.Println(err.Error())
+	errs := rs.ValidateBytes([]byte(`"bar"`))
+	fmt.Println(errs[0].Error())
 
 	// Output: 'bar' is not foo. It should be foo. plz make 'bar' == foo. plz
 }
 
 type FooValidator uint8
 
-func (f *FooValidator) Validate(data interface{}) error {
+func (f *FooValidator) Validate(data interface{}) []ValError {
 	return nil
 }
 

@@ -15,13 +15,13 @@ func newAllOf() Validator {
 }
 
 // Validate implements the validator interface for allOf
-func (a allOf) Validate(data interface{}) error {
-	for i, sch := range a {
-		if err := sch.Validate(data); err != nil {
-			return fmt.Errorf("allOf element %d error: %s", i, err.Error())
+func (a allOf) Validate(data interface{}) (errs []ValError) {
+	for _, sch := range a {
+		if ves := sch.Validate(data); len(ves) > 0 {
+			errs = append(errs, ves...)
 		}
 	}
-	return nil
+	return
 }
 
 // JSONProp implements JSON property name indexing for allOf
@@ -55,13 +55,15 @@ func newAnyOf() Validator {
 }
 
 // Validate implements the validator interface for anyOf
-func (a anyOf) Validate(data interface{}) error {
+func (a anyOf) Validate(data interface{}) []ValError {
 	for _, sch := range a {
 		if err := sch.Validate(data); err == nil {
 			return nil
 		}
 	}
-	return fmt.Errorf("value did not match any specified anyOf schemas: %v", data)
+	return []ValError{
+		{Message: fmt.Sprintf("value did not match any specified anyOf schemas: %v", data)},
+	}
 }
 
 // JSONProp implements JSON property name indexing for anyOf
@@ -94,18 +96,22 @@ func newOneOf() Validator {
 }
 
 // Validate implements the validator interface for oneOf
-func (o oneOf) Validate(data interface{}) error {
+func (o oneOf) Validate(data interface{}) []ValError {
 	matched := false
 	for _, sch := range o {
 		if err := sch.Validate(data); err == nil {
 			if matched {
-				return fmt.Errorf("value matched more than one specified oneOf schemas")
+				return []ValError{
+					{Message: fmt.Sprintf("value matched more than one specified oneOf schemas")},
+				}
 			}
 			matched = true
 		}
 	}
 	if !matched {
-		return fmt.Errorf("value did not match any of the specified oneOf schemas")
+		return []ValError{
+			{Message: fmt.Sprintf("value did not match any of the specified oneOf schemas")},
+		}
 	}
 	return nil
 }
@@ -141,11 +147,13 @@ func newNot() Validator {
 }
 
 // Validate implements the validator interface for not
-func (n *not) Validate(data interface{}) error {
+func (n *not) Validate(data interface{}) []ValError {
 	sch := Schema(*n)
 	if sch.Validate(data) == nil {
 		// TODO - make this error actually make sense
-		return fmt.Errorf("not clause")
+		return []ValError{
+			{Message: fmt.Sprintf("not clause")},
+		}
 	}
 	return nil
 }

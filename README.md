@@ -75,15 +75,16 @@ func main() {
     "lastName" : "Michael"
     }`)
 
-	if err := rs.ValidateBytes(valid); err != nil {
+	if errors := rs.ValidateBytes(valid); len(errors) > 0 {
 		panic(err)
 	}
 
 	var invalidPerson = []byte(`{
     "firstName" : "Prince"
     }`)
-	err := rs.ValidateBytes(invalidPerson)
-	fmt.Println(err.Error())
+	if errors := rs.ValidateBytes(invalidPerson); len(errors) > 0 {
+  	fmt.Println(errs[0].Error())
+  }
 
 	var invalidFriend = []byte(`{
     "firstName" : "Jay",
@@ -92,8 +93,9 @@ func main() {
       "firstName" : "Nas"
       }]
     }`)
-	err = rs.ValidateBytes(invalidFriend)
-	fmt.Println(err)
+	if errors := rs.ValidateBytes(invalidFriend); len(errors) > 0 {
+  	fmt.Println(errors[0].Error())
+  }
 }
 ```
 
@@ -124,10 +126,12 @@ func newIsFoo() jsonschema.Validator {
 }
 
 // Validate implements jsonschema.Validator
-func (f IsFoo) Validate(data interface{}) error {
+func (f IsFoo) Validate(data interface{}) []jsonschema.ValError {
   if str, ok := data.(string); ok {
     if str != "foo" {
-      return fmt.Errorf("'%s' is not foo. It should be foo. plz make '%s' == foo. plz", str, str)
+      return []jsonschema.ValError{
+        {Message: fmt.Sprintf("'%s' is not foo. It should be foo. plz make '%s' == foo. plz", str, str)},
+      }
     }
   }
   return nil
@@ -148,10 +152,10 @@ func main() {
   }
 
   // validate some JSON
-  err := rs.ValidateBytes([]byte(`"bar"`))
+  errors := rs.ValidateBytes([]byte(`"bar"`))
 
   // print le error
-  fmt.Println(err.Error())
+  fmt.Println(errs[0].Error())
 
   // Output: 'bar' is not foo. It should be foo. plz make 'bar' == foo. plz
 }

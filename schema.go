@@ -15,6 +15,16 @@ import (
 	"net/url"
 )
 
+// Must turns a JSON string into a *RootSchema, panicing if parsing fails.
+// Useful for declaring Schemas in Go code.
+func Must(jsonString string) *RootSchema {
+	rs := &RootSchema{}
+	if err := rs.UnmarshalJSON([]byte(jsonString)); err != nil {
+		panic(err)
+	}
+	return rs
+}
+
 // DefaultSchemaPool is a package level map of schemas by identifier
 // remote references are cached here.
 var DefaultSchemaPool = Definitions{}
@@ -157,10 +167,12 @@ func (rs *RootSchema) FetchRemoteReferences() error {
 
 // ValidateBytes performs schema validation against a slice of json
 // byte data
-func (rs *RootSchema) ValidateBytes(data []byte) error {
+func (rs *RootSchema) ValidateBytes(data []byte) []ValError {
 	var doc interface{}
 	if err := json.Unmarshal(data, &doc); err != nil {
-		return err
+		return []ValError{
+			{Message: fmt.Sprintf("error parsing JSON: %s", err.Error())},
+		}
 	}
 	return rs.Validate(doc)
 }
@@ -333,11 +345,16 @@ type Schema struct {
 
 // Validate uses the schema to check an instance, returning error on
 // the first error
-func (s *Schema) Validate(data interface{}) error {
+func (s *Schema) Validate(data interface{}) (errs []ValError) {
 	if s.Ref != "" && s.ref != nil {
-		return s.ref.Validate(data)
+		if ves := s.ref.Validate(data); len(ves) > 0 {
+			errs = append(errs, ves...)
+		}
+		return
 	} else if s.Ref != "" && s.ref == nil {
-		return fmt.Errorf("%s reference is nil for data: %v", s.Ref, data)
+		return []ValError{
+			{Message: fmt.Sprintf("%s reference is nil for data: %v", s.Ref, data)},
+		}
 	}
 
 	// TODO - so far all default.json tests pass when no use of
@@ -345,11 +362,11 @@ func (s *Schema) Validate(data interface{}) error {
 	// Is this correct?
 
 	for _, v := range s.Validators {
-		if err := v.Validate(data); err != nil {
-			return err
+		if ves := v.Validate(data); len(ves) > 0 {
+			errs = append(errs, ves...)
 		}
 	}
-	return nil
+	return
 }
 
 // JSONProp implements the JSONPather for Schema

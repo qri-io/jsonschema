@@ -17,10 +17,12 @@ func newMaxLength() Validator {
 }
 
 // Validate implements the Validator interface for maxLength
-func (m maxLength) Validate(data interface{}) error {
+func (m maxLength) Validate(data interface{}) []ValError {
 	if str, ok := data.(string); ok {
 		if utf8.RuneCountInString(str) > int(m) {
-			return fmt.Errorf("max length of %d characters exceeded: %s", m, str)
+			return []ValError{
+				{Message: fmt.Sprintf("max length of %d characters exceeded: %s", m, str)},
+			}
 		}
 	}
 	return nil
@@ -37,10 +39,12 @@ func newMinLength() Validator {
 }
 
 // Validate implements the Validator interface for minLength
-func (m minLength) Validate(data interface{}) error {
+func (m minLength) Validate(data interface{}) []ValError {
 	if str, ok := data.(string); ok {
 		if utf8.RuneCountInString(str) < int(m) {
-			return fmt.Errorf("min length of %d characters required: %s", m, str)
+			return []ValError{
+				{Message: fmt.Sprintf("min length of %d characters required: %s", m, str)},
+			}
 		}
 	}
 	return nil
@@ -57,11 +61,13 @@ func newPattern() Validator {
 }
 
 // Validate implements the Validator interface for pattern
-func (p pattern) Validate(data interface{}) error {
+func (p pattern) Validate(data interface{}) []ValError {
 	re := regexp.Regexp(p)
 	if str, ok := data.(string); ok {
 		if !re.Match([]byte(str)) {
-			return fmt.Errorf("regext pattrn %s mismatch on string: %s", re.String(), str)
+			return []ValError{
+				{Message: fmt.Sprintf("regext pattrn %s mismatch on string: %s", re.String(), str)},
+			}
 		}
 	}
 	return nil

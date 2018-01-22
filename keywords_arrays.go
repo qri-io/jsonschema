@@ -27,19 +27,19 @@ func newItems() Validator {
 }
 
 // Validate implements the Validator interface for items
-func (it items) Validate(data interface{}) error {
+func (it items) Validate(data interface{}) []ValError {
 	if arr, ok := data.([]interface{}); ok {
 		if it.single {
-			for i, elem := range arr {
-				if err := it.Schemas[0].Validate(elem); err != nil {
-					return fmt.Errorf("element %d %s", i, err.Error())
+			for _, elem := range arr {
+				if ves := it.Schemas[0].Validate(elem); len(ves) > 0 {
+					return ves
 				}
 			}
 		} else {
 			for i, vs := range it.Schemas {
 				if i < len(arr) {
-					if err := vs.Validate(arr[i]); err != nil {
-						return fmt.Errorf("element %d %s", i, err.Error())
+					if ves := vs.Validate(arr[i]); len(ves) > 0 {
+						return ves
 					}
 				}
 			}
@@ -108,20 +108,20 @@ func newAdditionalItems() Validator {
 }
 
 // Validate implements the Validator interface for additionalItems
-func (a *additionalItems) Validate(data interface{}) error {
+func (a *additionalItems) Validate(data interface{}) (errs []ValError) {
 	if a.startIndex >= 0 {
 		if arr, ok := data.([]interface{}); ok {
 			for i, elem := range arr {
 				if i < a.startIndex {
 					continue
 				}
-				if err := a.Schema.Validate(elem); err != nil {
-					return fmt.Errorf("element %d: %s", i, err.Error())
+				if ves := a.Schema.Validate(elem); len(ves) > 0 {
+					errs = append(errs, ves...)
 				}
 			}
 		}
 	}
-	return nil
+	return
 }
 
 // JSONProp implements JSON property name indexing for additionalItems
@@ -158,10 +158,12 @@ func newMaxItems() Validator {
 }
 
 // Validate implements the Validator interface for maxItems
-func (m maxItems) Validate(data interface{}) error {
+func (m maxItems) Validate(data interface{}) []ValError {
 	if arr, ok := data.([]interface{}); ok {
 		if len(arr) > int(m) {
-			return fmt.Errorf("%d array items exceeds %d max", len(arr), m)
+			return []ValError{
+				{Message: fmt.Sprintf("%d array items exceeds %d max", len(arr), m)},
+			}
 		}
 	}
 	return nil
@@ -177,10 +179,12 @@ func newMinItems() Validator {
 }
 
 // Validate implements the Validator interface for minItems
-func (m minItems) Validate(data interface{}) error {
+func (m minItems) Validate(data interface{}) []ValError {
 	if arr, ok := data.([]interface{}); ok {
 		if len(arr) < int(m) {
-			return fmt.Errorf("%d array items below %d minimum", len(arr), m)
+			return []ValError{
+				{Message: fmt.Sprintf("%d array items below %d minimum", len(arr), m)},
+			}
 		}
 	}
 	return nil
@@ -197,13 +201,15 @@ func newUniqueItems() Validator {
 }
 
 // Validate implements the Validator interface for uniqueItems
-func (u *uniqueItems) Validate(data interface{}) error {
+func (u *uniqueItems) Validate(data interface{}) []ValError {
 	if arr, ok := data.([]interface{}); ok {
 		found := []interface{}{}
 		for _, elem := range arr {
 			for _, f := range found {
 				if reflect.DeepEqual(f, elem) {
-					return fmt.Errorf("arry must be unique: %v", arr)
+					return []ValError{
+						{Message: fmt.Sprintf("arry must be unique: %v", arr)},
+					}
 				}
 			}
 			found = append(found, elem)
@@ -221,7 +227,7 @@ func newContains() Validator {
 }
 
 // Validate implements the Validator interface for contains
-func (c *contains) Validate(data interface{}) error {
+func (c *contains) Validate(data interface{}) []ValError {
 	v := Schema(*c)
 	if arr, ok := data.([]interface{}); ok {
 		for _, elem := range arr {
@@ -229,7 +235,9 @@ func (c *contains) Validate(data interface{}) error {
 				return nil
 			}
 		}
-		return fmt.Errorf("expected %v to contain at least one of: %s", data, c)
+		return []ValError{
+			{Message: fmt.Sprintf("expected %v to contain at least one of: %s", data, c)},
+		}
 	}
 	return nil
 }
