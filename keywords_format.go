@@ -1,22 +1,31 @@
 package jsonschema
 
 import (
+	// "encoding/json"
 	"fmt"
 	"net"
+	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
 
 const (
-	email    string = "^(((([a-zA-Z]|\\d|[!#\\$%&'\\*\\+\\-\\/=\\?\\^_`{\\|}~]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])+(\\.([a-zA-Z]|\\d|[!#\\$%&'\\*\\+\\-\\/=\\?\\^_`{\\|}~]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])+)*)|((\\x22)((((\\x20|\\x09)*(\\x0d\\x0a))?(\\x20|\\x09)+)?(([\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x7f]|\\x21|[\\x23-\\x5b]|[\\x5d-\\x7e]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])|(\\([\\x01-\\x09\\x0b\\x0c\\x0d-\\x7f]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}]))))*(((\\x20|\\x09)*(\\x0d\\x0a))?(\\x20|\\x09)+)?(\\x22)))@((([a-zA-Z]|\\d|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])|(([a-zA-Z]|\\d|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])([a-zA-Z]|\\d|-|\\.|_|~|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])*([a-zA-Z]|\\d|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])))\\.)+(([a-zA-Z]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])|(([a-zA-Z]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])([a-zA-Z]|\\d|-|_|~|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])*([a-zA-Z]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])))\\.?$"
-	hostname string = `^([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])(\.([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9]))*$`
+	email          string = "^(((([a-zA-Z]|\\d|[!#\\$%&'\\*\\+\\-\\/=\\?\\^_`{\\|}~]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])+(\\.([a-zA-Z]|\\d|[!#\\$%&'\\*\\+\\-\\/=\\?\\^_`{\\|}~]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])+)*)|((\\x22)((((\\x20|\\x09)*(\\x0d\\x0a))?(\\x20|\\x09)+)?(([\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x7f]|\\x21|[\\x23-\\x5b]|[\\x5d-\\x7e]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])|(\\([\\x01-\\x09\\x0b\\x0c\\x0d-\\x7f]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}]))))*(((\\x20|\\x09)*(\\x0d\\x0a))?(\\x20|\\x09)+)?(\\x22)))@((([a-zA-Z]|\\d|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])|(([a-zA-Z]|\\d|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])([a-zA-Z]|\\d|-|\\.|_|~|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])*([a-zA-Z]|\\d|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])))\\.)+(([a-zA-Z]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])|(([a-zA-Z]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])([a-zA-Z]|\\d|-|_|~|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])*([a-zA-Z]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])))\\.?$"
+	hostname       string = `^([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])(\.([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9]))*$`
+	unescapedTilda        = `\~[^01]`
+	endingTilda           = `\~$`
 )
 
 var (
-	emailPattern    = regexp.MustCompile(email)
-	hostnamePattern = regexp.MustCompile(hostname)
+	emailPattern           = regexp.MustCompile(email)
+	hostnamePattern        = regexp.MustCompile(hostname)
+	unescaptedTildaPattern = regexp.MustCompile(unescapedTilda)
+	endingTildaPattern     = regexp.MustCompile(endingTilda)
 )
+
+// for json pointers
 
 // func FormatType(data interface{}) string {
 // 	switch
@@ -68,6 +77,10 @@ func (f format) Validate(data interface{}) error {
 			return isValidURITemplate(str)
 		case "uri":
 			return isValidURI(str)
+		default:
+			// TODO: should we return an error saying that we don't know that
+			// format? or should we keep it as is (ignore, return nil)
+			return nil
 		}
 	}
 	return nil
@@ -85,8 +98,8 @@ func isValidDateTime(dateTime string) error {
 }
 
 // A string instance is valid against "date" if it is a valid
-// representation according to the "date" production derived from RFC
-// 3339, section 5.6 [RFC3339]
+// representation according to the "full-date" production derived
+// from RFC 3339, section 5.6 [RFC3339]
 // https://tools.ietf.org/html/rfc3339#section-5.6
 func isValidDate(date string) error {
 	arbitraryTime := "T08:30:06.283185Z"
@@ -180,10 +193,37 @@ func isValidIri(iri string) error {
 // RFC 6901, section 5 [RFC6901].
 // https://tools.ietf.org/html/rfc6901#section-5
 func isValidJSONPointer(jsonPointer string) error {
+	// if !validateEscapeChars(jsonPointer) {
+	// 	return fmt.Errorf("json pointer includes unescaped characters")
+	// }
+	// if _, err := jsonpointer.Parse(jsonPointer); err != nil {
+	// 	return fmt.Errorf("invalid json pointer: %s", err.Error())
+	// }
+	if len(jsonPointer) == 0 {
+		return nil
+	}
+	if jsonPointer[0] != '/' {
+		return fmt.Errorf("non-empty references must begin with a '/' character")
+	}
+	str := jsonPointer[1:]
+	if unescaptedTildaPattern.MatchString(str) {
+		return fmt.Errorf("unescaped tilda error")
+	}
+	if endingTildaPattern.MatchString(str) {
+		return fmt.Errorf("unescaped tilda error")
+	}
 	return nil
 }
 
 // A string instance is a valid against "regex" if it is a valid
+// regular expression according to the ECMA 262 [ecma262] regular
+// expression dialect. Implementations that validate formats MUST
+// accept at least the subset of ECMA 262 defined in the Regular
+// Expressions [regexInterop] section of this specification, and
+// SHOULD accept all valid ECMA 262 expressions.
+// http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-262.pdf
+// http://json-schema.org/latest/json-schema-validation.html#regexInterop
+// https://tools.ietf.org/html/rfc7159
 func isValidRegex(regex string) error {
 	return nil
 }
@@ -191,12 +231,30 @@ func isValidRegex(regex string) error {
 // A string instance is a valid against "relative-json-pointer" if it
 // is a valid Relative JSON Pointer [relative-json-pointer].
 // https://tools.ietf.org/html/draft-handrews-relative-json-pointer-00
-func isValidRelJSONPointer(relJsonPointer string) error {
-	return nil
+func isValidRelJSONPointer(relJSONPointer string) error {
+	parts := strings.Split(relJSONPointer, "/")
+	if len(parts) == 1 {
+		parts = strings.Split(relJSONPointer, "#")
+	}
+	if i, err := strconv.Atoi(parts[0]); err != nil || i < 0 {
+		return fmt.Errorf("RJP must begin with positive integer")
+	}
+	//skip over first part
+	str := relJSONPointer[len(parts[0]):]
+	if len(str) > 0 && str[0] == '#' {
+		return nil
+	}
+	return isValidJSONPointer(str)
 }
 
-// A string instance is a valid against "time" if it is a valid
+// A string instance is valid against "time" if it is a valid
+// representation according to the "full-time" production derived
+// from RFC 3339, section 5.6 [RFC3339]
+// https://tools.ietf.org/html/rfc3339#section-5.6
 func isValidTime(time string) error {
+	arbitraryDate := "1963-06-19"
+	dateTime := fmt.Sprintf("%sT%s", arbitraryDate, time)
+	return isValidDateTime(dateTime)
 	return nil
 }
 
@@ -221,5 +279,8 @@ func isValidURITemplate(uriTemplate string) error {
 // according to [RFC3986].
 // https://tools.ietf.org/html/rfc3986
 func isValidURI(uri string) error {
+	if _, err := url.Parse(uri); err != nil {
+		return fmt.Errorf("uri incorrectly formatted: %s", err.Error())
+	}
 	return nil
 }
