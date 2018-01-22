@@ -69,6 +69,32 @@ func ExampleBasic() {
 	// "friends" property ["lastName" value is required]
 }
 
+func TestMust(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			if err, ok := r.(error); ok {
+				if err.Error() != "unexpected end of JSON input" {
+					t.Errorf("expected panic error to equal: %s", "unexpected end of JSON input")
+				}
+			} else {
+				t.Errorf("must paniced with a non-error")
+			}
+		} else {
+			t.Errorf("expected invalid call to Must to panic")
+		}
+	}()
+
+	// Valid call to Must shouldn't panic
+	rs := Must(`{}`)
+	if rs == nil {
+		t.Errorf("expected parse of empty schema to return *RootSchema, got nil")
+		return
+	}
+
+	// This should panic, checked in defer above
+	Must(``)
+}
+
 func TestDraft3(t *testing.T) {
 	runJSONTests(t, []string{
 		"testdata/draft3/additionalItems.json",

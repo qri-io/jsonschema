@@ -15,6 +15,16 @@ import (
 	"net/url"
 )
 
+// Must turns a JSON string into a *RootSchema, panicing if parsing fails.
+// Useful for declaring Schemas in Go code.
+func Must(jsonString string) *RootSchema {
+	rs := &RootSchema{}
+	if err := rs.UnmarshalJSON([]byte(jsonString)); err != nil {
+		panic(err)
+	}
+	return rs
+}
+
 // DefaultSchemaPool is a package level map of schemas by identifier
 // remote references are cached here.
 var DefaultSchemaPool = Definitions{}
