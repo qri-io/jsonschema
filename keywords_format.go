@@ -4,6 +4,7 @@ import (
 	// "encoding/json"
 	"fmt"
 	"net"
+	"net/mail"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -12,17 +13,21 @@ import (
 )
 
 const (
-	email          string = "^(((([a-zA-Z]|\\d|[!#\\$%&'\\*\\+\\-\\/=\\?\\^_`{\\|}~]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])+(\\.([a-zA-Z]|\\d|[!#\\$%&'\\*\\+\\-\\/=\\?\\^_`{\\|}~]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])+)*)|((\\x22)((((\\x20|\\x09)*(\\x0d\\x0a))?(\\x20|\\x09)+)?(([\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x7f]|\\x21|[\\x23-\\x5b]|[\\x5d-\\x7e]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])|(\\([\\x01-\\x09\\x0b\\x0c\\x0d-\\x7f]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}]))))*(((\\x20|\\x09)*(\\x0d\\x0a))?(\\x20|\\x09)+)?(\\x22)))@((([a-zA-Z]|\\d|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])|(([a-zA-Z]|\\d|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])([a-zA-Z]|\\d|-|\\.|_|~|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])*([a-zA-Z]|\\d|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])))\\.)+(([a-zA-Z]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])|(([a-zA-Z]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])([a-zA-Z]|\\d|-|_|~|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])*([a-zA-Z]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])))\\.?$"
 	hostname       string = `^([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])(\.([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9]))*$`
 	unescapedTilda        = `\~[^01]`
 	endingTilda           = `\~$`
+	schemePrefix          = `^[^\:]+\:`
+	uriTemplate           = `\{[^\{\}\\]*\}`
 )
 
 var (
-	emailPattern           = regexp.MustCompile(email)
+	// emailPattern           = regexp.MustCompile(email)
 	hostnamePattern        = regexp.MustCompile(hostname)
 	unescaptedTildaPattern = regexp.MustCompile(unescapedTilda)
 	endingTildaPattern     = regexp.MustCompile(endingTilda)
+	schemePrefixPattern    = regexp.MustCompile(schemePrefix)
+	uriTemplatePattern     = regexp.MustCompile(uriTemplate)
+	disallowedIdnChars     = map[string]bool{"\u0020": true, "\u002D": true, "\u00A2": true, "\u00A3": true, "\u00A4": true, "\u00A5": true, "\u034F": true, "\u0640": true, "\u07FA": true, "\u180B": true, "\u180C": true, "\u180D": true, "\u200B": true, "\u2060": true, "\u2104": true, "\u2108": true, "\u2114": true, "\u2117": true, "\u2118": true, "\u211E": true, "\u211F": true, "\u2123": true, "\u2125": true, "\u2282": true, "\u2283": true, "\u2284": true, "\u2285": true, "\u2286": true, "\u2287": true, "\u2288": true, "\u2616": true, "\u2617": true, "\u2619": true, "\u262F": true, "\u2638": true, "\u266C": true, "\u266D": true, "\u266F": true, "\u2752": true, "\u2756": true, "\u2758": true, "\u275E": true, "\u2761": true, "\u2775": true, "\u2794": true, "\u2798": true, "\u27AF": true, "\u27B1": true, "\u27BE": true, "\u3004": true, "\u3012": true, "\u3013": true, "\u3020": true, "\u302E": true, "\u302F": true, "\u3031": true, "\u3032": true, "\u3035": true, "\u303B": true, "\u3164": true, "\uFFA0": true}
 )
 
 // for json pointers
@@ -111,8 +116,11 @@ func isValidDate(date string) error {
 // representation as defined by RFC 5322, section 3.4.1 [RFC5322].
 // https://tools.ietf.org/html/rfc5322#section-3.4.1
 func isValidEmail(email string) error {
-	if !emailPattern.MatchString(email) {
-		return fmt.Errorf("invalid email format")
+	// if !emailPattern.MatchString(email) {
+	// 	return fmt.Errorf("invalid email format")
+	// }
+	if _, err := mail.ParseAddress(email); err != nil {
+		return fmt.Errorf("email address incorrectly formatted: %s", err.Error())
 	}
 	return nil
 }
@@ -134,6 +142,9 @@ func isValidHostname(hostname string) error {
 // representation as defined by RFC 6531 [RFC6531]
 // https://tools.ietf.org/html/rfc6531
 func isValidIdnEmail(idnEmail string) error {
+	if _, err := mail.ParseAddress(idnEmail); err != nil {
+		return fmt.Errorf("email address incorrectly formatted: %s", err.Error())
+	}
 	return nil
 }
 
@@ -142,8 +153,18 @@ func isValidIdnEmail(idnEmail string) error {
 // an internationalized hostname as defined by RFC 5890, section
 // 2.3.2.3 [RFC5890].
 // https://tools.ietf.org/html/rfc1034
-// http://tools.ietf.org/html/rfc5890#section-2.3.2.3
+// https://tools.ietf.org/html/rfc5890#section-2.3.2.3
+// https://pdfs.semanticscholar.org/9275/6bcecb29d3dc407e23a997b256be6ff4149d.pdf
 func isValidIdnHostname(idnHostname string) error {
+	if len(idnHostname) > 255 {
+		return fmt.Errorf("invalid idn hostname string")
+	}
+	for _, r := range idnHostname {
+		s := string(r)
+		if disallowedIdnChars[s] {
+			return fmt.Errorf("invalid hostname: contains illegal character %#U", r)
+		}
+	}
 	return nil
 }
 
@@ -193,12 +214,6 @@ func isValidIri(iri string) error {
 // RFC 6901, section 5 [RFC6901].
 // https://tools.ietf.org/html/rfc6901#section-5
 func isValidJSONPointer(jsonPointer string) error {
-	// if !validateEscapeChars(jsonPointer) {
-	// 	return fmt.Errorf("json pointer includes unescaped characters")
-	// }
-	// if _, err := jsonpointer.Parse(jsonPointer); err != nil {
-	// 	return fmt.Errorf("invalid json pointer: %s", err.Error())
-	// }
 	if len(jsonPointer) == 0 {
 		return nil
 	}
@@ -263,6 +278,12 @@ func isValidTime(time string) error {
 // according to [RFC3986].
 // https://tools.ietf.org/html/rfc3986
 func isValidURIRef(uriRef string) error {
+	if _, err := url.Parse(uriRef); err != nil {
+		return fmt.Errorf("uri incorrectly formatted: %s", err.Error())
+	}
+	if strings.Contains(uriRef, "\\") {
+		return fmt.Errorf("invalid uri")
+	}
 	return nil
 }
 
@@ -272,7 +293,12 @@ func isValidURIRef(uriRef string) error {
 // Template specification.
 // https://tools.ietf.org/html/rfc6570
 func isValidURITemplate(uriTemplate string) error {
-	return nil
+	arbitraryValue := "aaa"
+	uriRef := uriTemplatePattern.ReplaceAllString(uriTemplate, arbitraryValue)
+	if strings.Contains(uriRef, "{") || strings.Contains(uriRef, "}") {
+		return fmt.Errorf("invalid uri template")
+	}
+	return isValidURIRef(uriRef)
 }
 
 // A string instance is a valid against "uri" if it is a valid URI,
@@ -281,6 +307,9 @@ func isValidURITemplate(uriTemplate string) error {
 func isValidURI(uri string) error {
 	if _, err := url.Parse(uri); err != nil {
 		return fmt.Errorf("uri incorrectly formatted: %s", err.Error())
+	}
+	if !schemePrefixPattern.MatchString(uri) {
+		return fmt.Errorf("uri missing scheme prefix")
 	}
 	return nil
 }
