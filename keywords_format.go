@@ -45,47 +45,51 @@ func newFormat() Validator {
 	return new(format)
 }
 
-func (f format) Validate(data interface{}) error {
+func (f format) Validate(data interface{}) []ValError {
+	var err error
 	if str, ok := data.(string); ok {
 		switch f {
 		case "date-time":
-			return isValidDateTime(str)
+			err = isValidDateTime(str)
 		case "date":
-			return isValidDate(str)
+			err = isValidDate(str)
 		case "email":
-			return isValidEmail(str)
+			err = isValidEmail(str)
 		case "hostname":
-			return isValidHostname(str)
+			err = isValidHostname(str)
 		case "idn-email":
-			return isValidIdnEmail(str)
+			err = isValidIdnEmail(str)
 		case "idn-hostname":
-			return isValidIdnHostname(str)
+			err = isValidIdnHostname(str)
 		case "ipv4":
-			return isValidIPv4(str)
+			err = isValidIPv4(str)
 		case "ipv6":
-			return isValidIPv6(str)
+			err = isValidIPv6(str)
 		case "iri-reference":
-			return isValidIriRef(str)
+			err = isValidIriRef(str)
 		case "iri":
-			return isValidIri(str)
+			err = isValidIri(str)
 		case "json-pointer":
-			return isValidJSONPointer(str)
+			err = isValidJSONPointer(str)
 		case "regex":
-			return isValidRegex(str)
+			err = isValidRegex(str)
 		case "relative-json-pointer":
-			return isValidRelJSONPointer(str)
+			err = isValidRelJSONPointer(str)
 		case "time":
-			return isValidTime(str)
+			err = isValidTime(str)
 		case "uri-reference":
-			return isValidURIRef(str)
+			err = isValidURIRef(str)
 		case "uri-template":
-			return isValidURITemplate(str)
+			err = isValidURITemplate(str)
 		case "uri":
-			return isValidURI(str)
+			err = isValidURI(str)
 		default:
-			// TODO: should we return an error saying that we don't know that
-			// format? or should we keep it as is (ignore, return nil)
-			return nil
+			err = nil
+		}
+		if err != nil {
+			return []ValError{
+				{Message: err.Error()},
+			}
 		}
 	}
 	return nil
