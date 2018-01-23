@@ -260,7 +260,7 @@ func TestDraft7(t *testing.T) {
 		"testdata/draft7/optional/format/date-time.json",
 		"testdata/draft7/optional/format/hostname.json",
 		"testdata/draft7/optional/format/ipv4.json",
-		// "testdata/draft7/optional/format/iri.json",
+		"testdata/draft7/optional/format/iri.json",
 		"testdata/draft7/optional/format/relative-json-pointer.json",
 		"testdata/draft7/optional/format/uri-template.json",
 		"testdata/draft7/optional/format/date.json",
@@ -271,8 +271,8 @@ func TestDraft7(t *testing.T) {
 		"testdata/draft7/optional/format/uri.json",
 		"testdata/draft7/optional/format/email.json",
 		"testdata/draft7/optional/format/idn-hostname.json",
-		// "testdata/draft7/optional/format/iri-reference.json",
-		// "testdata/draft7/optional/format/regex.json",
+		"testdata/draft7/optional/format/iri-reference.json",
+		"testdata/draft7/optional/format/regex.json",
 		"testdata/draft7/optional/format/uri-reference.json",
 	})
 }
