@@ -27,7 +27,8 @@ var (
 	endingTildaPattern     = regexp.MustCompile(endingTilda)
 	schemePrefixPattern    = regexp.MustCompile(schemePrefix)
 	uriTemplatePattern     = regexp.MustCompile(uriTemplate)
-	disallowedIdnChars     = map[string]bool{"\u0020": true, "\u002D": true, "\u00A2": true, "\u00A3": true, "\u00A4": true, "\u00A5": true, "\u034F": true, "\u0640": true, "\u07FA": true, "\u180B": true, "\u180C": true, "\u180D": true, "\u200B": true, "\u2060": true, "\u2104": true, "\u2108": true, "\u2114": true, "\u2117": true, "\u2118": true, "\u211E": true, "\u211F": true, "\u2123": true, "\u2125": true, "\u2282": true, "\u2283": true, "\u2284": true, "\u2285": true, "\u2286": true, "\u2287": true, "\u2288": true, "\u2616": true, "\u2617": true, "\u2619": true, "\u262F": true, "\u2638": true, "\u266C": true, "\u266D": true, "\u266F": true, "\u2752": true, "\u2756": true, "\u2758": true, "\u275E": true, "\u2761": true, "\u2775": true, "\u2794": true, "\u2798": true, "\u27AF": true, "\u27B1": true, "\u27BE": true, "\u3004": true, "\u3012": true, "\u3013": true, "\u3020": true, "\u302E": true, "\u302F": true, "\u3031": true, "\u3032": true, "\u3035": true, "\u303B": true, "\u3164": true, "\uFFA0": true}
+
+	disallowedIdnChars = map[string]bool{"\u0020": true, "\u002D": true, "\u00A2": true, "\u00A3": true, "\u00A4": true, "\u00A5": true, "\u034F": true, "\u0640": true, "\u07FA": true, "\u180B": true, "\u180C": true, "\u180D": true, "\u200B": true, "\u2060": true, "\u2104": true, "\u2108": true, "\u2114": true, "\u2117": true, "\u2118": true, "\u211E": true, "\u211F": true, "\u2123": true, "\u2125": true, "\u2282": true, "\u2283": true, "\u2284": true, "\u2285": true, "\u2286": true, "\u2287": true, "\u2288": true, "\u2616": true, "\u2617": true, "\u2619": true, "\u262F": true, "\u2638": true, "\u266C": true, "\u266D": true, "\u266F": true, "\u2752": true, "\u2756": true, "\u2758": true, "\u275E": true, "\u2761": true, "\u2775": true, "\u2794": true, "\u2798": true, "\u27AF": true, "\u27B1": true, "\u27BE": true, "\u3004": true, "\u3012": true, "\u3013": true, "\u3020": true, "\u302E": true, "\u302F": true, "\u3031": true, "\u3032": true, "\u3035": true, "\u303B": true, "\u3164": true, "\uFFA0": true}
 )
 
 // for json pointers
@@ -58,9 +59,9 @@ func (f format) Validate(data interface{}) []ValError {
 		case "hostname":
 			err = isValidHostname(str)
 		case "idn-email":
-			err = isValidIdnEmail(str)
+			err = isValidIDNEmail(str)
 		case "idn-hostname":
-			err = isValidIdnHostname(str)
+			err = isValidIDNHostname(str)
 		case "ipv4":
 			err = isValidIPv4(str)
 		case "ipv6":
@@ -145,7 +146,7 @@ func isValidHostname(hostname string) error {
 // A string instance is valid against "idn-email" if it is a valid
 // representation as defined by RFC 6531 [RFC6531]
 // https://tools.ietf.org/html/rfc6531
-func isValidIdnEmail(idnEmail string) error {
+func isValidIDNEmail(idnEmail string) error {
 	if _, err := mail.ParseAddress(idnEmail); err != nil {
 		return fmt.Errorf("email address incorrectly formatted: %s", err.Error())
 	}
@@ -159,7 +160,7 @@ func isValidIdnEmail(idnEmail string) error {
 // https://tools.ietf.org/html/rfc1034
 // https://tools.ietf.org/html/rfc5890#section-2.3.2.3
 // https://pdfs.semanticscholar.org/9275/6bcecb29d3dc407e23a997b256be6ff4149d.pdf
-func isValidIdnHostname(idnHostname string) error {
+func isValidIDNHostname(idnHostname string) error {
 	if len(idnHostname) > 255 {
 		return fmt.Errorf("invalid idn hostname string")
 	}
@@ -241,7 +242,7 @@ func isValidJSONPointer(jsonPointer string) error {
 // Expressions [regexInterop] section of this specification, and
 // SHOULD accept all valid ECMA 262 expressions.
 // http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-262.pdf
-// http://json-schema.org/latest/json-schema-validation.html#regexInterop
+// http://json-schema.org/latest/jsoxn-schema-validation.html#regexInterop
 // https://tools.ietf.org/html/rfc7159
 func isValidRegex(regex string) error {
 	if _, err := regexp.Compile(regex); err != nil {
