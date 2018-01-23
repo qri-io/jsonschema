@@ -199,14 +199,14 @@ func isValidIPv6(ipv6 string) error {
 // according to [RFC3987].
 // https://tools.ietf.org/html/rfc3987
 func isValidIriRef(iriRef string) error {
-	return nil
+	return isValidURIRef(iriRef)
 }
 
 // A string instance is a valid against "iri" if it is a valid IRI,
 // according to [RFC3987].
 // https://tools.ietf.org/html/rfc3987
 func isValidIri(iri string) error {
-	return nil
+	return isValidURI(iri)
 }
 
 // A string instance is a valid against "json-pointer" if it is a
@@ -240,6 +240,9 @@ func isValidJSONPointer(jsonPointer string) error {
 // http://json-schema.org/latest/json-schema-validation.html#regexInterop
 // https://tools.ietf.org/html/rfc7159
 func isValidRegex(regex string) error {
+	if _, err := regexp.Compile(regex); err != nil {
+		return fmt.Errorf("invalid regex expression")
+	}
 	return nil
 }
 
