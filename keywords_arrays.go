@@ -7,27 +7,28 @@ import (
 	"strconv"
 )
 
-// items MUST be either a valid JSON Schema or an array of valid JSON Schemas.
+// Items MUST be either a valid JSON Schema or an array of valid JSON Schemas.
 // This keyword determines how child instances validate for arrays, and does not directly validate the
 // immediate instance itself.
-// * If "items" is a schema, validation succeeds if all elements in the array successfully validate
+// * If "Items" is a schema, validation succeeds if all elements in the array successfully validate
 //   against that schema.
-// * If "items" is an array of schemas, validation succeeds if each element of the instance validates
+// * If "Items" is an array of schemas, validation succeeds if each element of the instance validates
 //   against the schema at the same position, if any.
 // * Omitting this keyword has the same behavior as an empty schema.
-type items struct {
+type Items struct {
 	// need to track weather user specficied a singl object or arry
-	// b/c it affects additionalItems validation semantics
+	// b/c it affects AdditionalItems validation semantics
 	single  bool
 	Schemas []*Schema
 }
 
-func newItems() Validator {
-	return &items{}
+// NewItems creates a new Items validator
+func NewItems() Validator {
+	return &Items{}
 }
 
-// Validate implements the Validator interface for items
-func (it items) Validate(data interface{}) []ValError {
+// Validate implements the Validator interface for Items
+func (it Items) Validate(data interface{}) []ValError {
 	if arr, ok := data.([]interface{}); ok {
 		if it.single {
 			for _, elem := range arr {
@@ -48,8 +49,8 @@ func (it items) Validate(data interface{}) []ValError {
 	return nil
 }
 
-// JSONProp implements JSON property name indexing for items
-func (it items) JSONProp(name string) interface{} {
+// JSONProp implements JSON property name indexing for Items
+func (it Items) JSONProp(name string) interface{} {
 	idx, err := strconv.Atoi(name)
 	if err != nil {
 		return nil
@@ -60,8 +61,8 @@ func (it items) JSONProp(name string) interface{} {
 	return it.Schemas[idx]
 }
 
-// JSONChildren implements the JSONContainer interface for items
-func (it items) JSONChildren() (res map[string]JSONPather) {
+// JSONChildren implements the JSONContainer interface for Items
+func (it Items) JSONChildren() (res map[string]JSONPather) {
 	res = map[string]JSONPather{}
 	for i, sch := range it.Schemas {
 		res[strconv.Itoa(i)] = sch
@@ -69,46 +70,47 @@ func (it items) JSONChildren() (res map[string]JSONPather) {
 	return
 }
 
-// UnmarshalJSON implements the json.Unmarshaler interface for items
-func (it *items) UnmarshalJSON(data []byte) error {
+// UnmarshalJSON implements the json.Unmarshaler interface for Items
+func (it *Items) UnmarshalJSON(data []byte) error {
 	s := &Schema{}
 	if err := json.Unmarshal(data, s); err == nil {
-		*it = items{single: true, Schemas: []*Schema{s}}
+		*it = Items{single: true, Schemas: []*Schema{s}}
 		return nil
 	}
 	ss := []*Schema{}
 	if err := json.Unmarshal(data, &ss); err != nil {
 		return err
 	}
-	*it = items{Schemas: ss}
+	*it = Items{Schemas: ss}
 	return nil
 }
 
-// MarshalJSON implements the json.Marshaler interface for items
-func (it items) MarshalJSON() ([]byte, error) {
+// MarshalJSON implements the json.Marshaler interface for Items
+func (it Items) MarshalJSON() ([]byte, error) {
 	if it.single {
 		return json.Marshal(it.Schemas[0])
 	}
 	return json.Marshal([]*Schema(it.Schemas))
 }
 
-// additionalItems determines how child instances validate for arrays, and does not directly validate the immediate
+// AdditionalItems determines how child instances validate for arrays, and does not directly validate the immediate
 // instance itself.
-// If "items" is an array of schemas, validation succeeds if every instance element at a position greater than
-// the size of "items" validates against "additionalItems".
-// Otherwise, "additionalItems" MUST be ignored, as the "items" schema (possibly the default value of an empty schema) is applied to all elements.
+// If "Items" is an array of schemas, validation succeeds if every instance element at a position greater than
+// the size of "Items" validates against "AdditionalItems".
+// Otherwise, "AdditionalItems" MUST be ignored, as the "Items" schema (possibly the default value of an empty schema) is applied to all elements.
 // Omitting this keyword has the same behavior as an empty schema.
-type additionalItems struct {
+type AdditionalItems struct {
 	startIndex int
 	Schema     *Schema
 }
 
-func newAdditionalItems() Validator {
-	return &additionalItems{}
+// NewAdditionalItems creates a new AdditionalItems validator
+func NewAdditionalItems() Validator {
+	return &AdditionalItems{}
 }
 
-// Validate implements the Validator interface for additionalItems
-func (a *additionalItems) Validate(data interface{}) (errs []ValError) {
+// Validate implements the Validator interface for AdditionalItems
+func (a *AdditionalItems) Validate(data interface{}) (errs []ValError) {
 	if a.startIndex >= 0 {
 		if arr, ok := data.([]interface{}); ok {
 			for i, elem := range arr {
@@ -124,84 +126,87 @@ func (a *additionalItems) Validate(data interface{}) (errs []ValError) {
 	return
 }
 
-// JSONProp implements JSON property name indexing for additionalItems
-func (a *additionalItems) JSONProp(name string) interface{} {
+// JSONProp implements JSON property name indexing for AdditionalItems
+func (a *AdditionalItems) JSONProp(name string) interface{} {
 	return a.Schema.JSONProp(name)
 }
 
-// JSONChildren implements the JSONContainer interface for additionalItems
-func (a *additionalItems) JSONChildren() (res map[string]JSONPather) {
+// JSONChildren implements the JSONContainer interface for AdditionalItems
+func (a *AdditionalItems) JSONChildren() (res map[string]JSONPather) {
 	if a.Schema == nil {
 		return map[string]JSONPather{}
 	}
 	return a.Schema.JSONChildren()
 }
 
-// UnmarshalJSON implements the json.Unmarshaler interface for additionalItems
-func (a *additionalItems) UnmarshalJSON(data []byte) error {
+// UnmarshalJSON implements the json.Unmarshaler interface for AdditionalItems
+func (a *AdditionalItems) UnmarshalJSON(data []byte) error {
 	sch := &Schema{}
 	if err := json.Unmarshal(data, sch); err != nil {
 		return err
 	}
-	// begin with -1 as default index to prevent additionalItems from evaluating
+	// begin with -1 as default index to prevent AdditionalItems from evaluating
 	// unless startIndex is explicitly set
-	*a = additionalItems{startIndex: -1, Schema: sch}
+	*a = AdditionalItems{startIndex: -1, Schema: sch}
 	return nil
 }
 
-// maxItems MUST be a non-negative integer.
-// An array instance is valid against "maxItems" if its size is less than, or equal to, the value of this keyword.
-type maxItems int
+// MaxItems MUST be a non-negative integer.
+// An array instance is valid against "MaxItems" if its size is less than, or equal to, the value of this keyword.
+type MaxItems int
 
-func newMaxItems() Validator {
-	return new(maxItems)
+// NewMaxItems creates a new MaxItems validator
+func NewMaxItems() Validator {
+	return new(MaxItems)
 }
 
-// Validate implements the Validator interface for maxItems
-func (m maxItems) Validate(data interface{}) []ValError {
+// Validate implements the Validator interface for MaxItems
+func (m MaxItems) Validate(data interface{}) []ValError {
 	if arr, ok := data.([]interface{}); ok {
 		if len(arr) > int(m) {
 			return []ValError{
-				{Message: fmt.Sprintf("%d array items exceeds %d max", len(arr), m)},
+				{Message: fmt.Sprintf("%d array Items exceeds %d max", len(arr), m)},
 			}
 		}
 	}
 	return nil
 }
 
-// minItems MUST be a non-negative integer.
-// An array instance is valid against "minItems" if its size is greater than, or equal to, the value of this keyword.
+// MinItems MUST be a non-negative integer.
+// An array instance is valid against "MinItems" if its size is greater than, or equal to, the value of this keyword.
 // Omitting this keyword has the same behavior as a value of 0.
-type minItems int
+type MinItems int
 
-func newMinItems() Validator {
-	return new(minItems)
+// NewMinItems creates a new MinItems validator
+func NewMinItems() Validator {
+	return new(MinItems)
 }
 
-// Validate implements the Validator interface for minItems
-func (m minItems) Validate(data interface{}) []ValError {
+// Validate implements the Validator interface for MinItems
+func (m MinItems) Validate(data interface{}) []ValError {
 	if arr, ok := data.([]interface{}); ok {
 		if len(arr) < int(m) {
 			return []ValError{
-				{Message: fmt.Sprintf("%d array items below %d minimum", len(arr), m)},
+				{Message: fmt.Sprintf("%d array Items below %d minimum", len(arr), m)},
 			}
 		}
 	}
 	return nil
 }
 
-// uniqueItems requires array instance elements be unique
+// UniqueItems requires array instance elements be unique
 // If this keyword has boolean value false, the instance validates successfully. If it has
 // boolean value true, the instance validates successfully if all of its elements are unique.
 // Omitting this keyword has the same behavior as a value of false.
-type uniqueItems bool
+type UniqueItems bool
 
-func newUniqueItems() Validator {
-	return new(uniqueItems)
+// NewUniqueItems creates a new UniqueItems validator
+func NewUniqueItems() Validator {
+	return new(UniqueItems)
 }
 
-// Validate implements the Validator interface for uniqueItems
-func (u *uniqueItems) Validate(data interface{}) []ValError {
+// Validate implements the Validator interface for UniqueItems
+func (u *UniqueItems) Validate(data interface{}) []ValError {
 	if arr, ok := data.([]interface{}); ok {
 		found := []interface{}{}
 		for _, elem := range arr {
@@ -218,16 +223,17 @@ func (u *uniqueItems) Validate(data interface{}) []ValError {
 	return nil
 }
 
-// contains validates that an array instance is valid against "contains" if at
+// Contains validates that an array instance is valid against "Contains" if at
 // least one of its elements is valid against the given schema.
-type contains Schema
+type Contains Schema
 
-func newContains() Validator {
-	return &contains{}
+// NewContains creates a new Contains validator
+func NewContains() Validator {
+	return &Contains{}
 }
 
-// Validate implements the Validator interface for contains
-func (c *contains) Validate(data interface{}) []ValError {
+// Validate implements the Validator interface for Contains
+func (c *Contains) Validate(data interface{}) []ValError {
 	v := Schema(*c)
 	if arr, ok := data.([]interface{}); ok {
 		for _, elem := range arr {
@@ -236,28 +242,28 @@ func (c *contains) Validate(data interface{}) []ValError {
 			}
 		}
 		return []ValError{
-			{Message: fmt.Sprintf("expected %v to contain at least one of: %s", data, c)},
+			{Message: fmt.Sprintf("expected %v to contain at least one of: %v", data, c)},
 		}
 	}
 	return nil
 }
 
-// JSONProp implements JSON property name indexing for contains
-func (c contains) JSONProp(name string) interface{} {
+// JSONProp implements JSON property name indexing for Contains
+func (c Contains) JSONProp(name string) interface{} {
 	return Schema(c).JSONProp(name)
 }
 
-// JSONChildren implements the JSONContainer interface for contains
-func (c contains) JSONChildren() (res map[string]JSONPather) {
+// JSONChildren implements the JSONContainer interface for Contains
+func (c Contains) JSONChildren() (res map[string]JSONPather) {
 	return Schema(c).JSONChildren()
 }
 
-// UnmarshalJSON implements the json.Unmarshaler interface for contains
-func (c *contains) UnmarshalJSON(data []byte) error {
+// UnmarshalJSON implements the json.Unmarshaler interface for Contains
+func (c *Contains) UnmarshalJSON(data []byte) error {
 	var sch Schema
 	if err := json.Unmarshal(data, &sch); err != nil {
 		return err
 	}
-	*c = contains(sch)
+	*c = Contains(sch)
 	return nil
 }

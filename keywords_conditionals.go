@@ -4,31 +4,32 @@ import (
 	"encoding/json"
 )
 
-// iif MUST be a valid JSON Schema.
-// Instances that successfully validate against this keyword's subschema MUST also be valid against the subschema value of the "then" keyword, if present.
-// Instances that fail to validate against this keyword's subschema MUST also be valid against the subschema value of the "else" keyword.
+// If MUST be a valid JSON Schema.
+// Instances that successfully validate against this keyword's subschema MUST also be valid against the subschema value of the "Then" keyword, if present.
+// Instances that fail to validate against this keyword's subschema MUST also be valid against the subschema value of the "Elsee" keyword.
 // Validation of the instance against this keyword on its own always succeeds, regardless of the validation outcome of against its subschema.
-type iif struct {
+type If struct {
 	Schema Schema
-	then   *then
-	els    *els
+	Then   *Then
+	Else   *Else
 }
 
-func newIif() Validator {
-	return &iif{}
+// NewIf allocates a new If validator
+func NewIf() Validator {
+	return &If{}
 }
 
-// Validate implements the Validator interface for iif
-func (i *iif) Validate(data interface{}) []ValError {
+// Validate implements the Validator interface for If
+func (i *If) Validate(data interface{}) []ValError {
 	if err := i.Schema.Validate(data); err == nil {
-		if i.then != nil {
-			s := Schema(*i.then)
+		if i.Then != nil {
+			s := Schema(*i.Then)
 			sch := &s
 			return sch.Validate(data)
 		}
 	} else {
-		if i.els != nil {
-			s := Schema(*i.els)
+		if i.Else != nil {
+			s := Schema(*i.Else)
 			sch := &s
 			return sch.Validate(data)
 		}
@@ -36,105 +37,107 @@ func (i *iif) Validate(data interface{}) []ValError {
 	return nil
 }
 
-// JSONProp implements JSON property name indexing for iif
-func (i iif) JSONProp(name string) interface{} {
+// JSONProp implements JSON property name indexing for If
+func (i If) JSONProp(name string) interface{} {
 	return Schema(i.Schema).JSONProp(name)
 }
 
-// JSONChildren implements the JSONContainer interface for iif
-func (i iif) JSONChildren() (res map[string]JSONPather) {
+// JSONChildren implements the JSONContainer interface for If
+func (i If) JSONChildren() (res map[string]JSONPather) {
 	return i.Schema.JSONChildren()
 }
 
-// UnmarshalJSON implements the json.Unmarshaler interface for iif
-func (i *iif) UnmarshalJSON(data []byte) error {
+// UnmarshalJSON implements the json.Unmarshaler interface for If
+func (i *If) UnmarshalJSON(data []byte) error {
 	var sch Schema
 	if err := json.Unmarshal(data, &sch); err != nil {
 		return err
 	}
-	*i = iif{Schema: sch}
+	*i = If{Schema: sch}
 	return nil
 }
 
-// MarshalJSON implements json.Marshaler for iif
-func (i iif) MarshalJSON() ([]byte, error) {
+// MarshalJSON implements json.Marshaler for If
+func (i If) MarshalJSON() ([]byte, error) {
 	return json.Marshal(i.Schema)
 }
 
-// then MUST be a valid JSON Schema.
+// Then MUST be a valid JSON Schema.
 // When present alongside of "if", the instance successfully validates against this keyword if it validates against both the "if"'s subschema and this keyword's subschema.
 // When "if" is absent, or the instance fails to validate against its subschema, validation against this keyword always succeeds. Implementations SHOULD avoid attempting to validate against the subschema in these cases.
-type then Schema
+type Then Schema
 
-func newThen() Validator {
-	return &then{}
+// NewThen allocates a new Then validator
+func NewThen() Validator {
+	return &Then{}
 }
 
-// Validate implements the Validator interface for then
-func (t *then) Validate(data interface{}) []ValError {
+// Validate implements the Validator interface for Then
+func (t *Then) Validate(data interface{}) []ValError {
 	return nil
 }
 
-// JSONProp implements JSON property name indexing for then
-func (t then) JSONProp(name string) interface{} {
+// JSONProp implements JSON property name indexing for Then
+func (t Then) JSONProp(name string) interface{} {
 	return Schema(t).JSONProp(name)
 }
 
-// JSONChildren implements the JSONContainer interface for iif
-func (t then) JSONChildren() (res map[string]JSONPather) {
+// JSONChildren implements the JSONContainer interface for If
+func (t Then) JSONChildren() (res map[string]JSONPather) {
 	return Schema(t).JSONChildren()
 }
 
-// UnmarshalJSON implements the json.Unmarshaler interface for then
-func (t *then) UnmarshalJSON(data []byte) error {
+// UnmarshalJSON implements the json.Unmarshaler interface for Then
+func (t *Then) UnmarshalJSON(data []byte) error {
 	var sch Schema
 	if err := json.Unmarshal(data, &sch); err != nil {
 		return err
 	}
-	*t = then(sch)
+	*t = Then(sch)
 	return nil
 }
 
-// MarshalJSON implements json.Marshaler for then
-func (t then) MarshalJSON() ([]byte, error) {
+// MarshalJSON implements json.Marshaler for Then
+func (t Then) MarshalJSON() ([]byte, error) {
 	return json.Marshal(Schema(t))
 }
 
-// els MUST be a valid JSON Schema.
+// Else MUST be a valid JSON Schema.
 // When present alongside of "if", the instance successfully validates against this keyword if it fails to validate against the "if"'s subschema, and successfully validates against this keyword's subschema.
 // When "if" is absent, or the instance successfully validates against its subschema, validation against this keyword always succeeds. Implementations SHOULD avoid attempting to validate against the subschema in these cases.
-type els Schema
+type Else Schema
 
-func newEls() Validator {
-	return &els{}
+// NewElse allocates a new Else validator
+func NewElse() Validator {
+	return &Else{}
 }
 
-// Validate implements the Validator interface for els
-func (e *els) Validate(data interface{}) []ValError {
+// Validate implements the Validator interface for Else
+func (e *Else) Validate(data interface{}) []ValError {
 	return nil
 }
 
-// JSONProp implements JSON property name indexing for els
-func (e els) JSONProp(name string) interface{} {
+// JSONProp implements JSON property name indexing for Else
+func (e Else) JSONProp(name string) interface{} {
 	return Schema(e).JSONProp(name)
 }
 
-// JSONChildren implements the JSONContainer interface for els
-func (e els) JSONChildren() (res map[string]JSONPather) {
+// JSONChildren implements the JSONContainer interface for Else
+func (e Else) JSONChildren() (res map[string]JSONPather) {
 	return Schema(e).JSONChildren()
 }
 
-// UnmarshalJSON implements the json.Unmarshaler interface for els
-func (e *els) UnmarshalJSON(data []byte) error {
+// UnmarshalJSON implements the json.Unmarshaler interface for Else
+func (e *Else) UnmarshalJSON(data []byte) error {
 	var sch Schema
 	if err := json.Unmarshal(data, &sch); err != nil {
 		return err
 	}
-	*e = els(sch)
+	*e = Else(sch)
 	return nil
 }
 
-// MarshalJSON implements json.Marshaler for els
-func (e els) MarshalJSON() ([]byte, error) {
+// MarshalJSON implements json.Marshaler for Else
+func (e Else) MarshalJSON() ([]byte, error) {
 	return json.Marshal(Schema(e))
 }

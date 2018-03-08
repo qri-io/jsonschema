@@ -4,17 +4,18 @@ import (
 	"fmt"
 )
 
-// multipleOf MUST be a number, strictly greater than 0.
-// multipleOf validates that a numeric instance is valid only if division
+// MultipleOf MUST be a number, strictly greater than 0.
+// MultipleOf validates that a numeric instance is valid only if division
 // by this keyword's value results in an integer.
-type multipleOf float64
+type MultipleOf float64
 
-func newMultipleOf() Validator {
-	return new(multipleOf)
+// NewMultipleOf allocates a new MultipleOf validator
+func NewMultipleOf() Validator {
+	return new(MultipleOf)
 }
 
-// Validate implements the Validator interface for multipleOf
-func (m multipleOf) Validate(data interface{}) []ValError {
+// Validate implements the Validator interface for MultipleOf
+func (m MultipleOf) Validate(data interface{}) []ValError {
 	if num, ok := data.(float64); ok {
 		div := num / float64(m)
 		if float64(int(div)) != div {
@@ -26,17 +27,18 @@ func (m multipleOf) Validate(data interface{}) []ValError {
 	return nil
 }
 
-// maximum MUST be a number, representing an inclusive upper limit
+// Maximum MUST be a number, representing an inclusive upper limit
 // for a numeric instance.
-// If the instance is a number, then this keyword validates only if the instance is less than or exactly equal to "maximum".
-type maximum float64
+// If the instance is a number, then this keyword validates only if the instance is less than or exactly equal to "Maximum".
+type Maximum float64
 
-func newMaximum() Validator {
-	return new(maximum)
+// NewMaximum allocates a new Maximum validator
+func NewMaximum() Validator {
+	return new(Maximum)
 }
 
-// Validate implements the Validator interface for maximum
-func (m maximum) Validate(data interface{}) []ValError {
+// Validate implements the Validator interface for Maximum
+func (m Maximum) Validate(data interface{}) []ValError {
 	if num, ok := data.(float64); ok {
 		if num > float64(m) {
 			return []ValError{
@@ -47,17 +49,18 @@ func (m maximum) Validate(data interface{}) []ValError {
 	return nil
 }
 
-// exclusiveMaximum MUST be number, representing an exclusive upper limit for a numeric instance.
+// ExclusiveMaximum MUST be number, representing an exclusive upper limit for a numeric instance.
 // If the instance is a number, then the instance is valid only if it has a value
-// strictly less than (not equal to) "exclusivemaximum".
-type exclusiveMaximum float64
+// strictly less than (not equal to) "Exclusivemaximum".
+type ExclusiveMaximum float64
 
-func newExclusiveMaximum() Validator {
-	return new(exclusiveMaximum)
+// NewExclusiveMaximum allocates a new ExclusiveMaximum validator
+func NewExclusiveMaximum() Validator {
+	return new(ExclusiveMaximum)
 }
 
-// Validate implements the Validator interface for exclusiveMaximum
-func (m exclusiveMaximum) Validate(data interface{}) []ValError {
+// Validate implements the Validator interface for ExclusiveMaximum
+func (m ExclusiveMaximum) Validate(data interface{}) []ValError {
 	if num, ok := data.(float64); ok {
 		if num >= float64(m) {
 			return []ValError{
@@ -68,16 +71,17 @@ func (m exclusiveMaximum) Validate(data interface{}) []ValError {
 	return nil
 }
 
-// minimum MUST be a number, representing an inclusive lower limit for a numeric instance.
-// If the instance is a number, then this keyword validates only if the instance is greater than or exactly equal to "minimum".
-type minimum float64
+// Minimum MUST be a number, representing an inclusive lower limit for a numeric instance.
+// If the instance is a number, then this keyword validates only if the instance is greater than or exactly equal to "Minimum".
+type Minimum float64
 
-func newMinimum() Validator {
-	return new(minimum)
+// NewMinimum allocates a new Minimum validator
+func NewMinimum() Validator {
+	return new(Minimum)
 }
 
-// Validate implements the Validator interface for minimum
-func (m minimum) Validate(data interface{}) []ValError {
+// Validate implements the Validator interface for Minimum
+func (m Minimum) Validate(data interface{}) []ValError {
 	if num, ok := data.(float64); ok {
 		if num < float64(m) {
 			return []ValError{
@@ -88,16 +92,17 @@ func (m minimum) Validate(data interface{}) []ValError {
 	return nil
 }
 
-// exclusiveMinimum MUST be number, representing an exclusive lower limit for a numeric instance.
-// If the instance is a number, then the instance is valid only if it has a value strictly greater than (not equal to) "exclusiveminimum".
-type exclusiveMinimum float64
+// ExclusiveMinimum MUST be number, representing an exclusive lower limit for a numeric instance.
+// If the instance is a number, then the instance is valid only if it has a value strictly greater than (not equal to) "ExclusiveMinimum".
+type ExclusiveMinimum float64
 
-func newExclusiveMinimum() Validator {
-	return new(exclusiveMinimum)
+// NewExclusiveMinimum allocates a new ExclusiveMinimum validator
+func NewExclusiveMinimum() Validator {
+	return new(ExclusiveMinimum)
 }
 
-// Validate implements the Validator interface for exclusiveMinimum
-func (m exclusiveMinimum) Validate(data interface{}) []ValError {
+// Validate implements the Validator interface for ExclusiveMinimum
+func (m ExclusiveMinimum) Validate(data interface{}) []ValError {
 	if num, ok := data.(float64); ok {
 		if num <= float64(m) {
 			return []ValError{

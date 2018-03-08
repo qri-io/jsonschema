@@ -454,7 +454,7 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 			return nil
 		}
 		// boolean false Always fails validation, as if the schema { "not":{} }
-		*s = Schema{schemaType: schemaTypeFalse, Validators: map[string]Validator{"not": &not{}}}
+		*s = Schema{schemaType: schemaTypeFalse, Validators: map[string]Validator{"not": &Not{}}}
 		return nil
 	}
 
@@ -523,25 +523,25 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 	}
 
 	if sch.Validators["if"] != nil {
-		if ite, ok := sch.Validators["if"].(*iif); ok {
-			if s, ok := sch.Validators["then"].(*then); ok {
-				ite.then = s
+		if ite, ok := sch.Validators["if"].(*If); ok {
+			if s, ok := sch.Validators["then"].(*Then); ok {
+				ite.Then = s
 			}
-			if s, ok := sch.Validators["else"].(*els); ok {
-				ite.els = s
+			if s, ok := sch.Validators["else"].(*Else); ok {
+				ite.Else = s
 			}
 		}
 	}
 
 	// TODO - replace all these assertions with methods on Schema that return proper types
-	if sch.Validators["items"] != nil && sch.Validators["additionalItems"] != nil && !sch.Validators["items"].(*items).single {
-		sch.Validators["additionalItems"].(*additionalItems).startIndex = len(sch.Validators["items"].(*items).Schemas)
+	if sch.Validators["items"] != nil && sch.Validators["additionalItems"] != nil && !sch.Validators["items"].(*Items).single {
+		sch.Validators["additionalItems"].(*AdditionalItems).startIndex = len(sch.Validators["items"].(*Items).Schemas)
 	}
 	if sch.Validators["properties"] != nil && sch.Validators["additionalProperties"] != nil {
-		sch.Validators["additionalProperties"].(*additionalProperties).properties = sch.Validators["properties"].(*properties)
+		sch.Validators["additionalProperties"].(*AdditionalProperties).Properties = sch.Validators["properties"].(*Properties)
 	}
 	if sch.Validators["patternProperties"] != nil && sch.Validators["additionalProperties"] != nil {
-		sch.Validators["additionalProperties"].(*additionalProperties).patterns = sch.Validators["patternProperties"].(*patternProperties)
+		sch.Validators["additionalProperties"].(*AdditionalProperties).patterns = sch.Validators["patternProperties"].(*PatternProperties)
 	}
 
 	*s = Schema(*sch)

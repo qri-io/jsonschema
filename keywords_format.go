@@ -36,17 +36,29 @@ var (
 // func FormatType(data interface{}) string {
 // 	switch
 // }
-// Note: Date and time format names are derived from RFC 3339, section
+// Note: Date and time Format names are derived from RFC 3339, section
 // 5.6  [RFC3339].
 // http://json-schema.org/latest/json-schema-validation.html#RFC3339
 
-type format string
+// Format implements semantic validation from section 7 of jsonschema draft 7
+// The "format" keyword functions as both an annotation (Section 3.3) and as an assertion (Section 3.2).
+// While no special effort is required to implement it as an annotation conveying semantic meaning,
+// implementing validation is non-trivial.
+// Implementations MAY support the "format" keyword as a validation assertion. Should they choose to do so:
+//    they SHOULD implement validation for attributes defined below;
+//    they SHOULD offer an option to disable validation for this keyword.
+// Implementations MAY add custom format attributes. S
+// ave for agreement between parties, schema authors SHALL NOT expect a peer implementation to support
+// this keyword and/or custom format attributes.
+type Format string
 
-func newFormat() Validator {
-	return new(format)
+// NewFormat allocates a new Format validator
+func NewFormat() Validator {
+	return new(Format)
 }
 
-func (f format) Validate(data interface{}) []ValError {
+// Validate validates input against a keyword
+func (f Format) Validate(data interface{}) []ValError {
 	var err error
 	if str, ok := data.(string); ok {
 		switch f {
@@ -102,7 +114,7 @@ func (f format) Validate(data interface{}) []ValError {
 // https://tools.ietf.org/html/rfc3339#section-5.6
 func isValidDateTime(dateTime string) error {
 	if _, err := time.Parse(time.RFC3339, dateTime); err != nil {
-		return fmt.Errorf("date-time incorrectly formatted: %s", err.Error())
+		return fmt.Errorf("date-time incorrectly Formatted: %s", err.Error())
 	}
 	return nil
 }
@@ -122,10 +134,10 @@ func isValidDate(date string) error {
 // https://tools.ietf.org/html/rfc5322#section-3.4.1
 func isValidEmail(email string) error {
 	// if !emailPattern.MatchString(email) {
-	// 	return fmt.Errorf("invalid email format")
+	// 	return fmt.Errorf("invalid email Format")
 	// }
 	if _, err := mail.ParseAddress(email); err != nil {
-		return fmt.Errorf("email address incorrectly formatted: %s", err.Error())
+		return fmt.Errorf("email address incorrectly Formatted: %s", err.Error())
 	}
 	return nil
 }
@@ -148,7 +160,7 @@ func isValidHostname(hostname string) error {
 // https://tools.ietf.org/html/rfc6531
 func isValidIDNEmail(idnEmail string) error {
 	if _, err := mail.ParseAddress(idnEmail); err != nil {
-		return fmt.Errorf("email address incorrectly formatted: %s", err.Error())
+		return fmt.Errorf("email address incorrectly Formatted: %s", err.Error())
 	}
 	return nil
 }
@@ -237,7 +249,7 @@ func isValidJSONPointer(jsonPointer string) error {
 
 // A string instance is a valid against "regex" if it is a valid
 // regular expression according to the ECMA 262 [ecma262] regular
-// expression dialect. Implementations that validate formats MUST
+// expression dialect. Implementations that validate Formats MUST
 // accept at least the subset of ECMA 262 defined in the Regular
 // Expressions [regexInterop] section of this specification, and
 // SHOULD accept all valid ECMA 262 expressions.
@@ -287,7 +299,7 @@ func isValidTime(time string) error {
 // https://tools.ietf.org/html/rfc3986
 func isValidURIRef(uriRef string) error {
 	if _, err := url.Parse(uriRef); err != nil {
-		return fmt.Errorf("uri incorrectly formatted: %s", err.Error())
+		return fmt.Errorf("uri incorrectly Formatted: %s", err.Error())
 	}
 	if strings.Contains(uriRef, "\\") {
 		return fmt.Errorf("invalid uri")
@@ -314,7 +326,7 @@ func isValidURITemplate(uriTemplate string) error {
 // https://tools.ietf.org/html/rfc3986
 func isValidURI(uri string) error {
 	if _, err := url.Parse(uri); err != nil {
-		return fmt.Errorf("uri incorrectly formatted: %s", err.Error())
+		return fmt.Errorf("uri incorrectly Formatted: %s", err.Error())
 	}
 	if !schemePrefixPattern.MatchString(uri) {
 		return fmt.Errorf("uri missing scheme prefix")

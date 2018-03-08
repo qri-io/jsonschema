@@ -6,16 +6,17 @@ import (
 	"strconv"
 )
 
-// allOf MUST be a non-empty array. Each item of the array MUST be a valid JSON Schema.
+// AllOf MUST be a non-empty array. Each item of the array MUST be a valid JSON Schema.
 // An instance validates successfully against this keyword if it validates successfully against all schemas defined by this keyword's value.
-type allOf []*Schema
+type AllOf []*Schema
 
-func newAllOf() Validator {
-	return &allOf{}
+// NewAllOf creates a new AllOf validator
+func NewAllOf() Validator {
+	return &AllOf{}
 }
 
-// Validate implements the validator interface for allOf
-func (a allOf) Validate(data interface{}) (errs []ValError) {
+// Validate implements the validator interface for AllOf
+func (a AllOf) Validate(data interface{}) (errs []ValError) {
 	for _, sch := range a {
 		if ves := sch.Validate(data); len(ves) > 0 {
 			errs = append(errs, ves...)
@@ -24,8 +25,8 @@ func (a allOf) Validate(data interface{}) (errs []ValError) {
 	return
 }
 
-// JSONProp implements JSON property name indexing for allOf
-func (a allOf) JSONProp(name string) interface{} {
+// JSONProp implements JSON property name indexing for AllOf
+func (a AllOf) JSONProp(name string) interface{} {
 	idx, err := strconv.Atoi(name)
 	if err != nil {
 		return nil
@@ -36,8 +37,8 @@ func (a allOf) JSONProp(name string) interface{} {
 	return a[idx]
 }
 
-// JSONChildren implements the JSONContainer interface for allOf
-func (a allOf) JSONChildren() (res map[string]JSONPather) {
+// JSONChildren implements the JSONContainer interface for AllOf
+func (a AllOf) JSONChildren() (res map[string]JSONPather) {
 	res = map[string]JSONPather{}
 	for i, sch := range a {
 		res[strconv.Itoa(i)] = sch
@@ -45,29 +46,30 @@ func (a allOf) JSONChildren() (res map[string]JSONPather) {
 	return
 }
 
-// anyOf MUST be a non-empty array. Each item of the array MUST be a valid JSON Schema.
+// AnyOf MUST be a non-empty array. Each item of the array MUST be a valid JSON Schema.
 // An instance validates successfully against this keyword if it validates successfully against at
 // least one schema defined by this keyword's value.
-type anyOf []*Schema
+type AnyOf []*Schema
 
-func newAnyOf() Validator {
-	return &anyOf{}
+// NewAnyOf creates a new AnyOf validator
+func NewAnyOf() Validator {
+	return &AnyOf{}
 }
 
-// Validate implements the validator interface for anyOf
-func (a anyOf) Validate(data interface{}) []ValError {
+// Validate implements the validator interface for AnyOf
+func (a AnyOf) Validate(data interface{}) []ValError {
 	for _, sch := range a {
 		if err := sch.Validate(data); err == nil {
 			return nil
 		}
 	}
 	return []ValError{
-		{Message: fmt.Sprintf("value did not match any specified anyOf schemas: %v", data)},
+		{Message: fmt.Sprintf("value did Not match any specified AnyOf schemas: %v", data)},
 	}
 }
 
-// JSONProp implements JSON property name indexing for anyOf
-func (a anyOf) JSONProp(name string) interface{} {
+// JSONProp implements JSON property name indexing for AnyOf
+func (a AnyOf) JSONProp(name string) interface{} {
 	idx, err := strconv.Atoi(name)
 	if err != nil {
 		return nil
@@ -78,8 +80,8 @@ func (a anyOf) JSONProp(name string) interface{} {
 	return a[idx]
 }
 
-// JSONChildren implements the JSONContainer interface for anyOf
-func (a anyOf) JSONChildren() (res map[string]JSONPather) {
+// JSONChildren implements the JSONContainer interface for AnyOf
+func (a AnyOf) JSONChildren() (res map[string]JSONPather) {
 	res = map[string]JSONPather{}
 	for i, sch := range a {
 		res[strconv.Itoa(i)] = sch
@@ -87,22 +89,23 @@ func (a anyOf) JSONChildren() (res map[string]JSONPather) {
 	return
 }
 
-// oneOf MUST be a non-empty array. Each item of the array MUST be a valid JSON Schema.
+// OneOf MUST be a non-empty array. Each item of the array MUST be a valid JSON Schema.
 // An instance validates successfully against this keyword if it validates successfully against exactly one schema defined by this keyword's value.
-type oneOf []*Schema
+type OneOf []*Schema
 
-func newOneOf() Validator {
-	return &oneOf{}
+// NewOneOf creates a new OneOf validator
+func NewOneOf() Validator {
+	return &OneOf{}
 }
 
-// Validate implements the validator interface for oneOf
-func (o oneOf) Validate(data interface{}) []ValError {
+// Validate implements the validator interface for OneOf
+func (o OneOf) Validate(data interface{}) []ValError {
 	matched := false
 	for _, sch := range o {
 		if err := sch.Validate(data); err == nil {
 			if matched {
 				return []ValError{
-					{Message: fmt.Sprintf("value matched more than one specified oneOf schemas")},
+					{Message: fmt.Sprintf("value matched more than one specified OneOf schemas")},
 				}
 			}
 			matched = true
@@ -110,14 +113,14 @@ func (o oneOf) Validate(data interface{}) []ValError {
 	}
 	if !matched {
 		return []ValError{
-			{Message: fmt.Sprintf("value did not match any of the specified oneOf schemas")},
+			{Message: fmt.Sprintf("value did Not match any of the specified OneOf schemas")},
 		}
 	}
 	return nil
 }
 
-// JSONProp implements JSON property name indexing for oneOf
-func (o oneOf) JSONProp(name string) interface{} {
+// JSONProp implements JSON property name indexing for OneOf
+func (o OneOf) JSONProp(name string) interface{} {
 	idx, err := strconv.Atoi(name)
 	if err != nil {
 		return nil
@@ -128,8 +131,8 @@ func (o oneOf) JSONProp(name string) interface{} {
 	return o[idx]
 }
 
-// JSONChildren implements the JSONContainer interface for oneOf
-func (o oneOf) JSONChildren() (res map[string]JSONPather) {
+// JSONChildren implements the JSONContainer interface for OneOf
+func (o OneOf) JSONChildren() (res map[string]JSONPather) {
 	res = map[string]JSONPather{}
 	for i, sch := range o {
 		res[strconv.Itoa(i)] = sch
@@ -137,34 +140,35 @@ func (o oneOf) JSONChildren() (res map[string]JSONPather) {
 	return
 }
 
-// not MUST be a valid JSON Schema.
+// Not MUST be a valid JSON Schema.
 // An instance is valid against this keyword if it fails to validate successfully against the schema defined
 // by this keyword.
-type not Schema
+type Not Schema
 
-func newNot() Validator {
-	return &not{}
+// NewNot creates a new Not validator
+func NewNot() Validator {
+	return &Not{}
 }
 
-// Validate implements the validator interface for not
-func (n *not) Validate(data interface{}) []ValError {
+// Validate implements the validator interface for Not
+func (n *Not) Validate(data interface{}) []ValError {
 	sch := Schema(*n)
 	if sch.Validate(data) == nil {
 		// TODO - make this error actually make sense
 		return []ValError{
-			{Message: fmt.Sprintf("not clause")},
+			{Message: fmt.Sprintf("Not clause")},
 		}
 	}
 	return nil
 }
 
-// JSONProp implements JSON property name indexing for not
-func (n not) JSONProp(name string) interface{} {
+// JSONProp implements JSON property name indexing for Not
+func (n Not) JSONProp(name string) interface{} {
 	return Schema(n).JSONProp(name)
 }
 
-// JSONChildren implements the JSONContainer interface for not
-func (n not) JSONChildren() (res map[string]JSONPather) {
+// JSONChildren implements the JSONContainer interface for Not
+func (n Not) JSONChildren() (res map[string]JSONPather) {
 	if n.Ref != "" {
 		s := Schema(n)
 		return map[string]JSONPather{"$ref": &s}
@@ -172,17 +176,17 @@ func (n not) JSONChildren() (res map[string]JSONPather) {
 	return Schema(n).JSONChildren()
 }
 
-// UnmarshalJSON implements the json.Unmarshaler interface for not
-func (n *not) UnmarshalJSON(data []byte) error {
+// UnmarshalJSON implements the json.Unmarshaler interface for Not
+func (n *Not) UnmarshalJSON(data []byte) error {
 	var sch Schema
 	if err := json.Unmarshal(data, &sch); err != nil {
 		return err
 	}
-	*n = not(sch)
+	*n = Not(sch)
 	return nil
 }
 
-// MarshalJSON implements json.Marshaller for not
-func (n not) MarshalJSON() ([]byte, error) {
+// MarshalJSON implements json.Marshaller for Not
+func (n Not) MarshalJSON() ([]byte, error) {
 	return json.Marshal(Schema(n))
 }
