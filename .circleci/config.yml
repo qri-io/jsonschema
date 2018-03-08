@@ -21,7 +21,7 @@ jobs:
             github.com/qri-io/jsonpointer
       - run: 
           name: Run Lint Tests
-          command: golint ./...
+          command: golint -set_exit_status ./...
       - run:
           name: Run Tests
           command: go test -v -race -coverprofile=coverage.txt -covermode=atomic
