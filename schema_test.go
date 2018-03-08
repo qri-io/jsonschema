@@ -413,7 +413,7 @@ func TestJSONCoding(t *testing.T) {
 			dmp := diffmatchpatch.New()
 			diffs := dmp.DiffMain(string(data), string(output), true)
 			if len(diffs) == 0 {
-				t.Logf("case %d bytes were unequal but computed no difference between results")
+				t.Logf("case %d bytes were unequal but computed no difference between results", i)
 				continue
 			}
 

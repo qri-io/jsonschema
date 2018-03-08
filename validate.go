@@ -44,51 +44,51 @@ func RegisterValidator(propName string, maker ValMaker) {
 // to draw from when decoding schemas
 var DefaultValidators = map[string]ValMaker{
 	// standard keywords
-	"type":  newTipe,
-	"enum":  newEnum,
-	"const": newKonst,
+	"type":  NewType,
+	"enum":  NewEnum,
+	"const": NewConst,
 
 	// numeric keywords
-	"multipleOf":       newMultipleOf,
-	"maximum":          newMaximum,
-	"exclusiveMaximum": newExclusiveMaximum,
-	"minimum":          newMinimum,
-	"exclusiveMinimum": newExclusiveMinimum,
+	"multipleOf":       NewMultipleOf,
+	"maximum":          NewMaximum,
+	"exclusiveMaximum": NewExclusiveMaximum,
+	"minimum":          NewMinimum,
+	"exclusiveMinimum": NewExclusiveMinimum,
 
 	// string keywords
-	"maxLength": newMaxLength,
-	"minLength": newMinLength,
-	"pattern":   newPattern,
+	"maxLength": NewMaxLength,
+	"minLength": NewMinLength,
+	"pattern":   NewPattern,
 
 	// boolean keywords
-	"allOf": newAllOf,
-	"anyOf": newAnyOf,
-	"oneOf": newOneOf,
-	"not":   newNot,
+	"allOf": NewAllOf,
+	"anyOf": NewAnyOf,
+	"oneOf": NewOneOf,
+	"not":   NewNot,
 
 	// array keywords
-	"items":           newItems,
-	"additionalItems": newAdditionalItems,
-	"maxItems":        newMaxItems,
-	"minItems":        newMinItems,
-	"uniqueItems":     newUniqueItems,
-	"contains":        newContains,
+	"items":           NewItems,
+	"additionalItems": NewAdditionalItems,
+	"maxItems":        NewMaxItems,
+	"minItems":        NewMinItems,
+	"uniqueItems":     NewUniqueItems,
+	"contains":        NewContains,
 
 	// object keywords
-	"maxProperties":        newMaxProperties,
-	"minProperties":        newMinProperties,
-	"required":             newRequired,
-	"properties":           newProperties,
-	"patternProperties":    newPatternProperties,
-	"additionalProperties": newAdditionalProperties,
-	"dependencies":         newDependencies,
-	"propertyNames":        newPropertyNames,
+	"maxProperties":        NewMaxProperties,
+	"minProperties":        NewMinProperties,
+	"required":             NewRequired,
+	"properties":           NewProperties,
+	"patternProperties":    NewPatternProperties,
+	"additionalProperties": NewAdditionalProperties,
+	"dependencies":         NewDependencies,
+	"propertyNames":        NewPropertyNames,
 
 	// conditional keywords
-	"if":   newIif,
-	"then": newThen,
-	"else": newEls,
+	"if":   NewIf,
+	"then": NewThen,
+	"else": NewElse,
 
 	//optional formats
-	"format": newFormat,
+	"format": NewFormat,
 }

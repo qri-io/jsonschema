@@ -42,23 +42,24 @@ func DataType(data interface{}) string {
 	}
 }
 
-// tipe specifies one of the six json primitive types.
+// Type specifies one of the six json primitive types.
 // The value of this keyword MUST be either a string or an array.
 // If it is an array, elements of the array MUST be strings and MUST be unique.
 // String values MUST be one of the six primitive types ("null", "boolean", "object", "array", "number", or "string"), or
 // "integer" which matches any number with a zero fractional part.
 // An instance validates if and only if the instance is in any of the sets listed for this keyword.
-type tipe struct {
-	strVal bool // set to true if tipe decoded from a string, false if an array
+type Type struct {
+	strVal bool // set to true if Type decoded from a string, false if an array
 	vals   []string
 }
 
-func newTipe() Validator {
-	return &tipe{}
+// NewType creates a new Type Validator
+func NewType() Validator {
+	return &Type{}
 }
 
 // Validate checks to see if input data satisfies the type constraint
-func (t tipe) Validate(data interface{}) (errs []ValError) {
+func (t Type) Validate(data interface{}) (errs []ValError) {
 	jt := DataType(data)
 	for _, typestr := range t.vals {
 		if jt == typestr || jt == "integer" && typestr == "number" {
@@ -82,8 +83,8 @@ func (t tipe) Validate(data interface{}) (errs []ValError) {
 	return
 }
 
-// JSONProp implements JSON property name indexing for tipe
-func (t tipe) JSONProp(name string) interface{} {
+// JSONProp implements JSON property name indexing for Type
+func (t Type) JSONProp(name string) interface{} {
 	idx, err := strconv.Atoi(name)
 	if err != nil {
 		return nil
@@ -94,15 +95,15 @@ func (t tipe) JSONProp(name string) interface{} {
 	return t.vals[idx]
 }
 
-// UnmarshalJSON implements the json.Unmarshaler interface for tipe
-func (t *tipe) UnmarshalJSON(data []byte) error {
+// UnmarshalJSON implements the json.Unmarshaler interface for Type
+func (t *Type) UnmarshalJSON(data []byte) error {
 	var single string
 	if err := json.Unmarshal(data, &single); err == nil {
-		*t = tipe{strVal: true, vals: []string{single}}
+		*t = Type{strVal: true, vals: []string{single}}
 	} else {
 		var set []string
 		if err := json.Unmarshal(data, &set); err == nil {
-			*t = tipe{vals: set}
+			*t = Type{vals: set}
 		} else {
 			return err
 		}
@@ -116,26 +117,27 @@ func (t *tipe) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// MarshalJSON implements the json.Marshaler interface for tipe
-func (t tipe) MarshalJSON() ([]byte, error) {
+// MarshalJSON implements the json.Marshaler interface for Type
+func (t Type) MarshalJSON() ([]byte, error) {
 	if t.strVal {
 		return json.Marshal(t.vals[0])
 	}
 	return json.Marshal(t.vals)
 }
 
-// enum validates successfully against this keyword if its value is equal to one of the
+// Enum validates successfully against this keyword if its value is equal to one of the
 // elements in this keyword's array value.
 // Elements in the array SHOULD be unique.
 // Elements in the array might be of any value, including null.
-type enum []konst
+type Enum []Const
 
-func newEnum() Validator {
-	return &enum{}
+// NewEnum creates a new Enum Validator
+func NewEnum() Validator {
+	return &Enum{}
 }
 
-// String implements the stringer interface for enum
-func (e enum) String() string {
+// String implements the stringer interface for Enum
+func (e Enum) String() string {
 	str := "["
 	for _, c := range e {
 		str += c.String() + ", "
@@ -143,20 +145,20 @@ func (e enum) String() string {
 	return str[:len(str)-2] + "]"
 }
 
-// Validate implements the Validator interface for enum
-func (e enum) Validate(data interface{}) []ValError {
+// Validate implements the Validator interface for Enum
+func (e Enum) Validate(data interface{}) []ValError {
 	for _, v := range e {
 		if err := v.Validate(data); err == nil {
 			return nil
 		}
 	}
 	return []ValError{
-		{Message: fmt.Sprintf("expected %s to be one of %s", data)},
+		{Message: fmt.Sprintf("expected %s to be one of %s", data, e.String())},
 	}
 }
 
-// JSONProp implements JSON property name indexing for enum
-func (e enum) JSONProp(name string) interface{} {
+// JSONProp implements JSON property name indexing for Enum
+func (e Enum) JSONProp(name string) interface{} {
 	idx, err := strconv.Atoi(name)
 	if err != nil {
 		return nil
@@ -167,8 +169,8 @@ func (e enum) JSONProp(name string) interface{} {
 	return e[idx]
 }
 
-// JSONChildren implements the JSONContainer interface for enum
-func (e enum) JSONChildren() (res map[string]JSONPather) {
+// JSONChildren implements the JSONContainer interface for Enum
+func (e Enum) JSONChildren() (res map[string]JSONPather) {
 	res = map[string]JSONPather{}
 	for i, bs := range e {
 		res[strconv.Itoa(i)] = bs
@@ -176,17 +178,18 @@ func (e enum) JSONChildren() (res map[string]JSONPather) {
 	return
 }
 
-// konst MAY be of any type, including null.
+// Const MAY be of any type, including null.
 // An instance validates successfully against this keyword if its
 // value is equal to the value of the keyword.
-type konst json.RawMessage
+type Const json.RawMessage
 
-func newKonst() Validator {
-	return &konst{}
+// NewConst creates a new Const Validator
+func NewConst() Validator {
+	return &Const{}
 }
 
-// Validate implements the validate interface for konst
-func (c konst) Validate(data interface{}) []ValError {
+// Validate implements the validate interface for Const
+func (c Const) Validate(data interface{}) []ValError {
 	var con interface{}
 	if err := json.Unmarshal(c, &con); err != nil {
 		return []ValError{
@@ -202,23 +205,23 @@ func (c konst) Validate(data interface{}) []ValError {
 	return nil
 }
 
-// JSONProp implements JSON property name indexing for konst
-func (c konst) JSONProp(name string) interface{} {
+// JSONProp implements JSON property name indexing for Const
+func (c Const) JSONProp(name string) interface{} {
 	return nil
 }
 
-// String implements the Stringer interface for konst
-func (c konst) String() string {
+// String implements the Stringer interface for Const
+func (c Const) String() string {
 	return string(c)
 }
 
-// UnmarshalJSON implements the json.Unmarshaler interface for konst
-func (c *konst) UnmarshalJSON(data []byte) error {
+// UnmarshalJSON implements the json.Unmarshaler interface for Const
+func (c *Const) UnmarshalJSON(data []byte) error {
 	*c = data
 	return nil
 }
 
-// MarshalJSON implements json.Marshaler for konst
-func (c konst) MarshalJSON() ([]byte, error) {
+// MarshalJSON implements json.Marshaler for Const
+func (c Const) MarshalJSON() ([]byte, error) {
 	return json.Marshal(json.RawMessage(c))
 }

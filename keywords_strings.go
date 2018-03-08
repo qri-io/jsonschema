@@ -7,17 +7,18 @@ import (
 	"unicode/utf8"
 )
 
-// maxLength MUST be a non-negative integer.
+// MaxLength MUST be a non-negative integer.
 // A string instance is valid against this keyword if its length is less than, or equal to, the value of this keyword.
 // The length of a string instance is defined as the number of its characters as defined by RFC 7159 [RFC7159].
-type maxLength int
+type MaxLength int
 
-func newMaxLength() Validator {
-	return new(maxLength)
+// NewMaxLength allocates a new MaxLength validator
+func NewMaxLength() Validator {
+	return new(MaxLength)
 }
 
-// Validate implements the Validator interface for maxLength
-func (m maxLength) Validate(data interface{}) []ValError {
+// Validate implements the Validator interface for MaxLength
+func (m MaxLength) Validate(data interface{}) []ValError {
 	if str, ok := data.(string); ok {
 		if utf8.RuneCountInString(str) > int(m) {
 			return []ValError{
@@ -28,18 +29,19 @@ func (m maxLength) Validate(data interface{}) []ValError {
 	return nil
 }
 
-// minLength MUST be a non-negative integer.
+// MinLength MUST be a non-negative integer.
 // A string instance is valid against this keyword if its length is greater than, or equal to, the value of this keyword.
 // The length of a string instance is defined as the number of its characters as defined by RFC 7159 [RFC7159].
 // Omitting this keyword has the same behavior as a value of 0.
-type minLength int
+type MinLength int
 
-func newMinLength() Validator {
-	return new(minLength)
+// NewMinLength allocates a new MinLength validator
+func NewMinLength() Validator {
+	return new(MinLength)
 }
 
-// Validate implements the Validator interface for minLength
-func (m minLength) Validate(data interface{}) []ValError {
+// Validate implements the Validator interface for MinLength
+func (m MinLength) Validate(data interface{}) []ValError {
 	if str, ok := data.(string); ok {
 		if utf8.RuneCountInString(str) < int(m) {
 			return []ValError{
@@ -50,18 +52,19 @@ func (m minLength) Validate(data interface{}) []ValError {
 	return nil
 }
 
-// pattern MUST be a string. This string SHOULD be a valid regular expression,
+// Pattern MUST be a string. This string SHOULD be a valid regular expression,
 // according to the ECMA 262 regular expression dialect.
 // A string instance is considered valid if the regular expression matches the instance successfully.
 // Recall: regular expressions are not implicitly anchored.
-type pattern regexp.Regexp
+type Pattern regexp.Regexp
 
-func newPattern() Validator {
-	return &pattern{}
+// NewPattern allocates a new Pattern validator
+func NewPattern() Validator {
+	return &Pattern{}
 }
 
-// Validate implements the Validator interface for pattern
-func (p pattern) Validate(data interface{}) []ValError {
+// Validate implements the Validator interface for Pattern
+func (p Pattern) Validate(data interface{}) []ValError {
 	re := regexp.Regexp(p)
 	if str, ok := data.(string); ok {
 		if !re.Match([]byte(str)) {
@@ -73,8 +76,8 @@ func (p pattern) Validate(data interface{}) []ValError {
 	return nil
 }
 
-// UnmarshalJSON implements the json.Unmarshaler interface for pattern
-func (p *pattern) UnmarshalJSON(data []byte) error {
+// UnmarshalJSON implements the json.Unmarshaler interface for Pattern
+func (p *Pattern) UnmarshalJSON(data []byte) error {
 	var str string
 	if err := json.Unmarshal(data, &str); err != nil {
 		return err
@@ -85,12 +88,12 @@ func (p *pattern) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	*p = pattern(*ptn)
+	*p = Pattern(*ptn)
 	return nil
 }
 
-// MarshalJSON implements json.Marshaler for pattern
-func (p pattern) MarshalJSON() ([]byte, error) {
+// MarshalJSON implements json.Marshaler for Pattern
+func (p Pattern) MarshalJSON() ([]byte, error) {
 	re := regexp.Regexp(p)
 	rep := &re
 	return json.Marshal(rep.String())
