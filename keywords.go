@@ -49,6 +49,7 @@ func DataType(data interface{}) string {
 // "integer" which matches any number with a zero fractional part.
 // An instance validates if and only if the instance is in any of the sets listed for this keyword.
 type Type struct {
+	BaseValidator
 	strVal bool // set to true if Type decoded from a string, false if an array
 	vals   []string
 }
@@ -59,17 +60,15 @@ func NewType() Validator {
 }
 
 // Validate checks to see if input data satisfies the type constraint
-func (t Type) Validate(data interface{}) (errs []ValError) {
+func (t Type) Validate(propPath string, data interface{}, errs *[]ValError) {
 	jt := DataType(data)
 	for _, typestr := range t.vals {
 		if jt == typestr || jt == "integer" && typestr == "number" {
-			return nil
+			return
 		}
 	}
 	if len(t.vals) == 1 {
-		errs = append(errs, ValError{
-			Message: fmt.Sprintf(`expected "%v" to be of type %s`, data, t.vals[0]),
-		})
+		t.AddError(errs, propPath, data, fmt.Sprintf(`type should be %s`, t.vals[0]))
 		return
 	}
 
@@ -77,10 +76,8 @@ func (t Type) Validate(data interface{}) (errs []ValError) {
 	for _, ts := range t.vals {
 		str += ts + ","
 	}
-	errs = append(errs, ValError{
-		Message: fmt.Sprintf(`expected "%v" to be one of type: %s`, data, str[:len(str)-1]),
-	})
-	return
+
+	t.AddError(errs, propPath, data, fmt.Sprintf(`type should be one of: %s`, str[:len(str)-1]))
 }
 
 // JSONProp implements JSON property name indexing for Type
@@ -145,16 +142,22 @@ func (e Enum) String() string {
 	return str[:len(str)-2] + "]"
 }
 
+// Path gives a jsonpointer path to the validator
+func (e Enum) Path() string {
+	return ""
+}
+
 // Validate implements the Validator interface for Enum
-func (e Enum) Validate(data interface{}) []ValError {
+func (e Enum) Validate(propPath string, data interface{}, errs *[]ValError) {
 	for _, v := range e {
-		if err := v.Validate(data); err == nil {
-			return nil
+		test := &[]ValError{}
+		v.Validate(propPath, data, test)
+		if len(*test) == 0 {
+			return
 		}
 	}
-	return []ValError{
-		{Message: fmt.Sprintf("expected %s to be one of %s", data, e.String())},
-	}
+
+	AddError(errs, propPath, data, fmt.Sprintf("should be one of %s", e.String()))
 }
 
 // JSONProp implements JSON property name indexing for Enum
@@ -188,21 +191,22 @@ func NewConst() Validator {
 	return &Const{}
 }
 
+// Path gives a jsonpointer path to the validator
+func (c Const) Path() string {
+	return ""
+}
+
 // Validate implements the validate interface for Const
-func (c Const) Validate(data interface{}) []ValError {
+func (c Const) Validate(propPath string, data interface{}, errs *[]ValError) {
 	var con interface{}
 	if err := json.Unmarshal(c, &con); err != nil {
-		return []ValError{
-			{Message: err.Error()},
-		}
+		AddError(errs, propPath, data, err.Error())
+		return
 	}
 
 	if !reflect.DeepEqual(con, data) {
-		return []ValError{
-			{Message: fmt.Sprintf(`%s must equal %s`, string(c), data)},
-		}
+		AddError(errs, propPath, data, fmt.Sprintf(`must equal %s`, InvalidValueString(data)))
 	}
-	return nil
 }
 
 // JSONProp implements JSON property name indexing for Const

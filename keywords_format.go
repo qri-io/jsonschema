@@ -58,7 +58,7 @@ func NewFormat() Validator {
 }
 
 // Validate validates input against a keyword
-func (f Format) Validate(data interface{}) []ValError {
+func (f Format) Validate(propPath string, data interface{}, errs *[]ValError) {
 	var err error
 	if str, ok := data.(string); ok {
 		switch f {
@@ -100,12 +100,9 @@ func (f Format) Validate(data interface{}) []ValError {
 			err = nil
 		}
 		if err != nil {
-			return []ValError{
-				{Message: err.Error()},
-			}
+			AddError(errs, propPath, data, fmt.Sprintf("invalid %s: %s", f, err.Error()))
 		}
 	}
-	return nil
 }
 
 // A string instance is valid against "date-time" if it is a valid

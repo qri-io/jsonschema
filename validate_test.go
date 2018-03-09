@@ -12,15 +12,12 @@ func newIsFoo() Validator {
 	return new(IsFoo)
 }
 
-func (f IsFoo) Validate(data interface{}) []ValError {
+func (f IsFoo) Validate(propPath string, data interface{}, errs *[]ValError) {
 	if str, ok := data.(string); ok {
 		if str != "foo" {
-			return []ValError{
-				{Message: fmt.Sprintf("'%s' is not foo. It should be foo. plz make '%s' == foo. plz", str, str)},
-			}
+			AddError(errs, propPath, data, fmt.Sprintf("should be foo. plz make '%s' == foo. plz", str))
 		}
 	}
-	return nil
 }
 
 func ExampleCustomValidator() {
@@ -36,17 +33,18 @@ func ExampleCustomValidator() {
 		panic(err)
 	}
 
-	errs := rs.ValidateBytes([]byte(`"bar"`))
-	fmt.Println(errs[0].Error())
+	errs, err := rs.ValidateBytes([]byte(`"bar"`))
+	if err != nil {
+		panic(err)
+	}
 
-	// Output: 'bar' is not foo. It should be foo. plz make 'bar' == foo. plz
+	fmt.Println(errs[0].Error())
+	// Output: /: "bar" should be foo. plz make 'bar' == foo. plz
 }
 
 type FooValidator uint8
 
-func (f *FooValidator) Validate(data interface{}) []ValError {
-	return nil
-}
+func (f *FooValidator) Validate(propPath string, data interface{}, errs *[]ValError) {}
 
 func TestRegisterValidator(t *testing.T) {
 	newFoo := func() Validator {

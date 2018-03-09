@@ -3,6 +3,7 @@ package jsonschema
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/qri-io/jsonpointer"
 	"regexp"
 	"strconv"
 )
@@ -17,15 +18,12 @@ func NewMaxProperties() Validator {
 }
 
 // Validate implements the validator interface for MaxProperties
-func (m MaxProperties) Validate(data interface{}) []ValError {
+func (m MaxProperties) Validate(propPath string, data interface{}, errs *[]ValError) {
 	if obj, ok := data.(map[string]interface{}); ok {
 		if len(obj) > int(m) {
-			return []ValError{
-				{Message: fmt.Sprintf("%d object Properties exceed %d maximum", len(obj), m)},
-			}
+			AddError(errs, propPath, data, fmt.Sprintf("%d object Properties exceed %d maximum", len(obj), m))
 		}
 	}
-	return nil
 }
 
 // minProperties MUST be a non-negative integer.
@@ -39,15 +37,12 @@ func NewMinProperties() Validator {
 }
 
 // Validate implements the validator interface for minProperties
-func (m minProperties) Validate(data interface{}) []ValError {
+func (m minProperties) Validate(propPath string, data interface{}, errs *[]ValError) {
 	if obj, ok := data.(map[string]interface{}); ok {
 		if len(obj) < int(m) {
-			return []ValError{
-				{Message: fmt.Sprintf("%d object Properties below %d minimum", len(obj), m)},
-			}
+			AddError(errs, propPath, data, fmt.Sprintf("%d object Properties below %d minimum", len(obj), m))
 		}
 	}
-	return nil
 }
 
 // Required ensures that for a given object instance, every item in the array is the name of a property in the instance.
@@ -61,17 +56,14 @@ func NewRequired() Validator {
 }
 
 // Validate implements the validator interface for Required
-func (r Required) Validate(data interface{}) []ValError {
+func (r Required) Validate(propPath string, data interface{}, errs *[]ValError) {
 	if obj, ok := data.(map[string]interface{}); ok {
 		for _, key := range r {
 			if val, ok := obj[key]; val == nil && !ok {
-				return []ValError{
-					{Message: fmt.Sprintf(`"%s" value is required`, key)},
-				}
+				AddError(errs, propPath, data, fmt.Sprintf(`"%s" value is required`, key))
 			}
 		}
 	}
-	return nil
 }
 
 // JSONProp implements JSON property name indexing for Required
@@ -100,19 +92,21 @@ func NewProperties() Validator {
 }
 
 // Validate implements the validator interface for Properties
-func (p Properties) Validate(data interface{}) []ValError {
+func (p Properties) Validate(propPath string, data interface{}, errs *[]ValError) {
+	jp, err := jsonpointer.Parse(propPath)
+	if err != nil {
+		AddError(errs, propPath, nil, "invalid property path")
+		return
+	}
+
 	if obj, ok := data.(map[string]interface{}); ok {
 		for key, val := range obj {
 			if p[key] != nil {
-				if err := p[key].Validate(val); err != nil {
-					return []ValError{
-						{Message: fmt.Sprintf(`"%s" property %s`, key, err)},
-					}
-				}
+				d, _ := jp.Descendant(key)
+				p[key].Validate(d.String(), val, errs)
 			}
 		}
 	}
-	return nil
 }
 
 // JSONProp implements JSON property name indexing for Properties
@@ -152,15 +146,19 @@ type patternSchema struct {
 }
 
 // Validate implements the validator interface for PatternProperties
-func (p PatternProperties) Validate(data interface{}) (errs []ValError) {
+func (p PatternProperties) Validate(propPath string, data interface{}, errs *[]ValError) {
+	jp, err := jsonpointer.Parse(propPath)
+	if err != nil {
+		AddError(errs, propPath, nil, "invalid property path")
+		return
+	}
+
 	if obj, ok := data.(map[string]interface{}); ok {
 		for key, val := range obj {
 			for _, ptn := range p {
 				if ptn.re.Match([]byte(key)) {
-					if ves := ptn.schema.Validate(val); len(ves) > 0 {
-						// fmt.Sprintf("object key %s pattern prop %s error: %s", key, ptn.key, err.Error())
-						errs = append(errs, ves...)
-					}
+					d, _ := jp.Descendant(key)
+					ptn.schema.Validate(d.String(), val, errs)
 				}
 			}
 		}
@@ -239,7 +237,13 @@ func NewAdditionalProperties() Validator {
 }
 
 // Validate implements the validator interface for AdditionalProperties
-func (ap AdditionalProperties) Validate(data interface{}) []ValError {
+func (ap AdditionalProperties) Validate(propPath string, data interface{}, errs *[]ValError) {
+	jp, err := jsonpointer.Parse(propPath)
+	if err != nil {
+		AddError(errs, propPath, nil, "invalid property path")
+		return
+	}
+
 	if obj, ok := data.(map[string]interface{}); ok {
 	KEYS:
 		for key, val := range obj {
@@ -257,13 +261,15 @@ func (ap AdditionalProperties) Validate(data interface{}) []ValError {
 					}
 				}
 			}
-			if ves := ap.Schema.Validate(val); len(ves) > 0 {
-				// fmt.Sprintf("object key %s AdditionalProperties error: %s", key, err.Error())
-				return ves
-			}
+			// c := len(*errs)
+			d, _ := jp.Descendant(key)
+			ap.Schema.Validate(d.String(), val, errs)
+			// if len(*errs) > c {
+			// 	// fmt.Sprintf("object key %s AdditionalProperties error: %s", key, err.Error())
+			// 	return
+			// }
 		}
 	}
-	return nil
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface for AdditionalProperties
@@ -314,13 +320,18 @@ func NewDependencies() Validator {
 }
 
 // Validate implements the validator interface for Dependencies
-func (d Dependencies) Validate(data interface{}) (errs []ValError) {
+func (d Dependencies) Validate(propPath string, data interface{}, errs *[]ValError) {
+	jp, err := jsonpointer.Parse(propPath)
+	if err != nil {
+		AddError(errs, propPath, nil, "invalid property path")
+		return
+	}
+
 	if obj, ok := data.(map[string]interface{}); ok {
 		for key, val := range d {
 			if obj[key] != nil {
-				if ves := val.Validate(obj); len(ves) > 0 {
-					errs = append(errs, ves...)
-				}
+				d, _ := jp.Descendant(key)
+				val.Validate(d.String(), obj, errs)
 			}
 		}
 	}
@@ -350,19 +361,18 @@ type Dependency struct {
 }
 
 // Validate implements the validator interface for Dependency
-func (d Dependency) Validate(data interface{}) (errs []ValError) {
+func (d Dependency) Validate(propPath string, data interface{}, errs *[]ValError) {
 	if obj, ok := data.(map[string]interface{}); ok {
 		if d.schema != nil {
-			return d.schema.Validate(data)
+			d.schema.Validate(propPath, data, errs)
 		} else if len(d.props) > 0 {
 			for _, k := range d.props {
 				if obj[k] == nil {
-					errs = append(errs, ValError{Message: fmt.Sprintf("Dependency property %s is Required", k)})
+					AddError(errs, propPath, data, fmt.Sprintf("Dependency property %s is Required", k))
 				}
 			}
 		}
 	}
-	return
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface for Dependencies
@@ -401,16 +411,21 @@ func NewPropertyNames() Validator {
 }
 
 // Validate implements the validator interface for PropertyNames
-func (p PropertyNames) Validate(data interface{}) (errs []ValError) {
+func (p PropertyNames) Validate(propPath string, data interface{}, errs *[]ValError) {
+	jp, err := jsonpointer.Parse(propPath)
+	if err != nil {
+		AddError(errs, propPath, nil, "invalid property path")
+		return
+	}
+
 	sch := Schema(p)
 	if obj, ok := data.(map[string]interface{}); ok {
 		for key := range obj {
-			if ves := sch.Validate(key); len(ves) > 0 {
-				errs = append(errs, ves...)
-			}
+			// TODO - adjust error message & prop path
+			d, _ := jp.Descendant(key)
+			sch.Validate(d.String(), key, errs)
 		}
 	}
-	return
 }
 
 // JSONProp implements JSON property name indexing for Properties

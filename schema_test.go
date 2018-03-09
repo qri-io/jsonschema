@@ -45,14 +45,20 @@ func ExampleBasic() {
 		"firstName" : "George",
 		"lastName" : "Michael"
 		}`)
-	if err := rs.ValidateBytes(valid); err != nil {
+	errs, err := rs.ValidateBytes(valid)
+	if err != nil {
 		panic(err)
 	}
 
 	var invalidPerson = []byte(`{
 		"firstName" : "Prince"
 		}`)
-	errs := rs.ValidateBytes(invalidPerson)
+
+	errs, err = rs.ValidateBytes(invalidPerson)
+	if err != nil {
+		panic(err)
+	}
+
 	fmt.Println(errs[0].Error())
 
 	var invalidFriend = []byte(`{
@@ -62,11 +68,15 @@ func ExampleBasic() {
 			"firstName" : "Nas"
 			}]
 		}`)
-	errs = rs.ValidateBytes(invalidFriend)
+	errs, err = rs.ValidateBytes(invalidFriend)
+	if err != nil {
+		panic(err)
+	}
+
 	fmt.Println(errs[0].Error())
 
-	// Output: "lastName" value is required
-	// "friends" property ["lastName" value is required]
+	// Output: /: {"firstName":"Prince... "lastName" value is required
+	// /friends/0: {"firstName":"Nas"} "lastName" value is required
 }
 
 func TestMust(t *testing.T) {
@@ -343,7 +353,8 @@ func runJSONTests(t *testing.T, testFilepaths []string) {
 			}
 			for i, c := range ts.Tests {
 				tests++
-				got := sc.Validate(c.Data)
+				got := []ValError{}
+				sc.Validate("/", c.Data, &got)
 				valid := len(got) == 0
 				if valid != c.Valid {
 					t.Errorf("%s: %s test case %d: %s. error: %s", base, ts.Description, i, c.Description, got)
@@ -422,6 +433,50 @@ func TestJSONCoding(t *testing.T) {
 			t.Errorf("expected:\n%s", string(data))
 			t.Errorf("got:\n%s", string(output))
 			continue
+		}
+	}
+}
+
+func TestValidateBytes(t *testing.T) {
+	cases := []struct {
+		schema string
+		input  string
+		errors []string
+	}{
+		{`true`, `"just a string yo"`, nil},
+		{`{"type":"array", "items": {"type":"string"}}`,
+			`[1,false,null]`,
+			[]string{
+				`/0: 1 type should be string`,
+				`/1: false type should be string`,
+				`/2: type should be string`,
+			}},
+	}
+
+	for i, c := range cases {
+		rs := &RootSchema{}
+		if err := rs.UnmarshalJSON([]byte(c.schema)); err != nil {
+			t.Errorf("case %d error parsing %s", i, err.Error())
+			continue
+		}
+
+		errors, err := rs.ValidateBytes([]byte(c.input))
+		if err != nil {
+			t.Errorf("case %d error validating: %s", i, err.Error())
+			continue
+		}
+
+		if len(errors) != len(c.errors) {
+			t.Errorf("case %d: error length mismatch. expected: %d, got: %d", i, len(c.errors), len(errors))
+			t.Errorf("%v", errors)
+			continue
+		}
+
+		for j, e := range errors {
+			if e.Error() != c.errors[j] {
+				t.Errorf("case %d: validation error %d mismatch. expected: %s, got: %s", i, j, c.errors[j], e.Error())
+				continue
+			}
 		}
 	}
 }
