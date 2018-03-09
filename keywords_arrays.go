@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+
+	"github.com/qri-io/jsonpointer"
 )
 
 // Items MUST be either a valid JSON Schema or an array of valid JSON Schemas.
@@ -16,7 +18,7 @@ import (
 //   against the schema at the same position, if any.
 // * Omitting this keyword has the same behavior as an empty schema.
 type Items struct {
-	// need to track weather user specficied a singl object or arry
+	// need to track weather user specficied a single object or arry
 	// b/c it affects AdditionalItems validation semantics
 	single  bool
 	Schemas []*Schema
@@ -28,25 +30,27 @@ func NewItems() Validator {
 }
 
 // Validate implements the Validator interface for Items
-func (it Items) Validate(data interface{}) []ValError {
+func (it Items) Validate(propPath string, data interface{}, errs *[]ValError) {
+	jp, err := jsonpointer.Parse(propPath)
+	if err != nil {
+		AddError(errs, propPath, nil, fmt.Sprintf("invalid property path: %s", err.Error()))
+	}
+
 	if arr, ok := data.([]interface{}); ok {
 		if it.single {
-			for _, elem := range arr {
-				if ves := it.Schemas[0].Validate(elem); len(ves) > 0 {
-					return ves
-				}
+			for i, elem := range arr {
+				d, _ := jp.Descendant(strconv.Itoa(i))
+				it.Schemas[0].Validate(d.String(), elem, errs)
 			}
 		} else {
 			for i, vs := range it.Schemas {
 				if i < len(arr) {
-					if ves := vs.Validate(arr[i]); len(ves) > 0 {
-						return ves
-					}
+					d, _ := jp.Descendant(strconv.Itoa(i))
+					vs.Validate(d.String(), arr[i], errs)
 				}
 			}
 		}
 	}
-	return nil
 }
 
 // JSONProp implements JSON property name indexing for Items
@@ -110,20 +114,23 @@ func NewAdditionalItems() Validator {
 }
 
 // Validate implements the Validator interface for AdditionalItems
-func (a *AdditionalItems) Validate(data interface{}) (errs []ValError) {
+func (a *AdditionalItems) Validate(propPath string, data interface{}, errs *[]ValError) {
+	jp, err := jsonpointer.Parse(propPath)
+	if err != nil {
+		AddError(errs, propPath, nil, fmt.Sprintf("invalid property path: %s", err.Error()))
+	}
+
 	if a.startIndex >= 0 {
 		if arr, ok := data.([]interface{}); ok {
 			for i, elem := range arr {
 				if i < a.startIndex {
 					continue
 				}
-				if ves := a.Schema.Validate(elem); len(ves) > 0 {
-					errs = append(errs, ves...)
-				}
+				d, _ := jp.Descendant(strconv.Itoa(i))
+				a.Schema.Validate(d.String(), elem, errs)
 			}
 		}
 	}
-	return
 }
 
 // JSONProp implements JSON property name indexing for AdditionalItems
@@ -161,15 +168,13 @@ func NewMaxItems() Validator {
 }
 
 // Validate implements the Validator interface for MaxItems
-func (m MaxItems) Validate(data interface{}) []ValError {
+func (m MaxItems) Validate(propPath string, data interface{}, errs *[]ValError) {
 	if arr, ok := data.([]interface{}); ok {
 		if len(arr) > int(m) {
-			return []ValError{
-				{Message: fmt.Sprintf("%d array Items exceeds %d max", len(arr), m)},
-			}
+			AddError(errs, propPath, data, fmt.Sprintf("array length %d exceeds %d max", len(arr), m))
+			return
 		}
 	}
-	return nil
 }
 
 // MinItems MUST be a non-negative integer.
@@ -183,15 +188,13 @@ func NewMinItems() Validator {
 }
 
 // Validate implements the Validator interface for MinItems
-func (m MinItems) Validate(data interface{}) []ValError {
+func (m MinItems) Validate(propPath string, data interface{}, errs *[]ValError) {
 	if arr, ok := data.([]interface{}); ok {
 		if len(arr) < int(m) {
-			return []ValError{
-				{Message: fmt.Sprintf("%d array Items below %d minimum", len(arr), m)},
-			}
+			AddError(errs, propPath, data, fmt.Sprintf("array length %d below %d minimum items", len(arr), m))
+			return
 		}
 	}
-	return nil
 }
 
 // UniqueItems requires array instance elements be unique
@@ -206,21 +209,19 @@ func NewUniqueItems() Validator {
 }
 
 // Validate implements the Validator interface for UniqueItems
-func (u *UniqueItems) Validate(data interface{}) []ValError {
+func (u *UniqueItems) Validate(propPath string, data interface{}, errs *[]ValError) {
 	if arr, ok := data.([]interface{}); ok {
 		found := []interface{}{}
 		for _, elem := range arr {
 			for _, f := range found {
 				if reflect.DeepEqual(f, elem) {
-					return []ValError{
-						{Message: fmt.Sprintf("arry must be unique: %v", arr)},
-					}
+					AddError(errs, propPath, data, fmt.Sprintf("array items must be unique. duplicated entry: %v", elem))
+					return
 				}
 			}
 			found = append(found, elem)
 		}
 	}
-	return nil
 }
 
 // Contains validates that an array instance is valid against "Contains" if at
@@ -233,19 +234,18 @@ func NewContains() Validator {
 }
 
 // Validate implements the Validator interface for Contains
-func (c *Contains) Validate(data interface{}) []ValError {
+func (c *Contains) Validate(propPath string, data interface{}, errs *[]ValError) {
 	v := Schema(*c)
 	if arr, ok := data.([]interface{}); ok {
 		for _, elem := range arr {
-			if err := v.Validate(elem); err == nil {
-				return nil
+			test := &[]ValError{}
+			v.Validate(propPath, elem, test)
+			if len(*test) == 0 {
+				return
 			}
 		}
-		return []ValError{
-			{Message: fmt.Sprintf("expected %v to contain at least one of: %v", data, c)},
-		}
+		AddError(errs, propPath, data, fmt.Sprintf("must contain at least one of: %v", c))
 	}
-	return nil
 }
 
 // JSONProp implements JSON property name indexing for Contains

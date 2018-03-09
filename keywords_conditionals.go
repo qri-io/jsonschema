@@ -20,21 +20,24 @@ func NewIf() Validator {
 }
 
 // Validate implements the Validator interface for If
-func (i *If) Validate(data interface{}) []ValError {
-	if err := i.Schema.Validate(data); err == nil {
+func (i *If) Validate(propPath string, data interface{}, errs *[]ValError) {
+	test := &[]ValError{}
+	i.Schema.Validate(propPath, data, test)
+	if len(*test) == 0 {
 		if i.Then != nil {
 			s := Schema(*i.Then)
 			sch := &s
-			return sch.Validate(data)
+			sch.Validate(propPath, data, errs)
+			return
 		}
 	} else {
 		if i.Else != nil {
 			s := Schema(*i.Else)
 			sch := &s
-			return sch.Validate(data)
+			sch.Validate(propPath, data, errs)
+			return
 		}
 	}
-	return nil
 }
 
 // JSONProp implements JSON property name indexing for If
@@ -73,9 +76,7 @@ func NewThen() Validator {
 }
 
 // Validate implements the Validator interface for Then
-func (t *Then) Validate(data interface{}) []ValError {
-	return nil
-}
+func (t *Then) Validate(propPath string, data interface{}, errs *[]ValError) {}
 
 // JSONProp implements JSON property name indexing for Then
 func (t Then) JSONProp(name string) interface{} {
@@ -113,9 +114,7 @@ func NewElse() Validator {
 }
 
 // Validate implements the Validator interface for Else
-func (e *Else) Validate(data interface{}) []ValError {
-	return nil
-}
+func (e *Else) Validate(propPath string, data interface{}, err *[]ValError) {}
 
 // JSONProp implements JSON property name indexing for Else
 func (e Else) JSONProp(name string) interface{} {

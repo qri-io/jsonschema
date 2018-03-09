@@ -21,7 +21,12 @@ func TestSchemaDeref(t *testing.T) {
 		return
 	}
 
-	got := rs.ValidateBytes([]byte(`"a"`))
+	got, err := rs.ValidateBytes([]byte(`"a"`))
+	if err != nil {
+		t.Errorf("error validating bytes: %s", err.Error())
+		return
+	}
+
 	if got == nil {
 		t.Errorf("expected error, got nil")
 		return

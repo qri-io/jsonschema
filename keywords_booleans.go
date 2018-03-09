@@ -2,7 +2,6 @@ package jsonschema
 
 import (
 	"encoding/json"
-	"fmt"
 	"strconv"
 )
 
@@ -16,13 +15,10 @@ func NewAllOf() Validator {
 }
 
 // Validate implements the validator interface for AllOf
-func (a AllOf) Validate(data interface{}) (errs []ValError) {
+func (a AllOf) Validate(propPath string, data interface{}, errs *[]ValError) {
 	for _, sch := range a {
-		if ves := sch.Validate(data); len(ves) > 0 {
-			errs = append(errs, ves...)
-		}
+		sch.Validate(propPath, data, errs)
 	}
-	return
 }
 
 // JSONProp implements JSON property name indexing for AllOf
@@ -57,15 +53,15 @@ func NewAnyOf() Validator {
 }
 
 // Validate implements the validator interface for AnyOf
-func (a AnyOf) Validate(data interface{}) []ValError {
+func (a AnyOf) Validate(propPath string, data interface{}, errs *[]ValError) {
 	for _, sch := range a {
-		if err := sch.Validate(data); err == nil {
-			return nil
+		test := &[]ValError{}
+		sch.Validate(propPath, data, test)
+		if len(*test) == 0 {
+			return
 		}
 	}
-	return []ValError{
-		{Message: fmt.Sprintf("value did Not match any specified AnyOf schemas: %v", data)},
-	}
+	AddError(errs, propPath, data, "did Not match any specified AnyOf schemas")
 }
 
 // JSONProp implements JSON property name indexing for AnyOf
@@ -99,24 +95,22 @@ func NewOneOf() Validator {
 }
 
 // Validate implements the validator interface for OneOf
-func (o OneOf) Validate(data interface{}) []ValError {
+func (o OneOf) Validate(propPath string, data interface{}, errs *[]ValError) {
 	matched := false
 	for _, sch := range o {
-		if err := sch.Validate(data); err == nil {
+		test := &[]ValError{}
+		sch.Validate(propPath, data, test)
+		if len(*test) == 0 {
 			if matched {
-				return []ValError{
-					{Message: fmt.Sprintf("value matched more than one specified OneOf schemas")},
-				}
+				AddError(errs, propPath, data, "matched more than one specified OneOf schemas")
+				return
 			}
 			matched = true
 		}
 	}
 	if !matched {
-		return []ValError{
-			{Message: fmt.Sprintf("value did Not match any of the specified OneOf schemas")},
-		}
+		AddError(errs, propPath, data, "did not match any of the specified OneOf schemas")
 	}
-	return nil
 }
 
 // JSONProp implements JSON property name indexing for OneOf
@@ -151,15 +145,14 @@ func NewNot() Validator {
 }
 
 // Validate implements the validator interface for Not
-func (n *Not) Validate(data interface{}) []ValError {
+func (n *Not) Validate(propPath string, data interface{}, errs *[]ValError) {
 	sch := Schema(*n)
-	if sch.Validate(data) == nil {
+	test := &[]ValError{}
+	sch.Validate(propPath, data, test)
+	if len(*test) == 0 {
 		// TODO - make this error actually make sense
-		return []ValError{
-			{Message: fmt.Sprintf("Not clause")},
-		}
+		AddError(errs, propPath, data, "cannot match schema")
 	}
-	return nil
 }
 
 // JSONProp implements JSON property name indexing for Not

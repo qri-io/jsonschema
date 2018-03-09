@@ -167,14 +167,14 @@ func (rs *RootSchema) FetchRemoteReferences() error {
 
 // ValidateBytes performs schema validation against a slice of json
 // byte data
-func (rs *RootSchema) ValidateBytes(data []byte) []ValError {
+func (rs *RootSchema) ValidateBytes(data []byte) ([]ValError, error) {
 	var doc interface{}
+	errs := []ValError{}
 	if err := json.Unmarshal(data, &doc); err != nil {
-		return []ValError{
-			{Message: fmt.Sprintf("error parsing JSON: %s", err.Error())},
-		}
+		return errs, fmt.Errorf("error parsing JSON bytes: %s", err.Error())
 	}
-	return rs.Validate(doc)
+	rs.Validate("/", doc, &errs)
+	return errs, nil
 }
 
 func (rs *RootSchema) evalJSONValidatorPointer(ptr jsonpointer.Pointer) (res interface{}, err error) {
@@ -343,18 +343,20 @@ type Schema struct {
 	Validators map[string]Validator
 }
 
-// Validate uses the schema to check an instance, returning error on
-// the first error
-func (s *Schema) Validate(data interface{}) (errs []ValError) {
+// Path gives a jsonpointer path to the validator
+func (s *Schema) Path() string {
+	return ""
+}
+
+// Validate uses the schema to check an instance, collecting validation
+// errors in a slice
+func (s *Schema) Validate(propPath string, data interface{}, errs *[]ValError) {
 	if s.Ref != "" && s.ref != nil {
-		if ves := s.ref.Validate(data); len(ves) > 0 {
-			errs = append(errs, ves...)
-		}
+		s.ref.Validate(propPath, data, errs)
 		return
 	} else if s.Ref != "" && s.ref == nil {
-		return []ValError{
-			{Message: fmt.Sprintf("%s reference is nil for data: %v", s.Ref, data)},
-		}
+		AddError(errs, propPath, data, fmt.Sprintf("%s reference is nil for data: %v", s.Ref, data))
+		return
 	}
 
 	// TODO - so far all default.json tests pass when no use of
@@ -362,11 +364,8 @@ func (s *Schema) Validate(data interface{}) (errs []ValError) {
 	// Is this correct?
 
 	for _, v := range s.Validators {
-		if ves := v.Validate(data); len(ves) > 0 {
-			errs = append(errs, ves...)
-		}
+		v.Validate(propPath, data, errs)
 	}
-	return
 }
 
 // JSONProp implements the JSONPather for Schema

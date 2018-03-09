@@ -18,15 +18,12 @@ func NewMaxLength() Validator {
 }
 
 // Validate implements the Validator interface for MaxLength
-func (m MaxLength) Validate(data interface{}) []ValError {
+func (m MaxLength) Validate(propPath string, data interface{}, errs *[]ValError) {
 	if str, ok := data.(string); ok {
 		if utf8.RuneCountInString(str) > int(m) {
-			return []ValError{
-				{Message: fmt.Sprintf("max length of %d characters exceeded: %s", m, str)},
-			}
+			AddError(errs, propPath, data, fmt.Sprintf("max length of %d characters exceeded: %s", m, str))
 		}
 	}
-	return nil
 }
 
 // MinLength MUST be a non-negative integer.
@@ -41,15 +38,12 @@ func NewMinLength() Validator {
 }
 
 // Validate implements the Validator interface for MinLength
-func (m MinLength) Validate(data interface{}) []ValError {
+func (m MinLength) Validate(propPath string, data interface{}, errs *[]ValError) {
 	if str, ok := data.(string); ok {
 		if utf8.RuneCountInString(str) < int(m) {
-			return []ValError{
-				{Message: fmt.Sprintf("min length of %d characters required: %s", m, str)},
-			}
+			AddError(errs, propPath, data, fmt.Sprintf("min length of %d characters required: %s", m, str))
 		}
 	}
-	return nil
 }
 
 // Pattern MUST be a string. This string SHOULD be a valid regular expression,
@@ -64,16 +58,13 @@ func NewPattern() Validator {
 }
 
 // Validate implements the Validator interface for Pattern
-func (p Pattern) Validate(data interface{}) []ValError {
+func (p Pattern) Validate(propPath string, data interface{}, errs *[]ValError) {
 	re := regexp.Regexp(p)
 	if str, ok := data.(string); ok {
 		if !re.Match([]byte(str)) {
-			return []ValError{
-				{Message: fmt.Sprintf("regext pattrn %s mismatch on string: %s", re.String(), str)},
-			}
+			AddError(errs, propPath, data, fmt.Sprintf("regexp pattrn %s mismatch on string: %s", re.String(), str))
 		}
 	}
-	return nil
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface for Pattern
