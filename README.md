@@ -8,9 +8,6 @@
 
 golang implementation of the [JSON Schema Specification](http://json-schema.org/), which lets you write JSON that validates some other json. Rad.
 
-### 🚧 New Package Alert 🚧
-This is a very new implementation and hasn't been tested by things that aren't computers. If you run into issues, please file an... issue, and we'll all work together to address it.
-
 ### Package Features
 
 * Encode schemas back to JSON
