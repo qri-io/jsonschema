@@ -46,15 +46,18 @@ type RootSchema struct {
 	// for current and previous published drafts of JSON Schema
 	// vocabularies as deemed reasonable.
 	SchemaURI string `json:"$schema"`
-	// Whether the top-level of the schema is an array or not.
-	// Assume it's an object otherwise.
-	TopIsArray bool
 }
 
-func determineTopIsArray(sch *Schema) bool {
-	validator := sch.Validators["type"]
-	typeValidator, ok := validator.(*Type)
-	return ok && typeValidator.FirstValue() == "array"
+// TopLevelType returns a string representing the schema's top-level type.
+func (rs *RootSchema) TopLevelType() string {
+	validator, ok := rs.Schema.Validators["type"]
+	if ok {
+		typeValidator, ok := validator.(*Type)
+		if ok {
+			return typeValidator.String()
+		}
+	}
+	return "unknown"
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface for
@@ -64,7 +67,6 @@ func (rs *RootSchema) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, sch); err != nil {
 		return err
 	}
-	topIsArray := determineTopIsArray(sch)
 
 	if sch.schemaType == schemaTypeFalse || sch.schemaType == schemaTypeTrue {
 		*rs = RootSchema{Schema: *sch}
@@ -81,7 +83,6 @@ func (rs *RootSchema) UnmarshalJSON(data []byte) error {
 	root := &RootSchema{
 		Schema:     *sch,
 		SchemaURI:  suri.SchemaURI,
-		TopIsArray: topIsArray,
 	}
 
 	// collect IDs for internal referencing:
@@ -135,7 +136,6 @@ func (rs *RootSchema) UnmarshalJSON(data []byte) error {
 	*rs = RootSchema{
 		Schema:     *sch,
 		SchemaURI:  suri.SchemaURI,
-		TopIsArray: topIsArray,
 	}
 	return nil
 }

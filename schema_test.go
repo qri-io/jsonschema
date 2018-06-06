@@ -94,8 +94,8 @@ func TestTopLevelType(t *testing.T) {
 	if err := json.Unmarshal(schemaObject, rs); err != nil {
 		panic("unmarshal schema: " + err.Error())
 	}
-	if rs.TopIsArray {
-		t.Errorf("error: schemaObject should not be an array")
+	if rs.TopLevelType() != "object" {
+		t.Errorf("error: schemaObject should be an object")
 	}
 
 	schemaArray := []byte(`{
@@ -107,8 +107,8 @@ func TestTopLevelType(t *testing.T) {
 	if err := json.Unmarshal(schemaArray, rs); err != nil {
 		panic("unmarshal schema: " + err.Error())
 	}
-	if !rs.TopIsArray {
-		t.Errorf("error: schemaArray should not be an object")
+	if rs.TopLevelType() != "array" {
+		t.Errorf("error: schemaArray should be an array")
 	}
 }
 

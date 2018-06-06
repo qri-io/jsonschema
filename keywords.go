@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
 )
 
 // primitiveTypes is a map of strings to check types against
@@ -60,11 +61,11 @@ func NewType() Validator {
 }
 
 // FirstValue returns the first element in the values of this type.
-func (t Type) FirstValue() string {
+func (t Type) String() string {
 	if len(t.vals) == 0 {
-		return ""
+		return "unknown"
 	}
-	return t.vals[0]
+	return strings.Join(t.vals, ",")
 }
 
 // Validate checks to see if input data satisfies the type constraint
