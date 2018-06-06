@@ -79,6 +79,39 @@ func ExampleBasic() {
 	// /friends/0: {"firstName":"Nas"} "lastName" value is required
 }
 
+func TestTopLevelType(t *testing.T) {
+	schemaObject := []byte(`{
+    "title": "Car",
+    "type": "object",
+    "properties": {
+        "color": {
+            "type": "string"
+        }
+    },
+    "required": ["color"]
+}`)
+	rs := &RootSchema{}
+	if err := json.Unmarshal(schemaObject, rs); err != nil {
+		panic("unmarshal schema: " + err.Error())
+	}
+	if rs.TopIsArray {
+		t.Errorf("error: schemaObject should not be an array")
+	}
+
+	schemaArray := []byte(`{
+    "title": "Cities",
+    "type": "array",
+    "items" : { "title" : "REFERENCE", "$ref" : "#" }
+}`)
+	rs = &RootSchema{}
+	if err := json.Unmarshal(schemaArray, rs); err != nil {
+		panic("unmarshal schema: " + err.Error())
+	}
+	if !rs.TopIsArray {
+		t.Errorf("error: schemaArray should not be an object")
+	}
+}
+
 func TestMust(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {

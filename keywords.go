@@ -59,6 +59,14 @@ func NewType() Validator {
 	return &Type{}
 }
 
+// FirstValue returns the first element in the values of this type.
+func (t Type) FirstValue() string {
+	if len(t.vals) == 0 {
+		return ""
+	}
+	return t.vals[0]
+}
+
 // Validate checks to see if input data satisfies the type constraint
 func (t Type) Validate(propPath string, data interface{}, errs *[]ValError) {
 	jt := DataType(data)
