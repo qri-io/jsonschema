@@ -110,6 +110,18 @@ func TestTopLevelType(t *testing.T) {
 	if rs.TopLevelType() != "array" {
 		t.Errorf("error: schemaArray should be an array")
 	}
+
+	schemaUnknown := []byte(`{
+    "title": "Typeless",
+    "items" : { "title" : "REFERENCE", "$ref" : "#" }
+}`)
+	rs = &RootSchema{}
+	if err := json.Unmarshal(schemaUnknown, rs); err != nil {
+		panic("unmarshal schema: " + err.Error())
+	}
+	if rs.TopLevelType() != "unknown" {
+		t.Errorf("error: schemaUnknown should have unknown type")
+	}
 }
 
 func TestMust(t *testing.T) {

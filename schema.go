@@ -50,12 +50,8 @@ type RootSchema struct {
 
 // TopLevelType returns a string representing the schema's top-level type.
 func (rs *RootSchema) TopLevelType() string {
-	validator, ok := rs.Schema.Validators["type"]
-	if ok {
-		typeValidator, ok := validator.(*Type)
-		if ok {
-			return typeValidator.String()
-		}
+	if t, ok := rs.Schema.Validators["type"].(*Type); ok {
+		return t.String()
 	}
 	return "unknown"
 }

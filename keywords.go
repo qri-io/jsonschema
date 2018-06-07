@@ -60,7 +60,7 @@ func NewType() Validator {
 	return &Type{}
 }
 
-// FirstValue returns the first element in the values of this type.
+// String returns the type(s) as a string, or unknown if there is no known type.
 func (t Type) String() string {
 	if len(t.vals) == 0 {
 		return "unknown"
