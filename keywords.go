@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
 )
 
 // primitiveTypes is a map of strings to check types against
@@ -57,6 +58,14 @@ type Type struct {
 // NewType creates a new Type Validator
 func NewType() Validator {
 	return &Type{}
+}
+
+// String returns the type(s) as a string, or unknown if there is no known type.
+func (t Type) String() string {
+	if len(t.vals) == 0 {
+		return "unknown"
+	}
+	return strings.Join(t.vals, ",")
 }
 
 // Validate checks to see if input data satisfies the type constraint

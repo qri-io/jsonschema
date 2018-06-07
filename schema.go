@@ -48,6 +48,14 @@ type RootSchema struct {
 	SchemaURI string `json:"$schema"`
 }
 
+// TopLevelType returns a string representing the schema's top-level type.
+func (rs *RootSchema) TopLevelType() string {
+	if t, ok := rs.Schema.Validators["type"].(*Type); ok {
+		return t.String()
+	}
+	return "unknown"
+}
+
 // UnmarshalJSON implements the json.Unmarshaler interface for
 // RootSchema
 func (rs *RootSchema) UnmarshalJSON(data []byte) error {
@@ -69,8 +77,8 @@ func (rs *RootSchema) UnmarshalJSON(data []byte) error {
 	}
 
 	root := &RootSchema{
-		Schema:    *sch,
-		SchemaURI: suri.SchemaURI,
+		Schema:     *sch,
+		SchemaURI:  suri.SchemaURI,
 	}
 
 	// collect IDs for internal referencing:
@@ -122,8 +130,8 @@ func (rs *RootSchema) UnmarshalJSON(data []byte) error {
 	}
 
 	*rs = RootSchema{
-		Schema:    *sch,
-		SchemaURI: suri.SchemaURI,
+		Schema:     *sch,
+		SchemaURI:  suri.SchemaURI,
 	}
 	return nil
 }

@@ -79,6 +79,51 @@ func ExampleBasic() {
 	// /friends/0: {"firstName":"Nas"} "lastName" value is required
 }
 
+func TestTopLevelType(t *testing.T) {
+	schemaObject := []byte(`{
+    "title": "Car",
+    "type": "object",
+    "properties": {
+        "color": {
+            "type": "string"
+        }
+    },
+    "required": ["color"]
+}`)
+	rs := &RootSchema{}
+	if err := json.Unmarshal(schemaObject, rs); err != nil {
+		panic("unmarshal schema: " + err.Error())
+	}
+	if rs.TopLevelType() != "object" {
+		t.Errorf("error: schemaObject should be an object")
+	}
+
+	schemaArray := []byte(`{
+    "title": "Cities",
+    "type": "array",
+    "items" : { "title" : "REFERENCE", "$ref" : "#" }
+}`)
+	rs = &RootSchema{}
+	if err := json.Unmarshal(schemaArray, rs); err != nil {
+		panic("unmarshal schema: " + err.Error())
+	}
+	if rs.TopLevelType() != "array" {
+		t.Errorf("error: schemaArray should be an array")
+	}
+
+	schemaUnknown := []byte(`{
+    "title": "Typeless",
+    "items" : { "title" : "REFERENCE", "$ref" : "#" }
+}`)
+	rs = &RootSchema{}
+	if err := json.Unmarshal(schemaUnknown, rs); err != nil {
+		panic("unmarshal schema: " + err.Error())
+	}
+	if rs.TopLevelType() != "unknown" {
+		t.Errorf("error: schemaUnknown should have unknown type")
+	}
+}
+
 func TestMust(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
