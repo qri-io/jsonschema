@@ -311,7 +311,7 @@ type Schema struct {
 	// unless the vocabulary specifically forbids it. Vocabularies MUST
 	// NOT specify any effect of "$comment" beyond what is described in
 	// this specification.
-	Comment string `json:"comment,omitempty"`
+	Comment string `json:"$comment,omitempty"`
 	// Ref is used to reference a schema, and provides the ability to
 	// validate recursive structures through self-reference. An object
 	// schema with a "$ref" property MUST be interpreted as a "$ref"
@@ -393,7 +393,7 @@ func (s Schema) JSONProp(name string) interface{} {
 		return s.ReadOnly
 	case "writeOnly":
 		return s.WriteOnly
-	case "comment":
+	case "$comment":
 		return s.Comment
 	case "$ref":
 		return s.Ref
@@ -444,7 +444,7 @@ type _schema struct {
 	Examples    []interface{}      `json:"examples,omitempty"`
 	ReadOnly    *bool              `json:"readOnly,omitempty"`
 	WriteOnly   *bool              `json:"writeOnly,omitempty"`
-	Comment     string             `json:"comment,omitempty"`
+	Comment     string             `json:"$comment,omitempty"`
 	Ref         string             `json:"$ref,omitempty"`
 	Definitions map[string]*Schema `json:"definitions,omitempty"`
 	Format      string             `json:"format,omitempty"`
@@ -508,7 +508,7 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 		} else {
 			switch prop {
 			// skip any already-parsed props
-			case "$schema", "$id", "title", "description", "default", "examples", "readOnly", "writeOnly", "comment", "$ref", "definitions", "format":
+			case "$schema", "$id", "title", "description", "default", "examples", "readOnly", "writeOnly", "$comment", "$ref", "definitions", "format":
 				continue
 			default:
 				// assume non-specified props are "extra definitions"
@@ -587,7 +587,7 @@ func (s Schema) MarshalJSON() ([]byte, error) {
 			obj["writeOnly"] = s.WriteOnly
 		}
 		if s.Comment != "" {
-			obj["comment"] = s.Comment
+			obj["$comment"] = s.Comment
 		}
 		if s.Ref != "" {
 			obj["$ref"] = s.Ref
