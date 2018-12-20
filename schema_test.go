@@ -16,6 +16,7 @@ func ExampleBasic() {
 	var schemaData = []byte(`{
     "title": "Person",
     "type": "object",
+    "$comment" : "sample comment",
     "properties": {
         "firstName": {
             "type": "string"
