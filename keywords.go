@@ -214,7 +214,7 @@ func (c Const) Validate(propPath string, data interface{}, errs *[]ValError) {
 	}
 
 	if !reflect.DeepEqual(con, data) {
-		AddError(errs, propPath, data, fmt.Sprintf(`must equal %s`, InvalidValueString(data)))
+		AddError(errs, propPath, data, fmt.Sprintf(`must equal %s`, InvalidValueString(con)))
 	}
 }
 
