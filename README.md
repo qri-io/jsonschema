@@ -72,15 +72,15 @@ func main() {
     "lastName" : "Michael"
     }`)
 
-	if errors := rs.ValidateBytes(valid); len(errors) > 0 {
-		panic(err)
+	if errors, _ := rs.ValidateBytes(valid); len(errors) > 0 {
+		panic(errors)
 	}
 
 	var invalidPerson = []byte(`{
     "firstName" : "Prince"
     }`)
-	if errors := rs.ValidateBytes(invalidPerson); len(errors) > 0 {
-  	fmt.Println(errs[0].Error())
+	if errors, _ := rs.ValidateBytes(invalidPerson); len(errors) > 0 {
+                fmt.Println(errors[0].Error())
   }
 
 	var invalidFriend = []byte(`{
@@ -90,8 +90,8 @@ func main() {
       "firstName" : "Nas"
       }]
     }`)
-	if errors := rs.ValidateBytes(invalidFriend); len(errors) > 0 {
-  	fmt.Println(errors[0].Error())
+	if errors, _ := rs.ValidateBytes(invalidFriend); len(errors) > 0 {
+	        fmt.Println(errors[0].Error())
   }
 }
 ```
