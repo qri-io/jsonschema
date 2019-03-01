@@ -10,9 +10,11 @@ package jsonschema
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/qri-io/jsonpointer"
 	"net/http"
 	"net/url"
+	"strings"
+
+	"github.com/qri-io/jsonpointer"
 )
 
 // Must turns a JSON string into a *RootSchema, panicing if parsing fails.
@@ -77,8 +79,8 @@ func (rs *RootSchema) UnmarshalJSON(data []byte) error {
 	}
 
 	root := &RootSchema{
-		Schema:     *sch,
-		SchemaURI:  suri.SchemaURI,
+		Schema:    *sch,
+		SchemaURI: suri.SchemaURI,
 	}
 
 	// collect IDs for internal referencing:
@@ -87,10 +89,16 @@ func (rs *RootSchema) UnmarshalJSON(data []byte) error {
 		if sch, ok := elem.(*Schema); ok {
 			if sch.ID != "" {
 				ids[sch.ID] = sch
-
-				// For the record, I think this is rediculous.
+				// For the record, I think this is ridiculous.
 				if u, err := url.Parse(sch.ID); err == nil {
-					ids[u.Path[1:]] = sch
+					// This is if the identifier is defined as a reference (with #)
+					// i.e. #/properties/firstName
+					// in this case, u.Fragment will have /properties/firstName
+					if strings.HasPrefix(sch.ID, "#") {
+						ids[u.Fragment[1:]] = sch
+					} else {
+						ids[u.Path[1:]] = sch
+					}
 				}
 			}
 		}
@@ -130,8 +138,8 @@ func (rs *RootSchema) UnmarshalJSON(data []byte) error {
 	}
 
 	*rs = RootSchema{
-		Schema:     *sch,
-		SchemaURI:  suri.SchemaURI,
+		Schema:    *sch,
+		SchemaURI: suri.SchemaURI,
 	}
 	return nil
 }
