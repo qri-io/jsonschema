@@ -125,6 +125,41 @@ func TestTopLevelType(t *testing.T) {
 	}
 }
 
+func TestParseUrl(t *testing.T) {
+	// Easy case, id is a standard URL
+	schemaObject := []byte(`{
+    "title": "Car",
+    "type": "object",
+    "$id": "http://example.com/root.json"
+}`)
+	rs := &RootSchema{}
+	if err := json.Unmarshal(schemaObject, rs); err != nil {
+		panic("unmarshal schema: " + err.Error())
+	}
+
+	// Tricky case, id is only a URL fragment
+	schemaObject = []byte(`{
+    "title": "Car",
+    "type": "object",
+    "$id": "#/properites/firstName"
+}`)
+	rs = &RootSchema{}
+	if err := json.Unmarshal(schemaObject, rs); err != nil {
+		panic("unmarshal schema: " + err.Error())
+	}
+
+	// Another tricky case, id is only an empty fragment
+	schemaObject = []byte(`{
+    "title": "Car",
+    "type": "object",
+    "$id": "#"
+}`)
+	rs = &RootSchema{}
+	if err := json.Unmarshal(schemaObject, rs); err != nil {
+		panic("unmarshal schema: " + err.Error())
+	}
+}
+
 func TestMust(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {

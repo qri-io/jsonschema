@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strings"
 
 	"github.com/qri-io/jsonpointer"
 )
@@ -91,13 +90,13 @@ func (rs *RootSchema) UnmarshalJSON(data []byte) error {
 				ids[sch.ID] = sch
 				// For the record, I think this is ridiculous.
 				if u, err := url.Parse(sch.ID); err == nil {
-					// This is if the identifier is defined as a reference (with #)
-					// i.e. #/properties/firstName
-					// in this case, u.Fragment will have /properties/firstName
-					if strings.HasPrefix(sch.ID, "#") {
-						ids[u.Fragment[1:]] = sch
-					} else {
+					if len(u.Path) >= 1 {
 						ids[u.Path[1:]] = sch
+					} else if len(u.Fragment) >= 1 {
+						// This handles if the identifier is defined as only a fragment (with #)
+						// i.e. #/properties/firstName
+						// in this case, u.Fragment will have /properties/firstName
+						ids[u.Fragment[1:]] = sch
 					}
 				}
 			}
