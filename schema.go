@@ -523,8 +523,8 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 					sch.extraDefinitions = Definitions{}
 				}
 				s := new(Schema)
-				if err := json.Unmarshal(rawmsg, s); err != nil {
-					return fmt.Errorf("error unmarshaling %s from json: %s", prop, err.Error())
+				if err := json.Unmarshal(rawmsg, s); err == nil {
+					sch.extraDefinitions[prop] = s
 				}
 				sch.extraDefinitions[prop] = s
 				continue

@@ -562,6 +562,23 @@ func TestValidateBytes(t *testing.T) {
 	}
 }
 
+func TestOpaqueProperties(t *testing.T) {
+	const input = `
+{
+    "$id": "https://www.github.com/schemas/robfig",
+    "properties": {
+        "name": {
+            "type": "string",
+            "opaque": "something"
+        }
+    }
+}`
+	var rs RootSchema
+	if err := rs.UnmarshalJSON([]byte(input)); err != nil {
+		t.Error(err)
+	}
+}
+
 // TODO - finish remoteRef.json tests by setting up a httptest server on localhost:1234
 // that uses an http.Dir to serve up testdata/remotes directory
 // func testServer() {
