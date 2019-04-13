@@ -13,6 +13,7 @@ golang implementation of the [JSON Schema Specification](http://json-schema.org/
 * Encode schemas back to JSON
 * Supply Your own Custom Validators
 * Uses Standard Go idioms
+* Fastest Go implementation of [JSON Schema validators](http://json-schema.org/implementations.html#validators) (draft 7 only, benchmarks are [here](https://github.com/TheWildBlue/validator-benchmarks) - thanks [@TheWildBlue](https://github.com/TheWildBlue)!)
 
 ### Getting Involved
 
