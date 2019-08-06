@@ -62,7 +62,7 @@ func (p Pattern) Validate(propPath string, data interface{}, errs *[]ValError) {
 	re := regexp.Regexp(p)
 	if str, ok := data.(string); ok {
 		if !re.Match([]byte(str)) {
-			AddError(errs, propPath, data, fmt.Sprintf("regexp pattrn %s mismatch on string: %s", re.String(), str))
+			AddError(errs, propPath, data, fmt.Sprintf("regexp pattern %s mismatch on string: %s", re.String(), str))
 		}
 	}
 }
