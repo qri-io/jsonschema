@@ -22,21 +22,24 @@ var primitiveTypes = map[string]bool{
 // DataType gives the primitive json type of a standard json-decoded value, plus the special case
 // "integer" for when numbers are whole
 func DataType(data interface{}) string {
-	switch v := data.(type) {
-	case nil:
+	if data == nil {
 		return "null"
-	case bool:
+	}
+
+	switch reflect.TypeOf(data).Kind() {
+	case reflect.Bool:
 		return "boolean"
-	case float64:
-		if float64(int(v)) == v {
+	case reflect.Float64:
+		number := reflect.ValueOf(data).Float()
+		if float64(int(number)) == number {
 			return "integer"
 		}
 		return "number"
-	case string:
+	case reflect.String:
 		return "string"
-	case []interface{}:
+	case reflect.Array, reflect.Slice:
 		return "array"
-	case map[string]interface{}:
+	case reflect.Map, reflect.Struct:
 		return "object"
 	default:
 		return "unknown"
