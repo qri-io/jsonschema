@@ -449,17 +449,24 @@ func runJSONTests(t *testing.T, testFilepaths []string) {
 }
 
 func TestDataType(t *testing.T) {
+	type customObject struct {}
+	type customNumber float64
+
 	cases := []struct {
 		data   interface{}
 		expect string
 	}{
 		{nil, "null"},
-		{struct{}{}, "unknown"},
 		{float64(4), "integer"},
 		{float64(4.5), "number"},
+		{customNumber(4.5), "number"},
 		{"foo", "string"},
-		{map[string]interface{}{}, "object"},
 		{[]interface{}{}, "array"},
+		{[0]interface{}{}, "array"},
+		{map[string]interface{}{}, "object"},
+		{struct{}{}, "object"},
+		{customObject{}, "object"},
+		{int8(42), "unknown"},
 	}
 
 	for i, c := range cases {
