@@ -12,8 +12,8 @@ func newIsFoo() Validator {
 	return new(IsFoo)
 }
 
-func (f IsFoo) Validate(propPath string, data interface{}, errs *[]ValError) {
-	if str, ok := data.(string); ok {
+func (f IsFoo) Validate(propPath string, data Val, errs *[]ValError) {
+	if str, ok := data.(StringVal); ok {
 		if str != "foo" {
 			AddError(errs, propPath, data, fmt.Sprintf("should be foo. plz make '%s' == foo. plz", str))
 		}
@@ -44,7 +44,7 @@ func ExampleCustomValidator() {
 
 type FooValidator uint8
 
-func (f *FooValidator) Validate(propPath string, data interface{}, errs *[]ValError) {}
+func (f *FooValidator) Validate(propPath string, data Val, errs *[]ValError) {}
 
 func TestRegisterValidator(t *testing.T) {
 	newFoo := func() Validator {

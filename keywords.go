@@ -5,46 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
-	"strings"
 )
-
-// primitiveTypes is a map of strings to check types against
-var primitiveTypes = map[string]bool{
-	"null":    true,
-	"boolean": true,
-	"object":  true,
-	"array":   true,
-	"number":  true,
-	"string":  true,
-	"integer": true,
-}
-
-// DataType gives the primitive json type of a standard json-decoded value, plus the special case
-// "integer" for when numbers are whole
-func DataType(data interface{}) string {
-	if data == nil {
-		return "null"
-	}
-
-	switch reflect.TypeOf(data).Kind() {
-	case reflect.Bool:
-		return "boolean"
-	case reflect.Float64:
-		number := reflect.ValueOf(data).Float()
-		if float64(int(number)) == number {
-			return "integer"
-		}
-		return "number"
-	case reflect.String:
-		return "string"
-	case reflect.Array, reflect.Slice:
-		return "array"
-	case reflect.Map, reflect.Struct:
-		return "object"
-	default:
-		return "unknown"
-	}
-}
 
 // Type specifies one of the six json primitive types.
 // The value of this keyword MUST be either a string or an array.
@@ -55,7 +16,7 @@ func DataType(data interface{}) string {
 type Type struct {
 	BaseValidator
 	strVal bool // set to true if Type decoded from a string, false if an array
-	vals   []string
+	vals   Ts
 }
 
 // NewType creates a new Type Validator
@@ -68,14 +29,13 @@ func (t Type) String() string {
 	if len(t.vals) == 0 {
 		return "unknown"
 	}
-	return strings.Join(t.vals, ",")
+	return t.vals.String()
 }
 
 // Validate checks to see if input data satisfies the type constraint
-func (t Type) Validate(propPath string, data interface{}, errs *[]ValError) {
-	jt := DataType(data)
+func (t Type) Validate(propPath string, data Val, errs *[]ValError) {
 	for _, typestr := range t.vals {
-		if jt == typestr || jt == "integer" && typestr == "number" {
+		if data.Type() == typestr || data.Type() == Integer && typestr == Number {
 			return
 		}
 	}
@@ -86,7 +46,7 @@ func (t Type) Validate(propPath string, data interface{}, errs *[]ValError) {
 
 	str := ""
 	for _, ts := range t.vals {
-		str += ts + ","
+		str += string(ts) + ","
 	}
 
 	t.AddError(errs, propPath, data, fmt.Sprintf(`type should be one of: %s`, str[:len(str)-1]))
@@ -108,9 +68,9 @@ func (t Type) JSONProp(name string) interface{} {
 func (t *Type) UnmarshalJSON(data []byte) error {
 	var single string
 	if err := json.Unmarshal(data, &single); err == nil {
-		*t = Type{strVal: true, vals: []string{single}}
+		*t = Type{strVal: true, vals: Ts{T(single)}}
 	} else {
-		var set []string
+		var set Ts
 		if err := json.Unmarshal(data, &set); err == nil {
 			*t = Type{vals: set}
 		} else {
@@ -119,7 +79,7 @@ func (t *Type) UnmarshalJSON(data []byte) error {
 	}
 
 	for _, pr := range t.vals {
-		if !primitiveTypes[pr] {
+		if !mapT[pr] {
 			return fmt.Errorf(`"%s" is not a valid type`, pr)
 		}
 	}
@@ -160,7 +120,7 @@ func (e Enum) Path() string {
 }
 
 // Validate implements the Validator interface for Enum
-func (e Enum) Validate(propPath string, data interface{}, errs *[]ValError) {
+func (e Enum) Validate(propPath string, data Val, errs *[]ValError) {
 	for _, v := range e {
 		test := &[]ValError{}
 		v.Validate(propPath, data, test)
@@ -209,14 +169,26 @@ func (c Const) Path() string {
 }
 
 // Validate implements the validate interface for Const
-func (c Const) Validate(propPath string, data interface{}, errs *[]ValError) {
+func (c Const) Validate(propPath string, data Val, errs *[]ValError) {
 	var con interface{}
 	if err := json.Unmarshal(c, &con); err != nil {
 		AddError(errs, propPath, data, err.Error())
 		return
 	}
 
-	if !reflect.DeepEqual(con, data) {
+	// Normalize the input to match the constant type.
+	var val interface{}
+	b, err := json.Marshal(data.Raw())
+	if err != nil {
+		AddError(errs, propPath, data, err.Error())
+		return
+	}
+	if err := json.Unmarshal(b, &val); err != nil {
+		AddError(errs, propPath, data, err.Error())
+		return
+	}
+
+	if !reflect.DeepEqual(con, val) {
 		AddError(errs, propPath, data, fmt.Sprintf(`must equal %s`, InvalidValueString(con)))
 	}
 }

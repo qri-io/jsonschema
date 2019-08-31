@@ -45,10 +45,10 @@ func InvalidValueString(data interface{}) string {
 }
 
 // AddError creates and appends a ValError to errs
-func AddError(errs *[]ValError, propPath string, data interface{}, msg string) {
+func AddError(errs *[]ValError, propPath string, data Val, msg string) {
 	*errs = append(*errs, ValError{
 		PropertyPath: propPath,
-		InvalidValue: data,
+		InvalidValue: data.Raw(),
 		Message:      msg,
 	})
 }

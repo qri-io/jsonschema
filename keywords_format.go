@@ -58,44 +58,44 @@ func NewFormat() Validator {
 }
 
 // Validate validates input against a keyword
-func (f Format) Validate(propPath string, data interface{}, errs *[]ValError) {
+func (f Format) Validate(propPath string, data Val, errs *[]ValError) {
 	var err error
-	if str, ok := data.(string); ok {
+	if str, ok := data.(StringVal); ok {
 		switch f {
 		case "date-time":
-			err = isValidDateTime(str)
+			err = isValidDateTime(string(str))
 		case "date":
-			err = isValidDate(str)
+			err = isValidDate(string(str))
 		case "email":
-			err = isValidEmail(str)
+			err = isValidEmail(string(str))
 		case "hostname":
-			err = isValidHostname(str)
+			err = isValidHostname(string(str))
 		case "idn-email":
-			err = isValidIDNEmail(str)
+			err = isValidIDNEmail(string(str))
 		case "idn-hostname":
-			err = isValidIDNHostname(str)
+			err = isValidIDNHostname(string(str))
 		case "ipv4":
-			err = isValidIPv4(str)
+			err = isValidIPv4(string(str))
 		case "ipv6":
-			err = isValidIPv6(str)
+			err = isValidIPv6(string(str))
 		case "iri-reference":
-			err = isValidIriRef(str)
+			err = isValidIriRef(string(str))
 		case "iri":
-			err = isValidIri(str)
+			err = isValidIri(string(str))
 		case "json-pointer":
-			err = isValidJSONPointer(str)
+			err = isValidJSONPointer(string(str))
 		case "regex":
-			err = isValidRegex(str)
+			err = isValidRegex(string(str))
 		case "relative-json-pointer":
-			err = isValidRelJSONPointer(str)
+			err = isValidRelJSONPointer(string(str))
 		case "time":
-			err = isValidTime(str)
+			err = isValidTime(string(str))
 		case "uri-reference":
-			err = isValidURIRef(str)
+			err = isValidURIRef(string(str))
 		case "uri-template":
-			err = isValidURITemplate(str)
+			err = isValidURITemplate(string(str))
 		case "uri":
-			err = isValidURI(str)
+			err = isValidURI(string(str))
 		default:
 			err = nil
 		}

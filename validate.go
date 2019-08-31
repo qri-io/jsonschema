@@ -11,7 +11,7 @@ type Validator interface {
 	// Validate checks decoded JSON data and writes
 	// validation errors (if any) to an outparam slice of ValErrors
 	// propPath indicates the position of data in the json tree
-	Validate(propPath string, data interface{}, errs *[]ValError)
+	Validate(propPath string, val Val, errs *[]ValError)
 }
 
 // BaseValidator is a foundation for building a validator
@@ -30,11 +30,11 @@ func (b BaseValidator) Path() string {
 }
 
 // AddError is a convenience method for appending a new error to an existing error slice
-func (b BaseValidator) AddError(errs *[]ValError, propPath string, data interface{}, msg string) {
+func (b BaseValidator) AddError(errs *[]ValError, propPath string, data Val, msg string) {
 	*errs = append(*errs, ValError{
 		PropertyPath: propPath,
 		RulePath:     b.Path(),
-		InvalidValue: data,
+		InvalidValue: data.Raw(),
 		Message:      msg,
 	})
 }

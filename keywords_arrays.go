@@ -30,23 +30,23 @@ func NewItems() Validator {
 }
 
 // Validate implements the Validator interface for Items
-func (it Items) Validate(propPath string, data interface{}, errs *[]ValError) {
+func (it Items) Validate(propPath string, data Val, errs *[]ValError) {
 	jp, err := jsonpointer.Parse(propPath)
 	if err != nil {
 		AddError(errs, propPath, nil, fmt.Sprintf("invalid property path: %s", err.Error()))
 	}
 
-	if arr, ok := data.([]interface{}); ok {
+	if arr, ok := data.(ArrayVal); ok {
 		if it.single {
 			for i, elem := range arr {
 				d, _ := jp.Descendant(strconv.Itoa(i))
-				it.Schemas[0].Validate(d.String(), elem, errs)
+				it.Schemas[0].Validate(d.String(), dataToVal(elem), errs)
 			}
 		} else {
 			for i, vs := range it.Schemas {
 				if i < len(arr) {
 					d, _ := jp.Descendant(strconv.Itoa(i))
-					vs.Validate(d.String(), arr[i], errs)
+					vs.Validate(d.String(), dataToVal(arr[i]), errs)
 				}
 			}
 		}
@@ -114,20 +114,20 @@ func NewAdditionalItems() Validator {
 }
 
 // Validate implements the Validator interface for AdditionalItems
-func (a *AdditionalItems) Validate(propPath string, data interface{}, errs *[]ValError) {
+func (a *AdditionalItems) Validate(propPath string, data Val, errs *[]ValError) {
 	jp, err := jsonpointer.Parse(propPath)
 	if err != nil {
 		AddError(errs, propPath, nil, fmt.Sprintf("invalid property path: %s", err.Error()))
 	}
 
 	if a.startIndex >= 0 {
-		if arr, ok := data.([]interface{}); ok {
+		if arr, ok := data.(ArrayVal); ok {
 			for i, elem := range arr {
 				if i < a.startIndex {
 					continue
 				}
 				d, _ := jp.Descendant(strconv.Itoa(i))
-				a.Schema.Validate(d.String(), elem, errs)
+				a.Schema.Validate(d.String(), dataToVal(elem), errs)
 			}
 		}
 	}
@@ -168,8 +168,8 @@ func NewMaxItems() Validator {
 }
 
 // Validate implements the Validator interface for MaxItems
-func (m MaxItems) Validate(propPath string, data interface{}, errs *[]ValError) {
-	if arr, ok := data.([]interface{}); ok {
+func (m MaxItems) Validate(propPath string, data Val, errs *[]ValError) {
+	if arr, ok := data.(ArrayVal); ok {
 		if len(arr) > int(m) {
 			AddError(errs, propPath, data, fmt.Sprintf("array length %d exceeds %d max", len(arr), m))
 			return
@@ -188,8 +188,8 @@ func NewMinItems() Validator {
 }
 
 // Validate implements the Validator interface for MinItems
-func (m MinItems) Validate(propPath string, data interface{}, errs *[]ValError) {
-	if arr, ok := data.([]interface{}); ok {
+func (m MinItems) Validate(propPath string, data Val, errs *[]ValError) {
+	if arr, ok := data.(ArrayVal); ok {
 		if len(arr) < int(m) {
 			AddError(errs, propPath, data, fmt.Sprintf("array length %d below %d minimum items", len(arr), m))
 			return
@@ -209,8 +209,8 @@ func NewUniqueItems() Validator {
 }
 
 // Validate implements the Validator interface for UniqueItems
-func (u *UniqueItems) Validate(propPath string, data interface{}, errs *[]ValError) {
-	if arr, ok := data.([]interface{}); ok {
+func (u *UniqueItems) Validate(propPath string, data Val, errs *[]ValError) {
+	if arr, ok := data.(ArrayVal); ok {
 		found := []interface{}{}
 		for _, elem := range arr {
 			for _, f := range found {
@@ -234,12 +234,12 @@ func NewContains() Validator {
 }
 
 // Validate implements the Validator interface for Contains
-func (c *Contains) Validate(propPath string, data interface{}, errs *[]ValError) {
+func (c *Contains) Validate(propPath string, data Val, errs *[]ValError) {
 	v := Schema(*c)
-	if arr, ok := data.([]interface{}); ok {
+	if arr, ok := data.(ArrayVal); ok {
 		for _, elem := range arr {
 			test := &[]ValError{}
-			v.Validate(propPath, elem, test)
+			v.Validate(propPath, dataToVal(elem), test)
 			if len(*test) == 0 {
 				return
 			}

@@ -20,7 +20,7 @@ func NewIf() Validator {
 }
 
 // Validate implements the Validator interface for If
-func (i *If) Validate(propPath string, data interface{}, errs *[]ValError) {
+func (i *If) Validate(propPath string, data Val, errs *[]ValError) {
 	test := &[]ValError{}
 	i.Schema.Validate(propPath, data, test)
 	if len(*test) == 0 {
@@ -76,7 +76,7 @@ func NewThen() Validator {
 }
 
 // Validate implements the Validator interface for Then
-func (t *Then) Validate(propPath string, data interface{}, errs *[]ValError) {}
+func (t *Then) Validate(propPath string, data Val, errs *[]ValError) {}
 
 // JSONProp implements JSON property name indexing for Then
 func (t Then) JSONProp(name string) interface{} {
@@ -114,7 +114,7 @@ func NewElse() Validator {
 }
 
 // Validate implements the Validator interface for Else
-func (e *Else) Validate(propPath string, data interface{}, err *[]ValError) {}
+func (e *Else) Validate(propPath string, data Val, err *[]ValError) {}
 
 // JSONProp implements JSON property name indexing for Else
 func (e Else) JSONProp(name string) interface{} {

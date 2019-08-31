@@ -435,7 +435,7 @@ func runJSONTests(t *testing.T, testFilepaths []string) {
 			for i, c := range ts.Tests {
 				tests++
 				got := []ValError{}
-				sc.Validate("/", c.Data, &got)
+				sc.Validate("/", dataToVal(c.Data), &got)
 				valid := len(got) == 0
 				if valid != c.Valid {
 					t.Errorf("%s: %s test case %d: %s. error: %s", base, ts.Description, i, c.Description, got)
@@ -449,28 +449,28 @@ func runJSONTests(t *testing.T, testFilepaths []string) {
 }
 
 func TestDataType(t *testing.T) {
-	type customObject struct {}
+	type customObject struct{}
 	type customNumber float64
 
 	cases := []struct {
 		data   interface{}
-		expect string
+		expect T
 	}{
-		{nil, "null"},
-		{float64(4), "integer"},
-		{float64(4.5), "number"},
-		{customNumber(4.5), "number"},
-		{"foo", "string"},
-		{[]interface{}{}, "array"},
-		{[0]interface{}{}, "array"},
-		{map[string]interface{}{}, "object"},
-		{struct{}{}, "object"},
-		{customObject{}, "object"},
-		{int8(42), "unknown"},
+		{nil, Null},
+		{float64(4), Integer},
+		{float64(4.5), Number},
+		{customNumber(4.5), Number},
+		{"foo", String},
+		{[]interface{}{}, Array},
+		{[0]interface{}{}, Array},
+		{map[string]interface{}{}, Object},
+		{struct{}{}, Object},
+		{customObject{}, Object},
+		{int8(42), Unknown},
 	}
 
 	for i, c := range cases {
-		got := DataType(c.data)
+		got := dataToT(c.data)
 		if got != c.expect {
 			t.Errorf("case %d result mismatch. expected: '%s', got: '%s'", i, c.expect, got)
 		}

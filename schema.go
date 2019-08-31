@@ -188,7 +188,7 @@ func (rs *RootSchema) ValidateBytes(data []byte) ([]ValError, error) {
 	if err := json.Unmarshal(data, &doc); err != nil {
 		return errs, fmt.Errorf("error parsing JSON bytes: %s", err.Error())
 	}
-	rs.Validate("/", doc, &errs)
+	rs.Validate("/", dataToVal(doc), &errs)
 	return errs, nil
 }
 
@@ -365,7 +365,7 @@ func (s *Schema) Path() string {
 
 // Validate uses the schema to check an instance, collecting validation
 // errors in a slice
-func (s *Schema) Validate(propPath string, data interface{}, errs *[]ValError) {
+func (s *Schema) Validate(propPath string, data Val, errs *[]ValError) {
 	if s.Ref != "" && s.ref != nil {
 		s.ref.Validate(propPath, data, errs)
 		return

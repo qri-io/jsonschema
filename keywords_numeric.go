@@ -15,12 +15,19 @@ func NewMultipleOf() Validator {
 }
 
 // Validate implements the Validator interface for MultipleOf
-func (m MultipleOf) Validate(propPath string, data interface{}, errs *[]ValError) {
-	if num, ok := data.(float64); ok {
-		div := num / float64(m)
-		if float64(int(div)) != div {
-			AddError(errs, propPath, data, fmt.Sprintf("must be a multiple of %f", m))
-		}
+func (m MultipleOf) Validate(propPath string, data Val, errs *[]ValError) {
+	var num float64
+	if v, ok := data.(IntVal); ok {
+		num = float64(v.Value())
+	} else if v, ok := data.(NumberVal); ok {
+		num = v.Value()
+	} else {
+		return
+	}
+
+	div := num / float64(m)
+	if float64(int(div)) != div {
+		AddError(errs, propPath, data, fmt.Sprintf("must be a multiple of %f", m))
 	}
 }
 
@@ -35,11 +42,18 @@ func NewMaximum() Validator {
 }
 
 // Validate implements the Validator interface for Maximum
-func (m Maximum) Validate(propPath string, data interface{}, errs *[]ValError) {
-	if num, ok := data.(float64); ok {
-		if num > float64(m) {
-			AddError(errs, propPath, data, fmt.Sprintf("must be less than or equal to %f", m))
-		}
+func (m Maximum) Validate(propPath string, data Val, errs *[]ValError) {
+	var num float64
+	if v, ok := data.(IntVal); ok {
+		num = float64(v.Value())
+	} else if v, ok := data.(NumberVal); ok {
+		num = v.Value()
+	} else {
+		return
+	}
+
+	if num > float64(m) {
+		AddError(errs, propPath, data, fmt.Sprintf("must be less than or equal to %f", m))
 	}
 }
 
@@ -54,11 +68,18 @@ func NewExclusiveMaximum() Validator {
 }
 
 // Validate implements the Validator interface for ExclusiveMaximum
-func (m ExclusiveMaximum) Validate(propPath string, data interface{}, errs *[]ValError) {
-	if num, ok := data.(float64); ok {
-		if num >= float64(m) {
-			AddError(errs, propPath, data, fmt.Sprintf("must be less than %f", m))
-		}
+func (m ExclusiveMaximum) Validate(propPath string, data Val, errs *[]ValError) {
+	var num float64
+	if v, ok := data.(IntVal); ok {
+		num = float64(v.Value())
+	} else if v, ok := data.(NumberVal); ok {
+		num = v.Value()
+	} else {
+		return
+	}
+
+	if num >= float64(m) {
+		AddError(errs, propPath, data, fmt.Sprintf("must be less than %f", m))
 	}
 }
 
@@ -72,11 +93,18 @@ func NewMinimum() Validator {
 }
 
 // Validate implements the Validator interface for Minimum
-func (m Minimum) Validate(propPath string, data interface{}, errs *[]ValError) {
-	if num, ok := data.(float64); ok {
-		if num < float64(m) {
-			AddError(errs, propPath, data, fmt.Sprintf("must be greater than or equal to %f", m))
-		}
+func (m Minimum) Validate(propPath string, data Val, errs *[]ValError) {
+	var num float64
+	if v, ok := data.(IntVal); ok {
+		num = float64(v.Value())
+	} else if v, ok := data.(NumberVal); ok {
+		num = v.Value()
+	} else {
+		return
+	}
+
+	if num < float64(m) {
+		AddError(errs, propPath, data, fmt.Sprintf("must be greater than or equal to %f", m))
 	}
 }
 
@@ -90,10 +118,17 @@ func NewExclusiveMinimum() Validator {
 }
 
 // Validate implements the Validator interface for ExclusiveMinimum
-func (m ExclusiveMinimum) Validate(propPath string, data interface{}, errs *[]ValError) {
-	if num, ok := data.(float64); ok {
-		if num <= float64(m) {
-			AddError(errs, propPath, data, fmt.Sprintf("must be greater than %f", m))
-		}
+func (m ExclusiveMinimum) Validate(propPath string, data Val, errs *[]ValError) {
+	var num float64
+	if v, ok := data.(IntVal); ok {
+		num = float64(v.Value())
+	} else if v, ok := data.(NumberVal); ok {
+		num = v.Value()
+	} else {
+		return
+	}
+
+	if num <= float64(m) {
+		AddError(errs, propPath, data, fmt.Sprintf("must be greater than %f", m))
 	}
 }

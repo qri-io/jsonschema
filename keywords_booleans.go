@@ -15,7 +15,7 @@ func NewAllOf() Validator {
 }
 
 // Validate implements the validator interface for AllOf
-func (a AllOf) Validate(propPath string, data interface{}, errs *[]ValError) {
+func (a AllOf) Validate(propPath string, data Val, errs *[]ValError) {
 	for _, sch := range a {
 		sch.Validate(propPath, data, errs)
 	}
@@ -53,7 +53,7 @@ func NewAnyOf() Validator {
 }
 
 // Validate implements the validator interface for AnyOf
-func (a AnyOf) Validate(propPath string, data interface{}, errs *[]ValError) {
+func (a AnyOf) Validate(propPath string, data Val, errs *[]ValError) {
 	for _, sch := range a {
 		test := &[]ValError{}
 		sch.Validate(propPath, data, test)
@@ -95,7 +95,7 @@ func NewOneOf() Validator {
 }
 
 // Validate implements the validator interface for OneOf
-func (o OneOf) Validate(propPath string, data interface{}, errs *[]ValError) {
+func (o OneOf) Validate(propPath string, data Val, errs *[]ValError) {
 	matched := false
 	for _, sch := range o {
 		test := &[]ValError{}
@@ -145,7 +145,7 @@ func NewNot() Validator {
 }
 
 // Validate implements the validator interface for Not
-func (n *Not) Validate(propPath string, data interface{}, errs *[]ValError) {
+func (n *Not) Validate(propPath string, data Val, errs *[]ValError) {
 	sch := Schema(*n)
 	test := &[]ValError{}
 	sch.Validate(propPath, data, test)
