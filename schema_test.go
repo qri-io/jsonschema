@@ -435,7 +435,7 @@ func runJSONTests(t *testing.T, testFilepaths []string) {
 			for i, c := range ts.Tests {
 				tests++
 				got := []ValError{}
-				sc.Validate("/", dataToVal(c.Data), &got)
+				sc.Validate("/", rawToVal(c.Data), &got)
 				valid := len(got) == 0
 				if valid != c.Valid {
 					t.Errorf("%s: %s test case %d: %s. error: %s", base, ts.Description, i, c.Description, got)

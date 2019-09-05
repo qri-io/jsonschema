@@ -40,13 +40,13 @@ func (it Items) Validate(propPath string, data Val, errs *[]ValError) {
 		if it.single {
 			for i, elem := range arr {
 				d, _ := jp.Descendant(strconv.Itoa(i))
-				it.Schemas[0].Validate(d.String(), dataToVal(elem), errs)
+				it.Schemas[0].Validate(d.String(), rawToVal(elem), errs)
 			}
 		} else {
 			for i, vs := range it.Schemas {
 				if i < len(arr) {
 					d, _ := jp.Descendant(strconv.Itoa(i))
-					vs.Validate(d.String(), dataToVal(arr[i]), errs)
+					vs.Validate(d.String(), rawToVal(arr[i]), errs)
 				}
 			}
 		}
@@ -127,7 +127,7 @@ func (a *AdditionalItems) Validate(propPath string, data Val, errs *[]ValError) 
 					continue
 				}
 				d, _ := jp.Descendant(strconv.Itoa(i))
-				a.Schema.Validate(d.String(), dataToVal(elem), errs)
+				a.Schema.Validate(d.String(), rawToVal(elem), errs)
 			}
 		}
 	}
@@ -239,7 +239,7 @@ func (c *Contains) Validate(propPath string, data Val, errs *[]ValError) {
 	if arr, ok := data.(ArrayVal); ok {
 		for _, elem := range arr {
 			test := &[]ValError{}
-			v.Validate(propPath, dataToVal(elem), test)
+			v.Validate(propPath, rawToVal(elem), test)
 			if len(*test) == 0 {
 				return
 			}

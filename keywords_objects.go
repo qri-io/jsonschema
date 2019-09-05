@@ -19,9 +19,9 @@ func NewMaxProperties() Validator {
 
 // Validate implements the validator interface for MaxProperties
 func (m MaxProperties) Validate(propPath string, data Val, errs *[]ValError) {
-	if obj, ok := data.(*ObjectVal); ok {
-		if len(obj.Map()) > int(m) {
-			AddError(errs, propPath, data, fmt.Sprintf("%d object Properties exceed %d maximum", len(obj.Map()), m))
+	if obj, ok := data.(ObjectVal); ok {
+		if obj.Len() > int(m) {
+			AddError(errs, propPath, data, fmt.Sprintf("%d object Properties exceed %d maximum", obj.Len(), m))
 		}
 	}
 }
@@ -38,9 +38,9 @@ func NewMinProperties() Validator {
 
 // Validate implements the validator interface for minProperties
 func (m minProperties) Validate(propPath string, data Val, errs *[]ValError) {
-	if obj, ok := data.(*ObjectVal); ok {
-		if len(obj.Map()) < int(m) {
-			AddError(errs, propPath, data, fmt.Sprintf("%d object Properties below %d minimum", len(obj.Map()), m))
+	if obj, ok := data.(ObjectVal); ok {
+		if obj.Len() < int(m) {
+			AddError(errs, propPath, data, fmt.Sprintf("%d object Properties below %d minimum", obj.Len(), m))
 		}
 	}
 }
@@ -57,9 +57,9 @@ func NewRequired() Validator {
 
 // Validate implements the validator interface for Required
 func (r Required) Validate(propPath string, data Val, errs *[]ValError) {
-	if obj, ok := data.(*ObjectVal); ok {
+	if obj, ok := data.(ObjectVal); ok {
 		for _, key := range r {
-			if val, ok := obj.Map()[key]; val == nil && !ok {
+			if val, ok := obj.Field(key); val == nil && !ok {
 				AddError(errs, propPath, data, fmt.Sprintf(`"%s" value is required`, key))
 			}
 		}
@@ -99,11 +99,11 @@ func (p Properties) Validate(propPath string, data Val, errs *[]ValError) {
 		return
 	}
 
-	if obj, ok := data.(*ObjectVal); ok {
-		for key, val := range obj.Map() {
-			if p[key] != nil {
-				d, _ := jp.Descendant(key)
-				p[key].Validate(d.String(), dataToVal(val), errs)
+	if obj, ok := data.(ObjectVal); ok {
+		for pair := range obj.Iterator(nil) {
+			if p[pair.Key] != nil {
+				d, _ := jp.Descendant(pair.Key)
+				p[pair.Key].Validate(d.String(), rawToVal(pair.Value), errs)
 			}
 		}
 	}
@@ -153,12 +153,12 @@ func (p PatternProperties) Validate(propPath string, data Val, errs *[]ValError)
 		return
 	}
 
-	if obj, ok := data.(*ObjectVal); ok {
-		for key, val := range obj.Map() {
+	if obj, ok := data.(ObjectVal); ok {
+		for pair := range obj.Iterator(nil) {
 			for _, ptn := range p {
-				if ptn.re.Match([]byte(key)) {
-					d, _ := jp.Descendant(key)
-					ptn.schema.Validate(d.String(), dataToVal(val), errs)
+				if ptn.re.Match([]byte(pair.Key)) {
+					d, _ := jp.Descendant(pair.Key)
+					ptn.schema.Validate(d.String(), rawToVal(pair.Value), errs)
 				}
 			}
 		}
@@ -244,26 +244,26 @@ func (ap AdditionalProperties) Validate(propPath string, data Val, errs *[]ValEr
 		return
 	}
 
-	if obj, ok := data.(*ObjectVal); ok {
+	if obj, ok := data.(ObjectVal); ok {
 	KEYS:
-		for key, val := range obj.Map() {
+		for pair := range obj.Iterator(nil) {
 			if ap.Properties != nil {
 				for propKey := range *ap.Properties {
-					if propKey == key {
+					if propKey == pair.Key {
 						continue KEYS
 					}
 				}
 			}
 			if ap.patterns != nil {
 				for _, ptn := range *ap.patterns {
-					if ptn.re.Match([]byte(key)) {
+					if ptn.re.Match([]byte(pair.Key)) {
 						continue KEYS
 					}
 				}
 			}
 			// c := len(*errs)
-			d, _ := jp.Descendant(key)
-			ap.Schema.Validate(d.String(), dataToVal(val), errs)
+			d, _ := jp.Descendant(pair.Key)
+			ap.Schema.Validate(d.String(), rawToVal(pair.Value), errs)
 			// if len(*errs) > c {
 			// 	// fmt.Sprintf("object key %s AdditionalProperties error: %s", key, err.Error())
 			// 	return
@@ -327,9 +327,9 @@ func (d Dependencies) Validate(propPath string, data Val, errs *[]ValError) {
 		return
 	}
 
-	if obj, ok := data.(*ObjectVal); ok {
+	if obj, ok := data.(ObjectVal); ok {
 		for key, val := range d {
-			if obj.Map()[key] != nil {
+			if v, _ := obj.Field(key); v != nil {
 				d, _ := jp.Descendant(key)
 				val.Validate(d.String(), obj, errs)
 			}
@@ -362,12 +362,12 @@ type Dependency struct {
 
 // Validate implements the validator interface for Dependency
 func (d Dependency) Validate(propPath string, data Val, errs *[]ValError) {
-	if obj, ok := data.(*ObjectVal); ok {
+	if obj, ok := data.(ObjectVal); ok {
 		if d.schema != nil {
 			d.schema.Validate(propPath, data, errs)
 		} else if len(d.props) > 0 {
 			for _, k := range d.props {
-				if obj.Map()[k] == nil {
+				if v, _ := obj.Field(k); v == nil {
 					AddError(errs, propPath, data, fmt.Sprintf("Dependency property %s is Required", k))
 				}
 			}
@@ -419,11 +419,11 @@ func (p PropertyNames) Validate(propPath string, data Val, errs *[]ValError) {
 	}
 
 	sch := Schema(p)
-	if obj, ok := data.(*ObjectVal); ok {
-		for key := range obj.Map() {
+	if obj, ok := data.(ObjectVal); ok {
+		for pair := range obj.Iterator(nil) {
 			// TODO - adjust error message & prop path
-			d, _ := jp.Descendant(key)
-			sch.Validate(d.String(), dataToVal(key), errs)
+			d, _ := jp.Descendant(pair.Key)
+			sch.Validate(d.String(), rawToVal(pair.Key), errs)
 		}
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"unicode"
 )
 
 type T string
@@ -150,54 +151,89 @@ func (v StringVal) Raw() interface{} {
 
 type ObjectVal struct {
 	raw interface{}
-	m   map[string]interface{}
 }
 
-func (v *ObjectVal) Type() T {
+func (v ObjectVal) Type() T {
 	return Object
 }
 
-func (v *ObjectVal) Raw() interface{} {
+func (v ObjectVal) Raw() interface{} {
 	return v.raw
 }
 
-func (v *ObjectVal) Map() map[string]interface{} {
-	v.ensureM()
-	return v.m
+func (v ObjectVal) Len() int {
+	switch reflect.TypeOf(v.raw).Kind() {
+	case reflect.Map:
+		return reflect.ValueOf(v.raw).Len()
+	case reflect.Struct:
+		return reflect.ValueOf(v.raw).NumField()
+	default:
+		panic(fmt.Sprintf("invalid value: %v", v.raw))
+	}
 }
 
-func (v *ObjectVal) ensureM() {
-	if v.raw == nil || v.m != nil {
-		return
-	}
+func (v ObjectVal) Field(name string) (interface{}, bool) {
+	var val reflect.Value
 
 	switch reflect.TypeOf(v.raw).Kind() {
 	case reflect.Map:
-		switch m := v.raw.(type) {
-		case map[string]interface{}:
-			v.m = m
-		case map[interface{}]interface{}:
-			tmp := make(map[string]interface{}, len(m))
-			for k, v := range m {
-				switch str := k.(type) {
-				case string:
-					tmp[str] = v
-				default:
+		val = reflect.ValueOf(v.raw).MapIndex(reflect.ValueOf(name))
+	case reflect.Struct:
+		val = reflect.ValueOf(v.raw).FieldByName(name)
+	default:
+		panic(fmt.Sprintf("invalid value: %v", v.raw))
+	}
+
+	if !val.IsValid() {
+		return nil, false
+	}
+	return val.Interface(), true
+}
+
+type Pair struct {
+	Key   string
+	Value interface{}
+}
+
+func (v ObjectVal) Iterator(cancelC chan struct{}) <-chan Pair {
+	ch := make(chan Pair, 50)
+
+	go func() {
+		defer close(ch)
+
+		switch reflect.TypeOf(v.raw).Kind() {
+		case reflect.Map:
+			for i := reflect.ValueOf(v.raw).MapRange(); i.Next(); {
+				select {
+				case ch <- Pair{
+					Key:   i.Key().String(),
+					Value: i.Value().Interface(),
+				}:
+				case <-cancelC:
 					return
 				}
 			}
-			v.m = tmp
+		case reflect.Struct:
+			val := reflect.ValueOf(v.raw)
+			valType := val.Type()
+			for i := 0; i < val.NumField(); i++ {
+				name := valType.Field(i).Name
+				if unicode.IsLower(rune(name[0])) {
+					continue
+				}
+				select {
+				case ch <- Pair{
+					Key:   valType.Field(i).Name,
+					Value: val.Field(i).Interface(),
+				}:
+				case <-cancelC:
+					return
+				}
+			}
 		}
-	case reflect.Struct:
-		val := reflect.ValueOf(v.raw)
-		tmp := make(map[string]interface{}, val.NumField())
-		for i := 0; i < val.NumField(); i++ {
-			f := val.Field(i)
-			t := val.Type()
-			tmp[t.Name()] = f.Interface()
-		}
-		v.m = tmp
-	}
+	}()
+
+	return ch
 }
 
 type ArrayVal []interface{}
@@ -215,17 +251,17 @@ var _ Val = BoolVal(false)
 var _ Val = NumberVal(0)
 var _ Val = IntVal(0)
 var _ Val = StringVal("")
-var _ Val = &ObjectVal{}
+var _ Val = ObjectVal{}
 var _ Val = ArrayVal{}
 
-func dataToVal(data interface{}) Val {
-	if data == nil {
+func rawToVal(raw interface{}) Val {
+	if raw == nil {
 		return NullVal{}
 	}
 
-	val := reflect.ValueOf(data)
+	val := reflect.ValueOf(raw)
 
-	switch dataToT(data) {
+	switch dataToT(raw) {
 	case Bool:
 		return BoolVal(val.Bool())
 	case Number:
@@ -235,7 +271,7 @@ func dataToVal(data interface{}) Val {
 	case String:
 		return StringVal(val.String())
 	case Object:
-		return &ObjectVal{raw: data}
+		return ObjectVal{raw: raw}
 	case Array:
 		arr := make([]interface{}, 0, val.Len())
 		for i := 0; i < val.Len(); i++ {
@@ -243,6 +279,6 @@ func dataToVal(data interface{}) Val {
 		}
 		return ArrayVal(arr)
 	default:
-		panic(fmt.Sprintf("unable to handle data of type '%v' (%v)", dataToT(data), data))
+		panic(fmt.Sprintf("unable to handle raw data of type '%v' (%v)", dataToT(raw), raw))
 	}
 }

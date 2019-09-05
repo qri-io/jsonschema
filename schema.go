@@ -188,7 +188,7 @@ func (rs *RootSchema) ValidateBytes(data []byte) ([]ValError, error) {
 	if err := json.Unmarshal(data, &doc); err != nil {
 		return errs, fmt.Errorf("error parsing JSON bytes: %s", err.Error())
 	}
-	rs.Validate("/", dataToVal(doc), &errs)
+	rs.Validate("/", rawToVal(doc), &errs)
 	return errs, nil
 }
 

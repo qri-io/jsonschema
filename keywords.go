@@ -177,6 +177,8 @@ func (c Const) Validate(propPath string, data Val, errs *[]ValError) {
 	}
 
 	// Normalize the input to match the constant type.
+	// We could do it more efficiently by providing Val.Compare(),
+	// but for now this does the job.
 	var val interface{}
 	b, err := json.Marshal(data.Raw())
 	if err != nil {
