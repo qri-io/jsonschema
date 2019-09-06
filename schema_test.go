@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
-	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/sergi/go-diff/diffmatchpatch"
