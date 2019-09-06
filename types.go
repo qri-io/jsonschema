@@ -1,24 +1,52 @@
 package jsonschema
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"strings"
 	"unicode"
 )
 
-type T string
+type T int
 
 const (
-	Unknown T = "unknown"
-	Null      = "null"
-	Bool      = "boolean"
-	Object    = "object"
-	Array     = "array"
-	Number    = "number"
-	Integer   = "integer"
-	String    = "string"
+	Unknown T = iota
+	Null
+	Bool
+	Object
+	Array
+	Number
+	Integer
+	String
 )
+
+// MarshalJSON implements the json.Marshaler interface for T
+func (t T) MarshalJSON() ([]byte, error) {
+	return json.Marshal(mapTStr[t])
+}
+
+var mapTStr = [8]string{
+	Unknown: "unknown",
+	Null:    "null",
+	Bool:    "boolean",
+	Object:  "object",
+	Array:   "array",
+	Number:  "number",
+	Integer: "integer",
+	String:  "string",
+}
+
+var mapStrT = map[string]T{
+	"unknown": Unknown,
+	"null":    Null,
+	"boolean": Bool,
+	"object":  Object,
+	"array":   Array,
+	"number":  Number,
+	"integer": Integer,
+	"string":  String,
+}
 
 // dataToT resolves data to a JSON type.
 func dataToT(data interface{}) T {
@@ -57,33 +85,23 @@ func (ts Ts) String() string {
 	case 0:
 		return ""
 	case 1:
-		return string(ts[0])
+		return mapTStr[ts[0]]
 	}
 
 	// Calculate string length.
 	n := len(ts) - 1
 	for i := 0; i < len(ts); i++ {
-		n += len(ts[i])
+		n += len(mapTStr[ts[i]])
 	}
 
 	var b strings.Builder
 	b.Grow(n)
-	b.WriteString(string(ts[0]))
+	b.WriteString(mapTStr[ts[0]])
 	for _, t := range ts[1:] {
 		b.WriteString(",")
-		b.WriteString(string(t))
+		b.WriteString(mapTStr[t])
 	}
 	return b.String()
-}
-
-var mapT = map[T]bool{
-	Null:    true,
-	Bool:    true,
-	Object:  true,
-	Array:   true,
-	Number:  true,
-	Integer: true,
-	String:  true,
 }
 
 type Val interface {

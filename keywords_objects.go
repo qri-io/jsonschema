@@ -3,9 +3,10 @@ package jsonschema
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/qri-io/jsonpointer"
 	"regexp"
 	"strconv"
+
+	"github.com/qri-io/jsonpointer"
 )
 
 // MaxProperties MUST be a non-negative integer.

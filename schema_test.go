@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/sergi/go-diff/diffmatchpatch"
 	"io/ioutil"
-	// "net/http"
-	// "net/http/httptest"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"testing"
+
+	"github.com/sergi/go-diff/diffmatchpatch"
 )
 
 func ExampleBasic() {
@@ -472,7 +473,7 @@ func TestDataType(t *testing.T) {
 	for i, c := range cases {
 		got := dataToT(c.data)
 		if got != c.expect {
-			t.Errorf("case %d result mismatch. expected: '%s', got: '%s'", i, c.expect, got)
+			t.Errorf("case %d result mismatch. expected: '%s', got: '%s'", i, mapTStr[c.expect], mapTStr[got])
 		}
 	}
 }

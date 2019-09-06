@@ -40,7 +40,7 @@ func (t Type) Validate(propPath string, data Val, errs *[]ValError) {
 		}
 	}
 	if len(t.vals) == 1 {
-		t.AddError(errs, propPath, data, fmt.Sprintf(`type should be %s`, t.vals[0]))
+		t.AddError(errs, propPath, data, fmt.Sprintf(`type should be %s`, mapTStr[t.vals[0]]))
 		return
 	}
 
@@ -68,19 +68,25 @@ func (t Type) JSONProp(name string) interface{} {
 func (t *Type) UnmarshalJSON(data []byte) error {
 	var single string
 	if err := json.Unmarshal(data, &single); err == nil {
-		*t = Type{strVal: true, vals: Ts{T(single)}}
+		if v, ok := mapStrT[single]; ok {
+			*t = Type{strVal: true, vals: Ts{v}}
+		} else {
+			return fmt.Errorf(`"%s" is not a valid type`, single)
+		}
 	} else {
-		var set Ts
+		var set []string
 		if err := json.Unmarshal(data, &set); err == nil {
-			*t = Type{vals: set}
+			ts := make(Ts, len(set))
+			for i, v := range set {
+				t, ok := mapStrT[v]
+				if !ok {
+					return fmt.Errorf(`"%s" is not a valid type`, single)
+				}
+				ts[i] = t
+			}
+			*t = Type{vals: ts}
 		} else {
 			return err
-		}
-	}
-
-	for _, pr := range t.vals {
-		if !mapT[pr] {
-			return fmt.Errorf(`"%s" is not a valid type`, pr)
 		}
 	}
 	return nil

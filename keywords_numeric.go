@@ -1,8 +1,6 @@
 package jsonschema
 
-import (
-	"fmt"
-)
+import "fmt"
 
 // MultipleOf MUST be a number, strictly greater than 0.
 // MultipleOf validates that a numeric instance is valid only if division

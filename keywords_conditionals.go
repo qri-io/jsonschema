@@ -1,8 +1,6 @@
 package jsonschema
 
-import (
-	"encoding/json"
-)
+import "encoding/json"
 
 // If MUST be a valid JSON Schema.
 // Instances that successfully validate against this keyword's subschema MUST also be valid against the subschema value of the "Then" keyword, if present.

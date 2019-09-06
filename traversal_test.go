@@ -100,5 +100,4 @@ func TestReferenceTraversal(t *testing.T) {
 			t.Errorf("case %d: expected %d references, got: %d", i, c.refs, refs)
 		}
 	}
-
 }
