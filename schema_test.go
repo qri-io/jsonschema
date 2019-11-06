@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"github.com/sergi/go-diff/diffmatchpatch"
 	"io/ioutil"
+	"strconv"
+	"strings"
+
 	// "net/http"
 	// "net/http/httptest"
 	"path/filepath"
@@ -449,7 +452,7 @@ func runJSONTests(t *testing.T, testFilepaths []string) {
 }
 
 func TestDataType(t *testing.T) {
-	type customObject struct {}
+	type customObject struct{}
 	type customNumber float64
 
 	cases := []struct {
@@ -576,3 +579,328 @@ func TestValidateBytes(t *testing.T) {
 
 // 	}))
 // }
+
+func BenchmarkAdditionalItems(b *testing.B) {
+	runBenchmark(b,
+		func(sampleSize int) (string, interface{}) {
+			data := make([]interface{}, sampleSize)
+			for i := 0; i < sampleSize; i++ {
+				data[i] = float64(i)
+			}
+			return `{
+				"items": {},
+				"additionalItems": false
+			}`, data
+		},
+	)
+}
+
+func BenchmarkAdditionalProperties(b *testing.B) {
+	runBenchmark(b,
+		func(sampleSize int) (string, interface{}) {
+			data := make(map[string]interface{}, sampleSize)
+			for i := 0; i < sampleSize; i++ {
+				p := fmt.Sprintf("p%v", i)
+				data[p] = struct{}{}
+			}
+			d, err := json.Marshal(data)
+			if err != nil {
+				b.Errorf("unable to marshal data: %v", err)
+				return "", nil
+			}
+			return `{
+				"properties": ` + string(d) + `,
+				"additionalProperties": false
+			}`, data
+		},
+	)
+}
+
+func BenchmarkConst(b *testing.B) {
+	runBenchmark(b,
+		func(sampleSize int) (string, interface{}) {
+			data := make(map[string]interface{}, sampleSize)
+			for i := 0; i < sampleSize; i++ {
+				data[fmt.Sprintf("p%v", i)] = fmt.Sprintf("p%v", 2*i)
+			}
+			d, err := json.Marshal(data)
+			if err != nil {
+				b.Errorf("unable to marshal data: %v", err)
+				return "", nil
+			}
+			return `{
+				"const": ` + string(d) + `
+			}`, data
+		},
+	)
+}
+
+func BenchmarkContains(b *testing.B) {
+	runBenchmark(b,
+		func(sampleSize int) (string, interface{}) {
+			data := make([]interface{}, sampleSize)
+			for i := 0; i < sampleSize; i++ {
+				data[i] = float64(i)
+			}
+			return `{
+				"contains": { "const": ` + strconv.Itoa(sampleSize-1) + ` }
+			}`, data
+		},
+	)
+}
+
+func BenchmarkDependencies(b *testing.B) {
+	runBenchmark(b,
+		func(sampleSize int) (string, interface{}) {
+			data := make(map[string]interface{}, sampleSize)
+			deps := []string{}
+			for i := 0; i < sampleSize; i++ {
+				p := fmt.Sprintf("p%v", i)
+				data[p] = fmt.Sprintf("p%v", 2*i)
+				if i != 0 {
+					deps = append(deps, p)
+				}
+			}
+			d, err := json.Marshal(deps)
+			if err != nil {
+				b.Errorf("unable to marshal data: %v", err)
+				return "", nil
+			}
+			return `{
+				"dependencies": {"p0": ` + string(d) + `}
+			}`, data
+		},
+	)
+}
+
+func BenchmarkEnum(b *testing.B) {
+	runBenchmark(b,
+		func(sampleSize int) (string, interface{}) {
+			data := make([]interface{}, sampleSize)
+			for i := 0; i < sampleSize; i++ {
+				data[i] = float64(i)
+			}
+			d, err := json.Marshal(data)
+			if err != nil {
+				b.Errorf("unable to marshal data: %v", err)
+				return "", nil
+			}
+			return `{
+				"enum": ` + string(d) + `
+			}`, float64(sampleSize / 2)
+		},
+	)
+}
+
+func BenchmarkMaximum(b *testing.B) {
+	runBenchmark(b, func(sampleSize int) (string, interface{}) {
+		return `{
+			"maximum": 3
+		}`, float64(2)
+	})
+}
+
+func BenchmarkMinimum(b *testing.B) {
+	runBenchmark(b, func(sampleSize int) (string, interface{}) {
+		return `{
+			"minimum": 3
+		}`, float64(4)
+	})
+}
+
+func BenchmarkExclusiveMaximum(b *testing.B) {
+	runBenchmark(b, func(sampleSize int) (string, interface{}) {
+		return `{
+			"exclusiveMaximum": 3
+		}`, float64(2)
+	})
+}
+
+func BenchmarkExclusiveMinimum(b *testing.B) {
+	runBenchmark(b, func(sampleSize int) (string, interface{}) {
+		return `{
+			"exclusiveMinimum": 3
+		}`, float64(4)
+	})
+}
+
+func BenchmarkMaxItems(b *testing.B) {
+	runBenchmark(b,
+		func(sampleSize int) (string, interface{}) {
+			data := make([]interface{}, sampleSize)
+			for i := 0; i < sampleSize; i++ {
+				data[i] = float64(i)
+			}
+			return `{
+				"maxItems": 10000
+			}`, data
+		},
+	)
+}
+
+func BenchmarkMinItems(b *testing.B) {
+	runBenchmark(b,
+		func(sampleSize int) (string, interface{}) {
+			data := make([]interface{}, sampleSize)
+			for i := 0; i < sampleSize; i++ {
+				data[i] = float64(i)
+			}
+			return `{
+				"minItems": 1
+			}`, data
+		},
+	)
+}
+
+func BenchmarkMaxLength(b *testing.B) {
+	runBenchmark(b,
+		func(sampleSize int) (string, interface{}) {
+			data := make([]rune, sampleSize)
+			for i := 0; i < sampleSize; i++ {
+				data[i] = 'a'
+			}
+			return `{
+				"maxLength": ` + strconv.Itoa(sampleSize) + `
+			}`, string(data)
+		},
+	)
+}
+
+func BenchmarkMinLength(b *testing.B) {
+	runBenchmark(b,
+		func(sampleSize int) (string, interface{}) {
+			data := make([]rune, sampleSize)
+			for i := 0; i < sampleSize; i++ {
+				data[i] = 'a'
+			}
+			return `{
+				"minLength": 1
+			}`, string(data)
+		},
+	)
+}
+
+func BenchmarkMaxProperties(b *testing.B) {
+	runBenchmark(b,
+		func(sampleSize int) (string, interface{}) {
+			data := make(map[string]interface{}, sampleSize)
+			for i := 0; i < sampleSize; i++ {
+				data[fmt.Sprintf("p%v", i)] = fmt.Sprintf("p%v", 2*i)
+			}
+			return `{
+				"maxProperties": ` + strconv.Itoa(sampleSize) + `
+			}`, data
+		},
+	)
+}
+
+func BenchmarkMinProperties(b *testing.B) {
+	runBenchmark(b,
+		func(sampleSize int) (string, interface{}) {
+			data := make(map[string]interface{}, sampleSize)
+			for i := 0; i < sampleSize; i++ {
+				data[fmt.Sprintf("p%v", i)] = fmt.Sprintf("p%v", 2*i)
+			}
+			return `{
+				"minProperties": 1
+			}`, data
+		},
+	)
+}
+
+func BenchmarkMultipleOf(b *testing.B) {
+	runBenchmark(b,
+		func(sampleSize int) (string, interface{}) {
+			return `{
+				"multipleOf": 2
+			}`, float64(42)
+		},
+	)
+}
+
+func BenchmarkPattern(b *testing.B) {
+	runBenchmark(b,
+		func(sampleSize int) (string, interface{}) {
+			data := make([]rune, sampleSize)
+			for i := 0; i < sampleSize; i++ {
+				data[i] = 'a'
+			}
+			return `{
+				"pattern": "^a*$"
+			}`, string(data)
+		},
+	)
+}
+
+func BenchmarkType(b *testing.B) {
+	runBenchmark(b,
+		func(sampleSize int) (string, interface{}) {
+			data := make(map[string]interface{}, sampleSize)
+			var schema strings.Builder
+
+			for i := 0; i < sampleSize; i++ {
+				propNull := fmt.Sprintf("n%v", nil)
+				propBool := fmt.Sprintf("b%v", i)
+				propInt := fmt.Sprintf("i%v", i)
+				propFloat := fmt.Sprintf("f%v", i)
+				propStr := fmt.Sprintf("s%v", i)
+				propArr := fmt.Sprintf("a%v", i)
+				propObj := fmt.Sprintf("o%v", i)
+
+				data[propBool] = true
+				data[propInt] = float64(42)
+				data[propFloat] = float64(42.5)
+				data[propStr] = "foobar"
+				data[propArr] = []interface{}{interface{}(1), interface{}(2), interface{}(3)}
+				data[propObj] = struct{}{}
+
+				schema.WriteString(fmt.Sprintf(`"%v": { "type": "null" },`, propNull))
+				schema.WriteString(fmt.Sprintf(`"%v": { "type": "boolean" },`, propBool))
+				schema.WriteString(fmt.Sprintf(`"%v": { "type": "integer" },`, propInt))
+				schema.WriteString(fmt.Sprintf(`"%v": { "type": "number" },`, propFloat))
+				schema.WriteString(fmt.Sprintf(`"%v": { "type": "string" },`, propStr))
+				schema.WriteString(fmt.Sprintf(`"%v": { "type": "array" },`, propArr))
+				schema.WriteString(fmt.Sprintf(`"%v": { "type": "object" }`, propObj))
+
+				if i != sampleSize-1 {
+					schema.WriteString(",")
+				}
+			}
+
+			return `{
+				"type": "object",
+				"properties": { ` + schema.String() + ` }
+			}`, data
+		},
+	)
+}
+
+func runBenchmark(b *testing.B, dataFn func(sampleSize int) (string, interface{})) {
+	for _, sampleSize := range []int{1, 10, 100, 1000} {
+		b.Run(fmt.Sprintf("sample size %v", sampleSize), func(b *testing.B) {
+			schema, data := dataFn(sampleSize)
+			if data == nil {
+				b.Skip("data == nil, skipping")
+				return
+			}
+
+			var validator RootSchema
+			if err := json.Unmarshal([]byte(schema), &validator); err != nil {
+				b.Errorf("error parsing schema: %s", err.Error())
+				return
+			}
+
+			var errs []ValError
+
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				validator.Validate("/", data, &errs)
+			}
+			b.StopTimer()
+
+			if len(errs) > 0 {
+				b.Errorf("error running benchmark: %s", errs)
+			}
+		})
+	}
+}
