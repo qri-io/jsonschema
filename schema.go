@@ -364,7 +364,7 @@ type Schema struct {
 	// Definitions provides a standardized location for schema authors
 	// to inline re-usable JSON Schemas into a more general schema. The
 	// keyword does not directly affect the validation result.
-	Definitions Definitions `json:"definitions,omitempty"`
+	Definitions Definitions `json:"definitions,omitempty" json:"$defs,omitempty"`
 
 	// TODO - currently a bit of a hack to handle arbitrary JSON data
 	// outside the spec
@@ -421,6 +421,8 @@ func (s Schema) JSONProp(name string) interface{} {
 		return s.Ref
 	case "$recursiveRef":
 		return s.RecursiveRef
+	case "$defs":
+		return s.Definitions
 	case "definitions":
 		return s.Definitions
 	case "format":
@@ -470,7 +472,7 @@ type _schema struct {
 	WriteOnly   *bool              `json:"writeOnly,omitempty"`
 	Comment     string             `json:"$comment,omitempty"`
 	Ref         string             `json:"$ref,omitempty"`
-	Definitions map[string]*Schema `json:"definitions,omitempty"`
+	Definitions map[string]*Schema `json:"definitions,omitempty" json:"$defs,omitempty"`
 	RecursiveRef         string             `json:"$recursiveRef,omitempty"`
 	Format      string             `json:"format,omitempty"`
 }
@@ -621,14 +623,11 @@ func (s Schema) MarshalJSON() ([]byte, error) {
 		if s.RecursiveRef != "" {
 			obj["$recursiveRef"] = s.RecursiveRef
 		}
-		if s.Definitions != nil {
-			obj["definitions"] = s.Definitions
-		}
 		if s.Format != "" {
 			obj["format"] = s.Format
 		}
 		if s.Definitions != nil {
-			obj["definitions"] = s.Definitions
+			obj["$defs"] = s.Definitions
 		}
 
 		for k, v := range s.Validators {
