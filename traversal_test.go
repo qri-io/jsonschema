@@ -34,7 +34,7 @@ func TestSchemaDeref(t *testing.T) {
 }
 
 func TestReferenceTraversal(t *testing.T) {
-	sch, err := ioutil.ReadFile("testdata/draft-07_schema.json")
+	sch, err := ioutil.ReadFile("testdata/draft2019-09_schema.json")
 	if err != nil {
 		t.Errorf("error reading file: %s", err.Error())
 		return

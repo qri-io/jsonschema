@@ -397,6 +397,93 @@ func TestDraft7(t *testing.T) {
 	})
 }
 
+func TestDraft2019_09(t *testing.T) {
+	prev := DefaultSchemaPool
+	defer func() { DefaultSchemaPool = prev }()
+
+	path := "testdata/draft2019-09_schema.json"
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		t.Errorf("error reading %s: %s", path, err.Error())
+		return
+	}
+
+	rsch := &RootSchema{}
+	if err := json.Unmarshal(data, rsch); err != nil {
+		t.Errorf("error unmarshaling schema: %s", err.Error())
+		return
+	}
+
+	DefaultSchemaPool["https://json-schema.org/draft/2019-09/schema#"] = &rsch.Schema
+
+	runJSONTests(t, []string{
+		"testdata/draft2019-09/additionalItems.json",
+		"testdata/draft2019-09/additionalProperties.json",
+		"testdata/draft2019-09/allOf.json",
+		"testdata/draft2019-09/anchor.json",
+		"testdata/draft2019-09/anyOf.json",
+		"testdata/draft2019-09/boolean_schema.json",
+		"testdata/draft2019-09/const.json",
+		"testdata/draft2019-09/contains.json",
+		"testdata/draft2019-09/default.json",
+		"testdata/draft2019-09/defs.json",
+		"testdata/draft2019-09/dependentRequired.json",
+		"testdata/draft2019-09/dependentSchemas.json",
+		"testdata/draft2019-09/enum.json",
+		"testdata/draft2019-09/exclusiveMaximum.json",
+		"testdata/draft2019-09/exclusiveMinimum.json",
+		"testdata/draft2019-09/format.json",
+		"testdata/draft2019-09/if-then-else.json",
+		"testdata/draft2019-09/items.json",
+		"testdata/draft2019-09/maxItems.json",
+		"testdata/draft2019-09/maxLength.json",
+		"testdata/draft2019-09/maxProperties.json",
+		"testdata/draft2019-09/maximum.json",
+		"testdata/draft2019-09/minItems.json",
+		"testdata/draft2019-09/minLength.json",
+		"testdata/draft2019-09/minProperties.json",
+		"testdata/draft2019-09/minimum.json",
+		"testdata/draft2019-09/multipleOf.json",
+		"testdata/draft2019-09/not.json",
+		"testdata/draft2019-09/oneOf.json",
+		"testdata/draft2019-09/pattern.json",
+		"testdata/draft2019-09/patternProperties.json",
+		"testdata/draft2019-09/properties.json",
+		"testdata/draft2019-09/propertyNames.json",
+		"testdata/draft2019-09/ref.json",
+		"testdata/draft2019-09/refRemote.json",
+		"testdata/draft2019-09/required.json",
+		"testdata/draft2019-09/type.json",
+		"testdata/draft2019-09/unevaluatedItems.json",
+		"testdata/draft2019-09/unevaluatedProperties.json",
+		"testdata/draft2019-09/uniqueItems.json",
+
+		"testdata/draft2019-09/optional/bignum.json",
+		"testdata/draft2019-09/optional/content.json",
+		"testdata/draft2019-09/optional/ecmascript-regex.json",
+		"testdata/draft2019-09/optional/refOfUnknownKeyword.json",
+		"testdata/draft2019-09/optional/zeroTerminatedFloats.json",
+
+		"testdata/draft2019-09/optional/format/date-time.json",
+		"testdata/draft2019-09/optional/format/date.json",
+		"testdata/draft2019-09/optional/format/email.json",
+		"testdata/draft2019-09/optional/format/hostname.json",
+		"testdata/draft2019-09/optional/format/idn-email.json",
+		"testdata/draft2019-09/optional/format/idn-hostname.json",
+		"testdata/draft2019-09/optional/format/ipv4.json",
+		"testdata/draft2019-09/optional/format/ipv6.json",
+		"testdata/draft2019-09/optional/format/iri-reference.json",
+		"testdata/draft2019-09/optional/format/iri.json",
+		"testdata/draft2019-09/optional/format/json-pointer.json",
+		"testdata/draft2019-09/optional/format/regex.json",
+		"testdata/draft2019-09/optional/format/relative-json-pointer.json",
+		"testdata/draft2019-09/optional/format/time.json",
+		"testdata/draft2019-09/optional/format/uri-reference.json",
+		"testdata/draft2019-09/optional/format/uri-template.json",
+		"testdata/draft2019-09/optional/format/uri.json",
+	})
+}
+
 // TestSet is a json-based set of tests
 // JSON-Schema comes with a lovely JSON-based test suite:
 // https://github.com/json-schema-org/JSON-Schema-Test-Suite
