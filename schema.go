@@ -110,15 +110,22 @@ func (rs *RootSchema) UnmarshalJSON(data []byte) error {
 	// RootSchema struct) to ensure root is evaluated for references
 	if err := walkJSON(sch, func(elem JSONPather) error {
 		if sch, ok := elem.(*Schema); ok {
+			_ref := ""
 			if sch.Ref != "" {
-				if ids[sch.Ref] != nil {
-					sch.ref = ids[sch.Ref]
+				_ref = sch.Ref
+			}
+			if sch.RecursiveRef != "" {
+				_ref = sch.RecursiveRef
+			}
+			if _ref != "" {
+				if ids[_ref] != nil {
+					sch.ref = ids[_ref]
 					return nil
 				}
 
-				ptr, err := jsonpointer.Parse(sch.Ref)
+				ptr, err := jsonpointer.Parse(_ref)
 				if err != nil {
-					return fmt.Errorf("error evaluating json pointer: %s: %s", err.Error(), sch.Ref)
+					return fmt.Errorf("error evaluating json pointer: %s: %s", err.Error(), _ref)
 				}
 				res, err := root.evalJSONValidatorPointer(ptr)
 				if err != nil {
@@ -127,7 +134,7 @@ func (rs *RootSchema) UnmarshalJSON(data []byte) error {
 				if val, ok := res.(Validator); ok {
 					sch.ref = val
 				} else {
-					return fmt.Errorf("%s : %s, %v is not a json pointer to a json schema", sch.Ref, ptr.String(), ptr)
+					return fmt.Errorf("%s : %s, %v is not a json pointer to a json schema", _ref, ptr.String(), ptr)
 				}
 			}
 		}
@@ -152,7 +159,13 @@ func (rs *RootSchema) FetchRemoteReferences() error {
 
 	if err := walkJSON(sch, func(elem JSONPather) error {
 		if sch, ok := elem.(*Schema); ok {
-			ref := sch.Ref
+			ref := ""
+			if sch.Ref != "" {
+				ref = sch.Ref
+			}
+			if sch.RecursiveRef != "" {
+				ref = sch.RecursiveRef
+			}
 			if ref != "" {
 				if refs[ref] == nil && ref[0] != '#' {
 					if u, err := url.Parse(ref); err == nil {
@@ -337,6 +350,8 @@ type Schema struct {
 	// SHOULD NOT make use of infinite recursive nesting like this; the
 	// behavior is undefined.
 	Ref string `json:"$ref,omitempty"`
+	// todo(arqu): add description for recursiveRef
+	RecursiveRef string `json:"$recursiveRef,omitempty"`
 	// Format functions as both an annotation (Section 3.3) and as an
 	// assertion (Section 3.2).
 	// While no special effort is required to implement it as an
@@ -366,10 +381,10 @@ func (s *Schema) Path() string {
 // Validate uses the schema to check an instance, collecting validation
 // errors in a slice
 func (s *Schema) Validate(propPath string, data interface{}, errs *[]ValError) {
-	if s.Ref != "" && s.ref != nil {
+	if (s.RecursiveRef != "" || s.Ref != "") && s.ref != nil {
 		s.ref.Validate(propPath, data, errs)
 		return
-	} else if s.Ref != "" && s.ref == nil {
+	} else if (s.RecursiveRef != "" || s.Ref != "") && s.ref == nil {
 		AddError(errs, propPath, data, fmt.Sprintf("%s reference is nil for data: %v", s.Ref, data))
 		return
 	}
@@ -404,6 +419,8 @@ func (s Schema) JSONProp(name string) interface{} {
 		return s.Comment
 	case "$ref":
 		return s.Ref
+	case "$recursiveRef":
+		return s.RecursiveRef
 	case "definitions":
 		return s.Definitions
 	case "format":
@@ -454,6 +471,7 @@ type _schema struct {
 	Comment     string             `json:"$comment,omitempty"`
 	Ref         string             `json:"$ref,omitempty"`
 	Definitions map[string]*Schema `json:"definitions,omitempty"`
+	RecursiveRef         string             `json:"$recursiveRef,omitempty"`
 	Format      string             `json:"format,omitempty"`
 }
 
@@ -487,6 +505,7 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 		WriteOnly:   _s.WriteOnly,
 		Comment:     _s.Comment,
 		Ref:         _s.Ref,
+		RecursiveRef: _s.RecursiveRef,
 		Definitions: _s.Definitions,
 		Format:      _s.Format,
 		Validators:  map[string]Validator{},
@@ -515,7 +534,7 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 		} else {
 			switch prop {
 			// skip any already-parsed props
-			case "$schema", "$id", "title", "description", "default", "examples", "readOnly", "writeOnly", "$comment", "$ref", "definitions", "format":
+			case "$schema", "$id", "title", "description", "default", "examples", "readOnly", "writeOnly", "$comment", "$ref", "$recursiveRef", "definitions", "$defs", "format":
 				continue
 			default:
 				// assume non-specified props are "extra definitions"
@@ -598,6 +617,9 @@ func (s Schema) MarshalJSON() ([]byte, error) {
 		}
 		if s.Ref != "" {
 			obj["$ref"] = s.Ref
+		}
+		if s.RecursiveRef != "" {
+			obj["$recursiveRef"] = s.RecursiveRef
 		}
 		if s.Definitions != nil {
 			obj["definitions"] = s.Definitions
