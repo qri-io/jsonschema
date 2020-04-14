@@ -536,7 +536,7 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 		} else {
 			switch prop {
 			// skip any already-parsed props
-			case "$schema", "$id", "title", "description", "default", "examples", "readOnly", "writeOnly", "$comment", "$ref", "$recursiveRef", "definitions", "$defs", "format":
+			case "$schema", "$id", "title", "description", "default", "examples", "extends", "readOnly", "writeOnly", "$comment", "$ref", "$recursiveRef", "definitions", "$defs", "format":
 				continue
 			default:
 				// assume non-specified props are "extra definitions"
