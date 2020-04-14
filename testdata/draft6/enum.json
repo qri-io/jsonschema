@@ -39,18 +39,28 @@
     {
         "description": "enums in properties",
         "schema": {
-           "type":"object",
-		     "properties": {
-		        "foo": {"enum":["foo"]},
-		        "bar": {"enum":["bar"]}
-		     },
-		     "required": ["bar"]
-		  },
+            "type":"object",
+            "properties": {
+                "foo": {"enum":["foo"]},
+                "bar": {"enum":["bar"]}
+            },
+            "required": ["bar"]
+        },
         "tests": [
             {
                 "description": "both properties are valid",
                 "data": {"foo":"foo", "bar":"bar"},
                 "valid": true
+            },
+            {
+                "description": "wrong foo value",
+                "data": {"foo":"foot", "bar":"bar"},
+                "valid": false
+            },
+            {
+                "description": "wrong bar value",
+                "data": {"foo":"foo", "bar":"bart"},
+                "valid": false
             },
             {
                 "description": "missing optional property is valid",
@@ -66,6 +76,113 @@
                 "description": "missing all properties is invalid",
                 "data": {},
                 "valid": false
+            }
+        ]
+    },
+    {
+        "description": "enum with escaped characters",
+        "schema": {
+            "enum": ["foo\nbar", "foo\rbar"]
+        },
+        "tests": [
+            {
+                "description": "member 1 is valid",
+                "data": "foo\nbar",
+                "valid": true
+            },
+            {
+                "description": "member 2 is valid",
+                "data": "foo\rbar",
+                "valid": true
+            },
+            {
+                "description": "another string is invalid",
+                "data": "abc",
+                "valid": false
+            }
+        ]
+    },
+    {
+        "description": "enum with false does not match 0",
+        "schema": {"enum": [false]},
+        "tests": [
+            {
+                "description": "false is valid",
+                "data": false,
+                "valid": true
+            },
+            {
+                "description": "integer zero is invalid",
+                "data": 0,
+                "valid": false
+            },
+            {
+                "description": "float zero is invalid",
+                "data": 0.0,
+                "valid": false
+            }
+        ]
+    },
+    {
+        "description": "enum with true does not match 1",
+        "schema": {"enum": [true]},
+        "tests": [
+            {
+                "description": "true is valid",
+                "data": true,
+                "valid": true
+            },
+            {
+                "description": "integer one is invalid",
+                "data": 1,
+                "valid": false
+            },
+            {
+                "description": "float one is invalid",
+                "data": 1.0,
+                "valid": false
+            }
+        ]
+    },
+    {
+        "description": "enum with 0 does not match false",
+        "schema": {"enum": [0]},
+        "tests": [
+            {
+                "description": "false is invalid",
+                "data": false,
+                "valid": false
+            },
+            {
+                "description": "integer zero is valid",
+                "data": 0,
+                "valid": true
+            },
+            {
+                "description": "float zero is valid",
+                "data": 0.0,
+                "valid": true
+            }
+        ]
+    },
+    {
+        "description": "enum with 1 does not match true",
+        "schema": {"enum": [1]},
+        "tests": [
+            {
+                "description": "true is invalid",
+                "data": true,
+                "valid": false
+            },
+            {
+                "description": "integer one is valid",
+                "data": 1,
+                "valid": true
+            },
+            {
+                "description": "float one is valid",
+                "data": 1.0,
+                "valid": true
             }
         ]
     }
