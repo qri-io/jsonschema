@@ -110,7 +110,7 @@ func (f Format) Validate(propPath string, data interface{}, errs *[]ValError) {
 // from RFC 3339, section 5.6 [RFC3339]
 // https://tools.ietf.org/html/rfc3339#section-5.6
 func isValidDateTime(dateTime string) error {
-	if _, err := time.Parse(time.RFC3339, dateTime); err != nil {
+	if _, err := time.Parse(time.RFC3339, strings.ToUpper(dateTime)); err != nil {
 		return fmt.Errorf("date-time incorrectly Formatted: %s", err.Error())
 	}
 	return nil

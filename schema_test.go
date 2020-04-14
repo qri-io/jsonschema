@@ -464,7 +464,7 @@ func TestDraft2019_09(t *testing.T) {
 		"testdata/draft2019-09/optional/refOfUnknownKeyword.json",
 		"testdata/draft2019-09/optional/zeroTerminatedFloats.json",
 
-		// "testdata/draft2019-09/optional/format/date-time.json",
+		"testdata/draft2019-09/optional/format/date-time.json",
 		"testdata/draft2019-09/optional/format/date.json",
 		"testdata/draft2019-09/optional/format/email.json",
 		"testdata/draft2019-09/optional/format/hostname.json",
