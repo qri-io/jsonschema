@@ -47,9 +47,9 @@ func TestReferenceTraversal(t *testing.T) {
 	}
 
 	elements := 0
-	expectElements := 120
+	expectElements := 28
 	refs := 0
-	expectRefs := 29
+	expectRefs := 7
 	walkJSON(rs, func(elem JSONPather) error {
 		elements++
 		if sch, ok := elem.(*Schema); ok {
