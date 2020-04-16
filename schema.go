@@ -114,9 +114,9 @@ func (rs *RootSchema) UnmarshalJSON(data []byte) error {
 			if sch.Ref != "" {
 				_ref = sch.Ref
 			}
-			if sch.RecursiveRef != "" {
-				_ref = sch.RecursiveRef
-			}
+			// if sch.RecursiveRef != "" {
+			// 	_ref = sch.RecursiveRef
+			// }
 			if _ref != "" {
 				if ids[_ref] != nil {
 					sch.ref = ids[_ref]
@@ -163,9 +163,9 @@ func (rs *RootSchema) FetchRemoteReferences() error {
 			if sch.Ref != "" {
 				ref = sch.Ref
 			}
-			if sch.RecursiveRef != "" {
-				ref = sch.RecursiveRef
-			}
+			// if sch.RecursiveRef != "" {
+			// 	ref = sch.RecursiveRef
+			// }
 			if ref != "" {
 				if refs[ref] == nil && ref[0] != '#' {
 					if u, err := url.Parse(ref); err == nil {
@@ -364,7 +364,7 @@ type Schema struct {
 	// Definitions provides a standardized location for schema authors
 	// to inline re-usable JSON Schemas into a more general schema. The
 	// keyword does not directly affect the validation result.
-	Definitions Definitions `json:"definitions,omitempty" json:"$defs,omitempty"`
+	Definitions Definitions `json:"$defs,omitempty"`
 
 	// TODO - currently a bit of a hack to handle arbitrary JSON data
 	// outside the spec
@@ -381,10 +381,13 @@ func (s *Schema) Path() string {
 // Validate uses the schema to check an instance, collecting validation
 // errors in a slice
 func (s *Schema) Validate(propPath string, data interface{}, errs *[]ValError) {
-	if (s.RecursiveRef != "" || s.Ref != "") && s.ref != nil {
+	// if s == nil {
+	// 	return
+	// }
+	if s.Ref != "" && s.ref != nil {
 		s.ref.Validate(propPath, data, errs)
 		return
-	} else if (s.RecursiveRef != "" || s.Ref != "") && s.ref == nil {
+	} else if s.Ref != "" && s.ref == nil {
 		AddError(errs, propPath, data, fmt.Sprintf("%s reference is nil for data: %v", s.Ref, data))
 		return
 	}
@@ -392,7 +395,6 @@ func (s *Schema) Validate(propPath string, data interface{}, errs *[]ValError) {
 	// TODO - so far all default.json tests pass when no use of
 	// "default" is made.
 	// Is this correct?
-
 	for _, v := range s.Validators {
 		v.Validate(propPath, data, errs)
 	}
@@ -423,8 +425,6 @@ func (s Schema) JSONProp(name string) interface{} {
 		return s.RecursiveRef
 	case "$defs":
 		return s.Definitions
-	case "definitions":
-		return s.Definitions
 	case "format":
 		return s.Format
 	default:
@@ -447,7 +447,8 @@ func (s Schema) JSONChildren() (ch map[string]JSONPather) {
 	}
 
 	if s.Definitions != nil {
-		ch["definitions"] = s.Definitions
+		ch["$defs"] = s.Definitions
+		// ch["definitions"] = s.Definitions
 	}
 
 	if s.Validators != nil {
@@ -472,7 +473,7 @@ type _schema struct {
 	WriteOnly   *bool              `json:"writeOnly,omitempty"`
 	Comment     string             `json:"$comment,omitempty"`
 	Ref         string             `json:"$ref,omitempty"`
-	Definitions map[string]*Schema `json:"definitions,omitempty" json:"$defs,omitempty"`
+	Definitions map[string]*Schema `json:"$defs,omitempty"`
 	RecursiveRef         string             `json:"$recursiveRef,omitempty"`
 	Format      string             `json:"format,omitempty"`
 }
@@ -536,7 +537,7 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 		} else {
 			switch prop {
 			// skip any already-parsed props
-			case "$schema", "$id", "title", "description", "default", "examples", "extends", "readOnly", "writeOnly", "$comment", "$ref", "$recursiveRef", "definitions", "$defs", "format":
+			case "$vocabulary", "$recursiveAnchor", "$schema", "$id", "title", "description", "default", "examples", "extends", "readOnly", "writeOnly", "$comment", "$ref", "$recursiveRef", "$defs", "format":
 				continue
 			default:
 				// assume non-specified props are "extra definitions"

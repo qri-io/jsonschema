@@ -62,7 +62,6 @@ func ExampleBasic() {
 	if err != nil {
 		panic(err)
 	}
-
 	fmt.Println(errs[0].Error())
 
 	var invalidFriend = []byte(`{
@@ -76,7 +75,7 @@ func ExampleBasic() {
 	if err != nil {
 		panic(err)
 	}
-
+// 
 	fmt.Println(errs[0].Error())
 
 	// Output: /: {"firstName":"Prince... "lastName" value is required
@@ -259,11 +258,12 @@ func TestDraft4(t *testing.T) {
 		// "testdata/draft4/definitions.json",
 		// "testdata/draft4/maximum.json",
 		// "testdata/draft4/minimum.json",
-		// "testdata/draft4/optional/zeroTerminatedFloats.json",
-
-		// TODO
 		// "testdata/draft4/ref.json",
 		// "testdata/draft4/refRemote.json",
+		// "testdata/draft4/optional/zeroTerminatedFloats.json",
+
+
+		// TODO
 		// "testdata/draft4/optional/bignum.json",
 		// "testdata/draft4/optional/ecmascript-regex.json",
 	})
@@ -308,6 +308,7 @@ func TestDraft6(t *testing.T) {
 
 		// disabled due to changes in spec
 		// "testdata/draft6/optional/zeroTerminatedFloats.json",
+
 
 		// TODO
 		// "testdata/draft6/ref.json",
@@ -434,6 +435,7 @@ func TestDraft2019_09(t *testing.T) {
 		"testdata/draft2019-09/exclusiveMinimum.json",
 		"testdata/draft2019-09/format.json",
 		"testdata/draft2019-09/if-then-else.json",
+		"testdata/draft2019-09/items.json",
 		"testdata/draft2019-09/maximum.json",
 		"testdata/draft2019-09/maxItems.json",
 		"testdata/draft2019-09/maxLength.json",
@@ -477,14 +479,22 @@ func TestDraft2019_09(t *testing.T) {
 		// "testdata/draft2019-09/defs.json",
 		// "testdata/draft2019-09/dependentRequired.json",
 		// "testdata/draft2019-09/dependentSchemas.json",
-		// "testdata/draft2019-09/items.json",
 		// "testdata/draft2019-09/ref.json",
 		// "testdata/draft2019-09/refRemote.json",
+
+
+		// TODO: requires keeping state of validated items
+		// which is something we might not want to support
+		// due to performance reasons (esp for large datasets)
 		// "testdata/draft2019-09/unevaluatedItems.json",
 		// "testdata/draft2019-09/unevaluatedProperties.json",
+
+
+		// TODO: implement support
 		// "testdata/draft2019-09/optional/bignum.json",
 		// "testdata/draft2019-09/optional/content.json",
 		// "testdata/draft2019-09/optional/ecmascript-regex.json",
+
 
 		// TODO: iri fails on IPV6 not having [] around the address
 		// which was a legal format in draft7
@@ -515,6 +525,7 @@ func runJSONTests(t *testing.T, testFilepaths []string) {
 	tests := 0
 	passed := 0
 	for _, path := range testFilepaths {
+		fmt.Println("Testing: " + path)
 		base := filepath.Base(path)
 		testSets := []*TestSet{}
 		data, err := ioutil.ReadFile(path)
