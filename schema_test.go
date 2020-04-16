@@ -475,7 +475,7 @@ func TestDraft2019_09(t *testing.T) {
 		"testdata/draft2019-09/optional/format/uri.json",
 
 		// TODO
-		// "testdata/draft2019-09/anchor.json",
+		"testdata/draft2019-09/anchor.json",
 		// "testdata/draft2019-09/defs.json",
 		// "testdata/draft2019-09/dependentRequired.json",
 		// "testdata/draft2019-09/dependentSchemas.json",

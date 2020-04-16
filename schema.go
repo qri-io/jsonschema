@@ -267,6 +267,7 @@ type Schema struct {
 	// "$id", the base URI is that of the entire document, as
 	// determined per RFC 3986 section 5 [RFC3986].
 	ID string `json:"$id,omitempty"`
+	Anchor string `json:"$anchor,omitempty"`
 	// Title and description can be used to decorate a user interface
 	// with information about the data produced by this user interface.
 	// A title will preferably be short.
@@ -405,6 +406,8 @@ func (s Schema) JSONProp(name string) interface{} {
 	switch name {
 	case "$id":
 		return s.ID
+	case "$anchor":
+		return s.ID
 	case "title":
 		return s.Title
 	case "description":
@@ -465,6 +468,7 @@ func (s Schema) JSONChildren() (ch map[string]JSONPather) {
 // _schema is an internal struct for encoding & decoding purposes
 type _schema struct {
 	ID          string             `json:"$id,omitempty"`
+	Anchor          string             `json:"$anchor,omitempty"`
 	Title       string             `json:"title,omitempty"`
 	Description string             `json:"description,omitempty"`
 	Default     interface{}        `json:"default,omitempty"`
@@ -500,6 +504,7 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 
 	sch := &Schema{
 		ID:          _s.ID,
+		Anchor:		_s.Anchor,
 		Title:       _s.Title,
 		Description: _s.Description,
 		Default:     _s.Default,
@@ -537,7 +542,7 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 		} else {
 			switch prop {
 			// skip any already-parsed props
-			case "$vocabulary", "$recursiveAnchor", "$schema", "$id", "title", "description", "default", "examples", "extends", "readOnly", "writeOnly", "$comment", "$ref", "$recursiveRef", "$defs", "format":
+			case "$anchor", "$vocabulary", "$recursiveAnchor", "$schema", "$id", "title", "description", "default", "examples", "extends", "readOnly", "writeOnly", "$comment", "$ref", "$recursiveRef", "$defs", "format":
 				continue
 			default:
 				// assume non-specified props are "extra definitions"
@@ -596,6 +601,9 @@ func (s Schema) MarshalJSON() ([]byte, error) {
 
 		if s.ID != "" {
 			obj["$id"] = s.ID
+		}
+		if s.Anchor != "" {
+			obj["$anchor"] = s.Anchor
 		}
 		if s.Title != "" {
 			obj["title"] = s.Title
