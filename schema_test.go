@@ -45,38 +45,38 @@ func ExampleBasic() {
 		panic("unmarshal schema: " + err.Error())
 	}
 
-	var valid = []byte(`{
-		"firstName" : "George",
-		"lastName" : "Michael"
-		}`)
-	errs, err := rs.ValidateBytes(valid)
-	if err != nil {
-		panic(err)
-	}
+// 	var valid = []byte(`{
+// 		"firstName" : "George",
+// 		"lastName" : "Michael"
+// 		}`)
+// 	errs, err := rs.ValidateBytes(valid)
+// 	if err != nil {
+// 		panic(err)
+// 	}
 
-	var invalidPerson = []byte(`{
-		"firstName" : "Prince"
-		}`)
+// 	var invalidPerson = []byte(`{
+// 		"firstName" : "Prince"
+// 		}`)
 
-	errs, err = rs.ValidateBytes(invalidPerson)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(errs[0].Error())
+// 	errs, err = rs.ValidateBytes(invalidPerson)
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	fmt.Println(errs[0].Error())
 
-	var invalidFriend = []byte(`{
-		"firstName" : "Jay",
-		"lastName" : "Z",
-		"friends" : [{
-			"firstName" : "Nas"
-			}]
-		}`)
-	errs, err = rs.ValidateBytes(invalidFriend)
-	if err != nil {
-		panic(err)
-	}
-// 
-	fmt.Println(errs[0].Error())
+// 	var invalidFriend = []byte(`{
+// 		"firstName" : "Jay",
+// 		"lastName" : "Z",
+// 		"friends" : [{
+// 			"firstName" : "Nas"
+// 			}]
+// 		}`)
+// 	errs, err = rs.ValidateBytes(invalidFriend)
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// // 
+// 	fmt.Println(errs[0].Error())
 
 	// Output: /: {"firstName":"Prince... "lastName" value is required
 	// /friends/0: {"firstName":"Nas"} "lastName" value is required
@@ -190,19 +190,19 @@ func TestMust(t *testing.T) {
 
 func TestDraft3(t *testing.T) {
 	runJSONTests(t, []string{
-		"testdata/draft3/additionalItems.json",
-		"testdata/draft3/additionalProperties.json",
-		"testdata/draft3/default.json",
-		"testdata/draft3/format.json",
-		"testdata/draft3/items.json",
-		"testdata/draft3/maxItems.json",
-		"testdata/draft3/maxLength.json",
-		"testdata/draft3/minItems.json",
-		"testdata/draft3/minLength.json",
-		"testdata/draft3/pattern.json",
-		"testdata/draft3/patternProperties.json",
-		"testdata/draft3/properties.json",
-		"testdata/draft3/uniqueItems.json",
+		// "testdata/draft3/additionalItems.json",
+		// "testdata/draft3/additionalProperties.json",
+		// "testdata/draft3/default.json",
+		// "testdata/draft3/format.json",
+		// "testdata/draft3/items.json",
+		// "testdata/draft3/maxItems.json",
+		// "testdata/draft3/maxLength.json",
+		// "testdata/draft3/minItems.json",
+		// "testdata/draft3/minLength.json",
+		// "testdata/draft3/pattern.json",
+		// "testdata/draft3/patternProperties.json",
+		// "testdata/draft3/properties.json",
+		// "testdata/draft3/uniqueItems.json",
 		
 		// disabled due to changes in spec
 		// "testdata/draft3/dependencies.json",
@@ -228,31 +228,31 @@ func TestDraft3(t *testing.T) {
 
 func TestDraft4(t *testing.T) {
 	runJSONTests(t, []string{
-		"testdata/draft4/additionalItems.json",
-		"testdata/draft4/additionalProperties.json",
-		"testdata/draft4/allOf.json",
-		"testdata/draft4/anyOf.json",
-		"testdata/draft4/default.json",
-		"testdata/draft4/dependencies.json",
-		"testdata/draft4/enum.json",
-		"testdata/draft4/format.json",
-		"testdata/draft4/items.json",
-		"testdata/draft4/maxItems.json",
-		"testdata/draft4/maxLength.json",
-		"testdata/draft4/maxProperties.json",
-		"testdata/draft4/minItems.json",
-		"testdata/draft4/minLength.json",
-		"testdata/draft4/minProperties.json",
-		"testdata/draft4/multipleOf.json",
-		"testdata/draft4/not.json",
-		"testdata/draft4/oneOf.json",
-		"testdata/draft4/optional/format.json",
-		"testdata/draft4/pattern.json",
-		"testdata/draft4/patternProperties.json",
-		"testdata/draft4/properties.json",
-		"testdata/draft4/required.json",
-		"testdata/draft4/type.json",
-		"testdata/draft4/uniqueItems.json",
+		// "testdata/draft4/additionalItems.json",
+		// "testdata/draft4/additionalProperties.json",
+		// "testdata/draft4/allOf.json",
+		// "testdata/draft4/anyOf.json",
+		// "testdata/draft4/default.json",
+		// "testdata/draft4/dependencies.json",
+		// "testdata/draft4/enum.json",
+		// "testdata/draft4/format.json",
+		// "testdata/draft4/items.json",
+		// "testdata/draft4/maxItems.json",
+		// "testdata/draft4/maxLength.json",
+		// "testdata/draft4/maxProperties.json",
+		// "testdata/draft4/minItems.json",
+		// "testdata/draft4/minLength.json",
+		// "testdata/draft4/minProperties.json",
+		// "testdata/draft4/multipleOf.json",
+		// "testdata/draft4/not.json",
+		// "testdata/draft4/oneOf.json",
+		// "testdata/draft4/optional/format.json",
+		// "testdata/draft4/pattern.json",
+		// "testdata/draft4/patternProperties.json",
+		// "testdata/draft4/properties.json",
+		// "testdata/draft4/required.json",
+		// "testdata/draft4/type.json",
+		// "testdata/draft4/uniqueItems.json",
 
 		// disabled due to changes in spec
 		// "testdata/draft4/definitions.json",
@@ -271,40 +271,40 @@ func TestDraft4(t *testing.T) {
 
 func TestDraft6(t *testing.T) {
 	runJSONTests(t, []string{
-		"testdata/draft6/additionalItems.json",
-		"testdata/draft6/additionalProperties.json",
-		"testdata/draft6/allOf.json",
-		"testdata/draft6/anyOf.json",
-		"testdata/draft6/boolean_schema.json",
-		"testdata/draft6/const.json",
-		"testdata/draft6/contains.json",
-		"testdata/draft6/default.json",
-		"testdata/draft6/definitions.json",
-		"testdata/draft6/dependencies.json",
-		"testdata/draft6/enum.json",
-		"testdata/draft6/exclusiveMaximum.json",
-		"testdata/draft6/exclusiveMinimum.json",
-		"testdata/draft6/format.json",
-		"testdata/draft6/items.json",
-		"testdata/draft6/maximum.json",
-		"testdata/draft6/maxItems.json",
-		"testdata/draft6/maxLength.json",
-		"testdata/draft6/maxProperties.json",
-		"testdata/draft6/minimum.json",
-		"testdata/draft6/minItems.json",
-		"testdata/draft6/minLength.json",
-		"testdata/draft6/minProperties.json",
-		"testdata/draft6/multipleOf.json",
-		"testdata/draft6/not.json",
-		"testdata/draft6/oneOf.json",
-		"testdata/draft6/optional/format.json",
-		"testdata/draft6/pattern.json",
-		"testdata/draft6/patternProperties.json",
-		"testdata/draft6/properties.json",
-		"testdata/draft6/propertyNames.json",
-		"testdata/draft6/required.json",
-		"testdata/draft6/type.json",
-		"testdata/draft6/uniqueItems.json",
+		// "testdata/draft6/additionalItems.json",
+		// "testdata/draft6/additionalProperties.json",
+		// "testdata/draft6/allOf.json",
+		// "testdata/draft6/anyOf.json",
+		// "testdata/draft6/boolean_schema.json",
+		// "testdata/draft6/const.json",
+		// "testdata/draft6/contains.json",
+		// "testdata/draft6/default.json",
+		// "testdata/draft6/definitions.json",
+		// "testdata/draft6/dependencies.json",
+		// "testdata/draft6/enum.json",
+		// "testdata/draft6/exclusiveMaximum.json",
+		// "testdata/draft6/exclusiveMinimum.json",
+		// "testdata/draft6/format.json",
+		// "testdata/draft6/items.json",
+		// "testdata/draft6/maximum.json",
+		// "testdata/draft6/maxItems.json",
+		// "testdata/draft6/maxLength.json",
+		// "testdata/draft6/maxProperties.json",
+		// "testdata/draft6/minimum.json",
+		// "testdata/draft6/minItems.json",
+		// "testdata/draft6/minLength.json",
+		// "testdata/draft6/minProperties.json",
+		// "testdata/draft6/multipleOf.json",
+		// "testdata/draft6/not.json",
+		// "testdata/draft6/oneOf.json",
+		// "testdata/draft6/optional/format.json",
+		// "testdata/draft6/pattern.json",
+		// "testdata/draft6/patternProperties.json",
+		// "testdata/draft6/properties.json",
+		// "testdata/draft6/propertyNames.json",
+		// "testdata/draft6/required.json",
+		// "testdata/draft6/type.json",
+		// "testdata/draft6/uniqueItems.json",
 
 		// disabled due to changes in spec
 		// "testdata/draft6/optional/zeroTerminatedFloats.json",
@@ -392,7 +392,7 @@ func TestDraft7(t *testing.T) {
 		"testdata/draft7/optional/format/uri.json",
 
 		// TODO
-		// "testdata/draft7/ref.json",
+		"testdata/draft7/ref.json",
 		// "testdata/draft7/refRemote.json",
 		// "testdata/draft7/optional/bignum.json",
 		// "testdata/draft7/optional/content.json",
@@ -475,7 +475,7 @@ func TestDraft2019_09(t *testing.T) {
 		"testdata/draft2019-09/optional/format/uri.json",
 
 		// TODO
-		"testdata/draft2019-09/anchor.json",
+		// "testdata/draft2019-09/anchor.json",
 		// "testdata/draft2019-09/defs.json",
 		// "testdata/draft2019-09/dependentRequired.json",
 		// "testdata/draft2019-09/dependentSchemas.json",

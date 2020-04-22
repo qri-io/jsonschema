@@ -1,0 +1,5 @@
+{
+  "maxLength": 1,
+  "minLength": 2,
+  "pattern": "$string/"
+}

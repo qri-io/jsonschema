@@ -1,0 +1,7 @@
+{
+  "exclusiveMaximum": 5,
+  "exclusiveMinimum": 7,
+  "maximum": 2,
+  "minimum": 6,
+  "multipleOf": 4
+}

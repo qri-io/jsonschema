@@ -1,6 +1,7 @@
 package jsonschema
 
 import (
+	// "fmt"
 	"encoding/json"
 	"strconv"
 )
@@ -17,6 +18,7 @@ func NewAllOf() Validator {
 // Validate implements the validator interface for AllOf
 func (a AllOf) Validate(propPath string, data interface{}, errs *[]ValError) {
 	for _, sch := range a {
+		// fmt.Println(sch)
 		sch.Validate(propPath, data, errs)
 	}
 }

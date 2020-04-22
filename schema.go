@@ -86,20 +86,79 @@ func (rs *RootSchema) UnmarshalJSON(data []byte) error {
 	ids := map[string]*Schema{}
 	if err := walkJSON(sch, func(elem JSONPather) error {
 		if sch, ok := elem.(*Schema); ok {
+			parentRef, err := jsonpointer.ParseRef(sch.Ref)
+			if err != nil {
+				return err
+			}
+			currentRef, _ := jsonpointer.ParseRef(sch.Ref)
 			if sch.ID != "" {
 				ids[sch.ID] = sch
 				// For the record, I think this is ridiculous.
-				if u, err := url.Parse(sch.ID); err == nil {
-					if len(u.Path) >= 1 {
-						ids[u.Path[1:]] = sch
-					} else if len(u.Fragment) >= 1 {
-						// This handles if the identifier is defined as only a fragment (with #)
-						// i.e. #/properties/firstName
-						// in this case, u.Fragment will have /properties/firstName
-						ids[u.Fragment[1:]] = sch
+				if u, err := jsonpointer.ParseRef(sch.ID); err == nil {
+					currentRef, err = jsonpointer.Compose(parentRef, u)
+					if err == nil {
+						ids[currentRef.String()] = sch	
 					}
+					// fmt.Println(currentRef.String())
+					// if len(u.Path) >= 1 {
+					// 	ids[u.Path[1:]] = sch
+					// } else if len(u.Fragment) >= 1 {
+					// 	// This handles if the identifier is defined as only a fragment (with #)
+					// 	// i.e. #/properties/firstName
+					// 	// in this case, u.Fragment will have /properties/firstName
+					// 	ids[u.Fragment[1:]] = sch
+					// }
 				}
 			}
+
+			if sch.Anchor != "" {
+				ids[sch.Anchor] = sch
+				// For the record, I think this is ridiculous.
+				if u, err := jsonpointer.ParseRef(sch.Anchor); err == nil {
+					currentRef, err = jsonpointer.Compose(parentRef, u)
+					if err == nil {
+						ids[currentRef.String()] = sch	
+					}
+					// fmt.Println(currentRef.String())
+					// if len(u.Path) >= 1 {
+					// 	ids[u.Path[1:]] = sch
+					// } else if len(u.Fragment) >= 1 {
+					// 	// This handles if the identifier is defined as only a fragment (with #)
+					// 	// i.e. #/properties/firstName
+					// 	// in this case, u.Fragment will have /properties/firstName
+					// 	ids[u.Fragment[1:]] = sch
+					// }
+				}
+			}
+			
+
+			// if sch.Ref != "" {
+			// 	_ref = sch.Ref
+			// }
+			// if sch.RecursiveRef != "" {
+			// 	_ref = sch.RecursiveRef
+			// }
+			// if _ref != "" {
+			// 	if ids[_ref] != nil {
+			// 		sch.ref = ids[_ref]
+			// 		return nil
+			// 	}
+
+				// ptr, err := jsonpointer.Parse(_ref)
+				// if err != nil {
+				// 	return fmt.Errorf("error evaluating json pointer: %s: %s", err.Error(), _ref)
+				// }
+				// res, err := root.evalJSONValidatorPointer(ptr)
+				// if err != nil {
+				// 	return err
+				// }
+				// if val, ok := res.(Validator); ok {
+				// 	sch.ref = val
+				// } else {
+				// 	return fmt.Errorf("%s : %s, %v is not a json pointer to a json schema", _ref, ptr.String(), ptr)
+				// }
+			// }
+			// }
 		}
 		return nil
 	}); err != nil {
@@ -110,31 +169,33 @@ func (rs *RootSchema) UnmarshalJSON(data []byte) error {
 	// RootSchema struct) to ensure root is evaluated for references
 	if err := walkJSON(sch, func(elem JSONPather) error {
 		if sch, ok := elem.(*Schema); ok {
-			_ref := ""
 			if sch.Ref != "" {
-				_ref = sch.Ref
-			}
-			// if sch.RecursiveRef != "" {
-			// 	_ref = sch.RecursiveRef
-			// }
-			if _ref != "" {
-				if ids[_ref] != nil {
-					sch.ref = ids[_ref]
+				if ids[sch.Ref] != nil {
+					sch.ref = ids[sch.Ref]
+					return nil
+				} 
+				ptr, err := jsonpointer.ParseRef(sch.Ref)
+				if ids[ptr.String()] != nil {
+					sch.ref = ids[ptr.String()]
 					return nil
 				}
-
-				ptr, err := jsonpointer.Parse(_ref)
-				if err != nil {
-					return fmt.Errorf("error evaluating json pointer: %s: %s", err.Error(), _ref)
+				ptr.RemoveFragment()
+				if ids[ptr.String()] != nil{
+					sch.ref = ids[ptr.String()]
+					return nil	
 				}
-				res, err := root.evalJSONValidatorPointer(ptr)
+				ptr, err = jsonpointer.ParseRef(sch.Ref)
+				if err != nil {
+					return fmt.Errorf("error evaluating json pointer: %s: %s", err.Error(), sch.Ref)
+				}
+				res, err := root.evalJSONValidatorRef(*ptr)
 				if err != nil {
 					return err
 				}
 				if val, ok := res.(Validator); ok {
 					sch.ref = val
 				} else {
-					return fmt.Errorf("%s : %s, %v is not a json pointer to a json schema", _ref, ptr.String(), ptr)
+					return fmt.Errorf("%s : %s, %v is not a json pointer to a json schema", sch.Ref, ptr.String(), ptr)
 				}
 			}
 		}
@@ -168,6 +229,18 @@ func (rs *RootSchema) FetchRemoteReferences() error {
 			// }
 			if ref != "" {
 				if refs[ref] == nil && ref[0] != '#' {
+					// currentRef, _ := jsonpointer.ParseRef(ref)
+					// if u, err := jsonpointer.ParseRef(ref); err == nil {
+					// 	if u.CanFetch() {
+					// 		if res, err := http.Get(u.String()); err == nil {
+					// 			s := &RootSchema{}
+					// 			if err := json.NewDecoder(res.Body).Decode(s); err != nil {
+					// 				return err
+					// 			}
+					// 			refs[ref] = &s.Schema
+					// 		}
+					// 	}
+					// }
 					if u, err := url.Parse(ref); err == nil {
 						if res, err := http.Get(u.String()); err == nil {
 							s := &RootSchema{}
@@ -203,6 +276,10 @@ func (rs *RootSchema) ValidateBytes(data []byte) ([]ValError, error) {
 	}
 	rs.Validate("/", doc, &errs)
 	return errs, nil
+}
+
+func (rs *RootSchema) evalJSONValidatorRef(ref jsonpointer.Reference) (res interface{}, err error) {
+	return rs.evalJSONValidatorPointer(*ref.GetPointer())
 }
 
 func (rs *RootSchema) evalJSONValidatorPointer(ptr jsonpointer.Pointer) (res interface{}, err error) {
@@ -385,6 +462,9 @@ func (s *Schema) Validate(propPath string, data interface{}, errs *[]ValError) {
 	// if s == nil {
 	// 	return
 	// }
+	// if propPath != "/" {
+	// 	fmt.Println(propPath)
+	// }
 	if s.Ref != "" && s.ref != nil {
 		s.ref.Validate(propPath, data, errs)
 		return
@@ -407,7 +487,7 @@ func (s Schema) JSONProp(name string) interface{} {
 	case "$id":
 		return s.ID
 	case "$anchor":
-		return s.ID
+		return s.Anchor
 	case "title":
 		return s.Title
 	case "description":
@@ -522,10 +602,10 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 	// if a reference is present everything else is *supposed to be* ignored
 	// but the tests seem to require that this is not the case
 	// I'd like to do this:
-	// if sch.Ref != "" {
-	// 	*s = Schema{Ref: sch.Ref}
-	// 	return nil
-	// }
+	if sch.Ref != "" {
+		*s = Schema{Ref: sch.Ref}
+		return nil
+	}
 	// but returning the full struct makes tests pass, because things like
 	// testdata/draft7/ref.json#/4/schema
 	// mean we should return the full object
