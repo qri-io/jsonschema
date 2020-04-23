@@ -1,4 +1,4 @@
-package jsonschema
+package main
 
 // JSONPather makes validators traversible by JSON-pointers,
 // which is required to support references in JSON schemas.
@@ -17,6 +17,22 @@ type JSONContainer interface {
 	// JSONChildren should return all immidiate children of this element
 	JSONChildren() map[string]JSONPather
 }
+
+// func walkJSON(elem JSONPather, key string, fn func(key string, elem JSONPather) error) error {
+// 	if err := fn(key, elem); err != nil {
+// 		return err
+// 	}
+
+// 	if con, ok := elem.(JSONContainer); ok {
+// 		for key, ch := range con.JSONChildren() {
+// 			if err := walkJSON(ch, key, fn); err != nil {
+// 				return err
+// 			}
+// 		}
+// 	}
+
+// 	return nil
+// }
 
 func walkJSON(elem JSONPather, fn func(elem JSONPather) error) error {
 	if err := fn(elem); err != nil {

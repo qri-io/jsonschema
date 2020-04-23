@@ -1,99 +1,137 @@
-package jsonschema
+package main
 
 import (
 	"fmt"
+	jptr "github.com/qri-io/jsonpointer"
 )
 
-// MultipleOf MUST be a number, strictly greater than 0.
-// MultipleOf validates that a numeric instance is valid only if division
-// by this keyword's value results in an integer.
+//
+// MultipleOf
+//
+
 type MultipleOf float64
 
-// NewMultipleOf allocates a new MultipleOf validator
-func NewMultipleOf() Validator {
+func NewMultipleOf() Keyword {
 	return new(MultipleOf)
 }
 
-// Validate implements the Validator interface for MultipleOf
-func (m MultipleOf) Validate(propPath string, data interface{}, errs *[]ValError) {
-	if num, ok := data.(float64); ok {
+func (m MultipleOf) Validate(propPath string, data interface{}, errs *[]KeyError) {}
+
+func (m *MultipleOf) Register(uri string, registry *SchemaRegistry) {}
+
+func (m *MultipleOf) Resolve(pointer jptr.Pointer, uri string) *Schema {
+	return nil
+}
+
+func (m MultipleOf) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	if num, ok := schCtx.Instance.(float64); ok {
 		div := num / float64(m)
 		if float64(int(div)) != div {
-			AddError(errs, propPath, data, fmt.Sprintf("must be a multiple of %f", m))
+			AddErrorCtx(errs, schCtx, fmt.Sprintf("must be a multiple of %f", m))
 		}
 	}
 }
 
-// Maximum MUST be a number, representing an inclusive upper limit
-// for a numeric instance.
-// If the instance is a number, then this keyword validates only if the instance is less than or exactly equal to "Maximum".
+//
+// Maximum
+//
+
 type Maximum float64
 
-// NewMaximum allocates a new Maximum validator
-func NewMaximum() Validator {
+func NewMaximum() Keyword {
 	return new(Maximum)
 }
 
-// Validate implements the Validator interface for Maximum
-func (m Maximum) Validate(propPath string, data interface{}, errs *[]ValError) {
-	if num, ok := data.(float64); ok {
+func (m Maximum) Validate(propPath string, data interface{}, errs *[]KeyError) {}
+
+func (m *Maximum) Register(uri string, registry *SchemaRegistry) {}
+
+func (m *Maximum) Resolve(pointer jptr.Pointer, uri string) *Schema {
+	return nil
+}
+
+func (m Maximum) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	if num, ok := schCtx.Instance.(float64); ok {
 		if num > float64(m) {
-			AddError(errs, propPath, data, fmt.Sprintf("must be less than or equal to %f", m))
+			AddErrorCtx(errs, schCtx, fmt.Sprintf("must be less than or equal to %f", m))
 		}
 	}
 }
 
-// ExclusiveMaximum MUST be number, representing an exclusive upper limit for a numeric instance.
-// If the instance is a number, then the instance is valid only if it has a value
-// strictly less than (not equal to) "Exclusivemaximum".
+//
+// ExclusiveMaximum
+//
+
 type ExclusiveMaximum float64
 
-// NewExclusiveMaximum allocates a new ExclusiveMaximum validator
-func NewExclusiveMaximum() Validator {
+func NewExclusiveMaximum() Keyword {
 	return new(ExclusiveMaximum)
 }
 
-// Validate implements the Validator interface for ExclusiveMaximum
-func (m ExclusiveMaximum) Validate(propPath string, data interface{}, errs *[]ValError) {
-	if num, ok := data.(float64); ok {
+func (m ExclusiveMaximum) Validate(propPath string, data interface{}, errs *[]KeyError) {}
+
+func (m *ExclusiveMaximum) Register(uri string, registry *SchemaRegistry) {}
+
+func (m *ExclusiveMaximum) Resolve(pointer jptr.Pointer, uri string) *Schema {
+	return nil
+}
+
+func (m ExclusiveMaximum) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	if num, ok := schCtx.Instance.(float64); ok {
 		if num >= float64(m) {
-			AddError(errs, propPath, data, fmt.Sprintf("must be less than %f", m))
+			AddErrorCtx(errs, schCtx, fmt.Sprintf("%f must be less than %f", num, m))
 		}
 	}
 }
 
-// Minimum MUST be a number, representing an inclusive lower limit for a numeric instance.
-// If the instance is a number, then this keyword validates only if the instance is greater than or exactly equal to "Minimum".
+//
+// Minimum
+//
+
 type Minimum float64
 
-// NewMinimum allocates a new Minimum validator
-func NewMinimum() Validator {
+func NewMinimum() Keyword {
 	return new(Minimum)
 }
 
-// Validate implements the Validator interface for Minimum
-func (m Minimum) Validate(propPath string, data interface{}, errs *[]ValError) {
-	if num, ok := data.(float64); ok {
+func (m Minimum) Validate(propPath string, data interface{}, errs *[]KeyError) {}
+
+func (m *Minimum) Register(uri string, registry *SchemaRegistry) {}
+
+func (m *Minimum) Resolve(pointer jptr.Pointer, uri string) *Schema {
+	return nil
+}
+
+func (m Minimum) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	if num, ok := schCtx.Instance.(float64); ok {
 		if num < float64(m) {
-			AddError(errs, propPath, data, fmt.Sprintf("must be greater than or equal to %f", m))
+			AddErrorCtx(errs, schCtx, fmt.Sprintf("must be less than or equal to %f", m))
 		}
 	}
 }
 
-// ExclusiveMinimum MUST be number, representing an exclusive lower limit for a numeric instance.
-// If the instance is a number, then the instance is valid only if it has a value strictly greater than (not equal to) "ExclusiveMinimum".
+//
+// ExclusiveMinimum
+//
+
 type ExclusiveMinimum float64
 
-// NewExclusiveMinimum allocates a new ExclusiveMinimum validator
-func NewExclusiveMinimum() Validator {
+func NewExclusiveMinimum() Keyword {
 	return new(ExclusiveMinimum)
 }
 
-// Validate implements the Validator interface for ExclusiveMinimum
-func (m ExclusiveMinimum) Validate(propPath string, data interface{}, errs *[]ValError) {
-	if num, ok := data.(float64); ok {
+func (m ExclusiveMinimum) Validate(propPath string, data interface{}, errs *[]KeyError) {}
+
+func (m *ExclusiveMinimum) Register(uri string, registry *SchemaRegistry) {}
+
+func (m *ExclusiveMinimum) Resolve(pointer jptr.Pointer, uri string) *Schema {
+	return nil
+}
+
+func (m ExclusiveMinimum) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	if num, ok := schCtx.Instance.(float64); ok {
 		if num <= float64(m) {
-			AddError(errs, propPath, data, fmt.Sprintf("must be greater than %f", m))
+			AddErrorCtx(errs, schCtx, fmt.Sprintf("%f must be less than %f", num, m))
 		}
 	}
 }
