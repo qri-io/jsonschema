@@ -138,5 +138,78 @@
                 "valid": false
             }
         ]
+    },
+    {
+        "description": "anyOf with one empty schema",
+        "schema": {
+            "anyOf": [
+                { "type": "number" },
+                {}
+            ]
+        },
+        "tests": [
+            {
+                "description": "string is valid",
+                "data": "foo",
+                "valid": true
+            },
+            {
+                "description": "number is valid",
+                "data": 123,
+                "valid": true
+            }
+        ]
+    },
+    {
+        "description": "nested anyOf, to check validation semantics",
+        "schema": {
+            "anyOf": [
+                {
+                    "anyOf": [
+                        {
+                            "type": "null"
+                        }
+                    ]
+                }
+            ]
+        },
+        "tests": [
+            {
+                "description": "null is valid",
+                "data": null,
+                "valid": true
+            },
+            {
+                "description": "anything non-null is invalid",
+                "data": 123,
+                "valid": false
+            }
+        ]
+    },
+    {
+        "description": "nested anyOf, to check validation semantics",
+        "schema": {
+            "anyOf": [
+                {
+                    "anyOf": [
+                        {
+                            "type": "null"
+                        }
+                    ]
+                }
+            ]
+        },
+        "tests": [
+            {
+                "description": "null is valid",
+                "data": null,
+                "valid": true
+            },
+            {
+                "description": "anything non-null is invalid",
+                "data": 123,
+                "valid": false
+            }
+        ]
     }
 ]

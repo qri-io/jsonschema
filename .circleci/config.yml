@@ -3,7 +3,7 @@ jobs:
   build:
     working_directory: /go/src/github.com/qri-io/jsonschema
     docker:
-      - image: circleci/golang:1.9
+      - image: circleci/golang:1.13
         environment:
           GOLANG_ENV: test
           PORT: 3000
@@ -12,14 +12,14 @@ jobs:
     steps:
       - checkout
       - run: mkdir -p $TEST_RESULTS
-      - run: go get github.com/jstemmer/go-junit-report github.com/golang/lint/golint github.com/sergi/go-diff/diffmatchpatch
+      - run: go get github.com/jstemmer/go-junit-report golang.org/x/lint/golint github.com/sergi/go-diff/diffmatchpatch
       - run:
           name: Install deps
           command: >
             go get -v -d -u
-            github.com/jstemmer/go-junit-report 
+            github.com/jstemmer/go-junit-report
             github.com/qri-io/jsonpointer
-      - run: 
+      - run:
           name: Run Lint Tests
           command: golint -set_exit_status ./...
       - run:
