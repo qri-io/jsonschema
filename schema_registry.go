@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"strings"
 )
 
@@ -9,37 +11,42 @@ var (
 )
 
 type SchemaRegistry struct {
-	schemaLookup map[string]*Schema
+	schemaLookup  map[string]*Schema
 	contextLookup map[string]*Schema
 }
 
 func GetSchemaRegistry() *SchemaRegistry {
 	if sr == nil {
 		sr = &SchemaRegistry{
-			schemaLookup: map[string]*Schema{},
+			schemaLookup:  map[string]*Schema{},
 			contextLookup: map[string]*Schema{},
 		}
 	}
 	return sr
 }
 
-func (sr *SchemaRegistry) Get(uri string) *Schema {
+func (sr *SchemaRegistry) Get(uri string, ctx *context.Context) *Schema {
 	uri = strings.TrimRight(uri, "#")
 	schema := sr.schemaLookup[uri]
 	if schema == nil {
-		err := FetchSchema(uri, schema)
+		fetchedSchema := &Schema{}
+		err := FetchSchema(ctx, uri, fetchedSchema)
 		if err != nil {
-			// TODO: Validate Schema
-			schema.DocPath = uri
-			sr.schemaLookup[uri] = schema
-		} else {
+			SchemaDebug(fmt.Sprintf("[SchemaRegistry] Fetch error: %s", err.Error()))
 			return nil
 		}
+		if fetchedSchema == nil {
+			return nil
+		}
+		fetchedSchema.docPath = uri
+		// TODO(arqu): meta validate schema
+		schema = fetchedSchema
+		sr.schemaLookup[uri] = schema
 	}
 	return schema
 }
 
-func (sr *SchemaRegistry) MustGet(uri string) *Schema {
+func (sr *SchemaRegistry) GetKnown(uri string) *Schema {
 	uri = strings.TrimRight(uri, "#")
 	return sr.schemaLookup[uri]
 }
@@ -50,22 +57,23 @@ func (sr *SchemaRegistry) GetLocal(uri string) *Schema {
 }
 
 func (sr *SchemaRegistry) Register(sch *Schema) {
-	if sch.DocPath == "" {
+	if sch.docPath == "" {
 		return
 	}
-	sr.schemaLookup[sch.DocPath] = sch
+	sr.schemaLookup[sch.docPath] = sch
 }
 
 func (sr *SchemaRegistry) RegisterLocal(sch *Schema) {
-	if sch.DocPath == "" {
-		return
-	}
-	if sch.ID != "" && IsLocalSchemaId(sch.ID) {
-		sr.contextLookup[sch.ID] = sch
+	if sch.id != "" && IsLocalSchemaId(sch.id) {
+		sr.contextLookup[sch.id] = sch
 	}
 
-	if sch.Anchor != "" {
-		anchorUri := sch.DocPath + "#" + sch.Anchor
+	if sch.HasKeyword("$anchor") {
+		anchorKeyword := sch.keywords["$anchor"].(*Anchor)
+		anchorUri := sch.docPath + "#" + string(*anchorKeyword)
+		if sr.contextLookup == nil {
+			sr.contextLookup = map[string]*Schema{}
+		}
 		sr.contextLookup[anchorUri] = sch
 	}
 }

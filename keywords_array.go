@@ -31,24 +31,41 @@ func (it *Items) Register(uri string, registry *SchemaRegistry) {
 }
 
 func (it *Items) Resolve(pointer jptr.Pointer, uri string) *Schema {
-	// TODO: implement this
+	if pointer == nil {
+		return nil
+	}
+	current := pointer.Head()
+	if current == nil {
+		return nil
+	}
+
+	pos, err := strconv.Atoi(*current)
+	if err != nil {
+		return nil
+	}
+
+	if pos < 0 || pos >= len(it.Schemas) {
+		return nil
+	}
+
+	return it.Schemas[pos].Resolve(pointer.Tail(), uri)
+
 	return nil
 }
 
 func (it Items) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	SchemaDebug("[Items] Validating")
 	if arr, ok := schCtx.Instance.([]interface{}); ok {
 		if it.single {
 			subCtx := NewSchemaContextFromSourceClean(*schCtx)
 			if schCtx.BaseRelativeLocation != nil {
-				if newPtr, err := schCtx.BaseRelativeLocation.RawDescendant("items"); err == nil {
-					subCtx.BaseRelativeLocation = &newPtr
-				}
+				newPtr := schCtx.BaseRelativeLocation.RawDescendant("items")
+				subCtx.BaseRelativeLocation = &newPtr
 			}
-			if newPtr, err := schCtx.RelativeLocation.RawDescendant("items"); err == nil {
-				subCtx.RelativeLocation = &newPtr
-			}
+			newPtr := schCtx.RelativeLocation.RawDescendant("items")
+			subCtx.RelativeLocation = &newPtr
 			for i, elem := range arr {
-				if _, ok := schCtx.Local.Keywords["additionalItems"]; ok {
+				if _, ok := schCtx.Local.keywords["additionalItems"]; ok {
 					schCtx.EvaluatedPropertyNames["0"] = true
 					schCtx.LocalEvaluatedPropertyNames["0"] = true
 					if schCtx.LastEvaluatedIndex < i {
@@ -59,12 +76,13 @@ func (it Items) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 					}
 				}
 				subCtx.ClearContext()
-				if newPtr, err := schCtx.InstanceLocation.RawDescendant(strconv.Itoa(i)); err == nil {
-					subCtx.InstanceLocation = &newPtr
-				}
+				newPtr = schCtx.InstanceLocation.RawDescendant(strconv.Itoa(i))
+				subCtx.InstanceLocation = &newPtr
 				subCtx.Instance = elem
 				it.Schemas[0].ValidateFromContext(subCtx, errs)
-				if _, ok := schCtx.Local.Keywords["additionalItems"]; ok {
+				if _, ok := schCtx.Local.keywords["additionalItems"]; ok {
+					// TODO(arqu): this might clash with additionalProperties
+					// should separate items out
 					JoinSets(&schCtx.EvaluatedPropertyNames, subCtx.EvaluatedPropertyNames)
 					JoinSets(&schCtx.LocalEvaluatedPropertyNames, subCtx.LocalEvaluatedPropertyNames)
 				}
@@ -73,7 +91,7 @@ func (it Items) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 			subCtx := NewSchemaContextFromSourceClean(*schCtx)
 			for i, vs := range it.Schemas {
 				if i < len(arr) {
-					if _, ok := schCtx.Local.Keywords["additionalItems"]; ok {
+					if _, ok := schCtx.Local.keywords["additionalItems"]; ok {
 						schCtx.EvaluatedPropertyNames[strconv.Itoa(i)] = true
 						schCtx.LocalEvaluatedPropertyNames[strconv.Itoa(i)] = true
 						if schCtx.LastEvaluatedIndex < i {
@@ -85,19 +103,17 @@ func (it Items) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 					}
 					subCtx.ClearContext()
 					if schCtx.BaseRelativeLocation != nil {
-						if newPtr, err := schCtx.BaseRelativeLocation.RawDescendant("items", strconv.Itoa(i)); err == nil {
-							subCtx.BaseRelativeLocation = &newPtr
-						}
+						newPtr := schCtx.BaseRelativeLocation.RawDescendant("items", strconv.Itoa(i))
+						subCtx.BaseRelativeLocation = &newPtr
 					}
-					if newPtr, err := schCtx.RelativeLocation.RawDescendant("items", strconv.Itoa(i)); err == nil {
-						subCtx.RelativeLocation = &newPtr
-					}
-					if newPtr, err := schCtx.InstanceLocation.RawDescendant(strconv.Itoa(i)); err == nil {
-						subCtx.InstanceLocation = &newPtr
-					}
+					newPtr := schCtx.RelativeLocation.RawDescendant("items", strconv.Itoa(i))
+					subCtx.RelativeLocation = &newPtr
+					newPtr = schCtx.InstanceLocation.RawDescendant(strconv.Itoa(i))
+					subCtx.InstanceLocation = &newPtr
+
 					subCtx.Instance = arr[i]
 					vs.ValidateFromContext(subCtx, errs)
-					if _, ok := schCtx.Local.Keywords["additionalItems"]; ok {
+					if _, ok := schCtx.Local.keywords["additionalItems"]; ok {
 						JoinSets(&schCtx.EvaluatedPropertyNames, subCtx.EvaluatedPropertyNames)
 						JoinSets(&schCtx.LocalEvaluatedPropertyNames, subCtx.LocalEvaluatedPropertyNames)
 					}
@@ -166,6 +182,7 @@ func (m *MaxItems) Resolve(pointer jptr.Pointer, uri string) *Schema {
 }
 
 func (m MaxItems) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	SchemaDebug("[MaxItems] Validating")
 	if arr, ok := schCtx.Instance.([]interface{}); ok {
 		if len(arr) > int(m) {
 			AddErrorCtx(errs, schCtx, fmt.Sprintf("array length %d exceeds %d max", len(arr), m))
@@ -193,6 +210,7 @@ func (m *MinItems) Resolve(pointer jptr.Pointer, uri string) *Schema {
 }
 
 func (m MinItems) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	SchemaDebug("[MinItems] Validating")
 	if arr, ok := schCtx.Instance.([]interface{}); ok {
 		if len(arr) < int(m) {
 			AddErrorCtx(errs, schCtx, fmt.Sprintf("array length %d below %d minimum items", len(arr), m))
@@ -220,6 +238,7 @@ func (u *UniqueItems) Resolve(pointer jptr.Pointer, uri string) *Schema {
 }
 
 func (u UniqueItems) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	SchemaDebug("[UniqueItems] Validating")
 	if arr, ok := schCtx.Instance.([]interface{}); ok {
 		found := []interface{}{}
 		for _, elem := range arr {
@@ -255,24 +274,22 @@ func (c *Contains) Resolve(pointer jptr.Pointer, uri string) *Schema {
 }
 
 func (c *Contains) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	SchemaDebug("[Contains] Validating")
 	v := Schema(*c)
 	if arr, ok := schCtx.Instance.([]interface{}); ok {
 		valid := false
 		matchCount := 0
 		subCtx := NewSchemaContextFromSourceClean(*schCtx)
 		if schCtx.BaseRelativeLocation != nil {
-			if newPtr, err := schCtx.BaseRelativeLocation.RawDescendant("contains"); err == nil {
-				subCtx.BaseRelativeLocation = &newPtr
-			}
+			newPtr := schCtx.BaseRelativeLocation.RawDescendant("contains")
+			subCtx.BaseRelativeLocation = &newPtr
 		}
-		if newPtr, err := schCtx.RelativeLocation.RawDescendant("contains"); err == nil {
-			subCtx.RelativeLocation = &newPtr
-		}
+		newPtr := schCtx.RelativeLocation.RawDescendant("contains")
+		subCtx.RelativeLocation = &newPtr
 		for i, elem := range arr {
 			subCtx.ClearContext()
-			if newPtr, err := schCtx.InstanceLocation.RawDescendant(strconv.Itoa(i)); err == nil {
-				subCtx.InstanceLocation = &newPtr
-			}
+			newPtr = schCtx.InstanceLocation.RawDescendant(strconv.Itoa(i))
+			subCtx.InstanceLocation = &newPtr
 			subCtx.Instance = elem
 			test := &[]KeyError{}
 			v.ValidateFromContext(subCtx, test)
@@ -325,6 +342,7 @@ func (m *MaxContains) Resolve(pointer jptr.Pointer, uri string) *Schema {
 }
 
 func (m MaxContains) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	SchemaDebug("[MaxContains] Validating")
 	if arr, ok := schCtx.Instance.([]interface{}); ok {
 		if containsCount, ok := schCtx.Misc["containsCount"]; ok {
 			if containsCount.(int) > int(m) {
@@ -353,6 +371,7 @@ func (m *MinContains) Resolve(pointer jptr.Pointer, uri string) *Schema {
 }
 
 func (m MinContains) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	SchemaDebug("[MinContains] Validating")
 	if arr, ok := schCtx.Instance.([]interface{}); ok {
 		if containsCount, ok := schCtx.Misc["containsCount"]; ok {
 			if containsCount.(int) < int(m) {
@@ -383,26 +402,24 @@ func (ai *AdditionalItems) Resolve(pointer jptr.Pointer, uri string) *Schema {
 }
 
 func (ai *AdditionalItems) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	// if not has items return
+	SchemaDebug("[AdditionalItems] Validating")
 	if arr, ok := schCtx.Instance.([]interface{}); ok {
 		if schCtx.LastEvaluatedIndex > -1 && schCtx.LastEvaluatedIndex < len(arr) {
-			for i := schCtx.LastEvaluatedIndex+1; i < len(arr); i++ {
+			for i := schCtx.LastEvaluatedIndex + 1; i < len(arr); i++ {
 				if ai.schemaType == schemaTypeFalse {
 					AddErrorCtx(errs, schCtx, "additional items are not allowed")
 					return
 				}
 				subCtx := NewSchemaContextFromSourceClean(*schCtx)
 				if schCtx.BaseRelativeLocation != nil {
-					if newPtr, err := schCtx.BaseRelativeLocation.RawDescendant("additionalItems"); err == nil {
-						subCtx.BaseRelativeLocation = &newPtr
-					}
+					newPtr := schCtx.BaseRelativeLocation.RawDescendant("additionalItems")
+					subCtx.BaseRelativeLocation = &newPtr
 				}
-				if newPtr, err := schCtx.RelativeLocation.RawDescendant("additionalItems"); err == nil {
-					subCtx.RelativeLocation = &newPtr
-				}
-				if newPtr, err := schCtx.InstanceLocation.RawDescendant(strconv.Itoa(i)); err == nil {
-					subCtx.InstanceLocation = &newPtr
-				}
+				newPtr := schCtx.RelativeLocation.RawDescendant("additionalItems")
+				subCtx.RelativeLocation = &newPtr
+				newPtr = schCtx.InstanceLocation.RawDescendant(strconv.Itoa(i))
+				subCtx.InstanceLocation = &newPtr
+
 				subCtx.Instance = arr[i]
 				(*Schema)(ai).ValidateFromContext(subCtx, errs)
 				JoinSets(&schCtx.EvaluatedPropertyNames, subCtx.EvaluatedPropertyNames)

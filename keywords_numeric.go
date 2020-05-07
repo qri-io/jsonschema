@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	jptr "github.com/qri-io/jsonpointer"
 )
 
@@ -24,6 +25,7 @@ func (m *MultipleOf) Resolve(pointer jptr.Pointer, uri string) *Schema {
 }
 
 func (m MultipleOf) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	SchemaDebug("[MultipleOf] Validating")
 	if num, ok := schCtx.Instance.(float64); ok {
 		div := num / float64(m)
 		if float64(int(div)) != div {
@@ -51,6 +53,7 @@ func (m *Maximum) Resolve(pointer jptr.Pointer, uri string) *Schema {
 }
 
 func (m Maximum) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	SchemaDebug("[Maximum] Validating")
 	if num, ok := schCtx.Instance.(float64); ok {
 		if num > float64(m) {
 			AddErrorCtx(errs, schCtx, fmt.Sprintf("must be less than or equal to %f", m))
@@ -77,6 +80,7 @@ func (m *ExclusiveMaximum) Resolve(pointer jptr.Pointer, uri string) *Schema {
 }
 
 func (m ExclusiveMaximum) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	SchemaDebug("[ExclusiveMaximum] Validating")
 	if num, ok := schCtx.Instance.(float64); ok {
 		if num >= float64(m) {
 			AddErrorCtx(errs, schCtx, fmt.Sprintf("%f must be less than %f", num, m))
@@ -103,6 +107,7 @@ func (m *Minimum) Resolve(pointer jptr.Pointer, uri string) *Schema {
 }
 
 func (m Minimum) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	SchemaDebug("[Minimum] Validating")
 	if num, ok := schCtx.Instance.(float64); ok {
 		if num < float64(m) {
 			AddErrorCtx(errs, schCtx, fmt.Sprintf("must be less than or equal to %f", m))
@@ -129,6 +134,7 @@ func (m *ExclusiveMinimum) Resolve(pointer jptr.Pointer, uri string) *Schema {
 }
 
 func (m ExclusiveMinimum) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	SchemaDebug("[ExclusiveMinimum] Validating")
 	if num, ok := schCtx.Instance.(float64); ok {
 		if num <= float64(m) {
 			AddErrorCtx(errs, schCtx, fmt.Sprintf("%f must be less than %f", num, m))

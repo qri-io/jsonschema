@@ -1,10 +1,11 @@
 package main
 
 import (
-	"fmt"
 	"encoding/json"
+	"fmt"
 	"regexp"
 	"unicode/utf8"
+
 	jptr "github.com/qri-io/jsonpointer"
 )
 
@@ -27,6 +28,7 @@ func (m *MaxLength) Resolve(pointer jptr.Pointer, uri string) *Schema {
 }
 
 func (m MaxLength) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	SchemaDebug("[MaxLength] Validating")
 	if str, ok := schCtx.Instance.(string); ok {
 		if utf8.RuneCountInString(str) > int(m) {
 			AddErrorCtx(errs, schCtx, fmt.Sprintf("max length of %d characters exceeded: %s", m, str))
@@ -53,6 +55,7 @@ func (m *MinLength) Resolve(pointer jptr.Pointer, uri string) *Schema {
 }
 
 func (m MinLength) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	SchemaDebug("[MinLength] Validating")
 	if str, ok := schCtx.Instance.(string); ok {
 		if utf8.RuneCountInString(str) < int(m) {
 			AddErrorCtx(errs, schCtx, fmt.Sprintf("max length of %d characters exceeded: %s", m, str))
@@ -79,6 +82,7 @@ func (p *Pattern) Resolve(pointer jptr.Pointer, uri string) *Schema {
 }
 
 func (p Pattern) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	SchemaDebug("[Pattern] Validating")
 	re := regexp.Regexp(p)
 	if str, ok := schCtx.Instance.(string); ok {
 		if !re.Match([]byte(str)) {

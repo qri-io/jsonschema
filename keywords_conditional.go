@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+
 	jptr "github.com/qri-io/jsonpointer"
 )
 
@@ -22,16 +23,15 @@ func (f *If) Register(uri string, registry *SchemaRegistry) {
 }
 
 func (f *If) Resolve(pointer jptr.Pointer, uri string) *Schema {
-	// TODO: check if this should be nil
-	return (*Schema)(f).Resolve(pointer, uri)
+	return nil
 }
 
 func (f *If) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	SchemaDebug("[If] Validating")
+	thenKW := schCtx.Local.keywords["then"]
+	elseKW := schCtx.Local.keywords["else"]
 
-	thenKW := schCtx.Local.Keywords["then"]
-	elseKW := schCtx.Local.Keywords["else"]
-
-	if (thenKW == nil && elseKW == nil) {
+	if thenKW == nil && elseKW == nil {
 		// no then or else for if, aborting validation
 		return
 	}
@@ -94,6 +94,7 @@ func (t *Then) Resolve(pointer jptr.Pointer, uri string) *Schema {
 }
 
 func (t *Then) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	SchemaDebug("[Then] Validating")
 	ifResult, okIf := schCtx.Misc["ifResult"]
 	if !okIf {
 		// if not found
@@ -116,7 +117,6 @@ func (t *Then) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	sch := Schema(*t)
 	sch.ValidateFromContext(subCtx, errs)
 }
-
 
 func (t Then) JSONProp(name string) interface{} {
 	return Schema(t).JSONProp(name)
@@ -160,12 +160,13 @@ func (e *Else) Resolve(pointer jptr.Pointer, uri string) *Schema {
 }
 
 func (e *Else) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	SchemaDebug("[Else] Validating")
 	ifResult, okIf := schCtx.Misc["ifResult"]
 	if !okIf {
 		// if not found
 		return
 	}
-	if (ifResult.(bool)) {
+	if ifResult.(bool) {
 		// if was true
 		return
 	}

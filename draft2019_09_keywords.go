@@ -2,9 +2,6 @@ package main
 
 func LoadDraft2019_09() {
 	// core keywords
-	// TODO: take a look at these three
-	// RegisterKeyword("default", NewDefault)
-
 	RegisterKeyword("$schema", NewSchemaURI)
 	RegisterKeyword("$id", NewId)
 	RegisterKeyword("description", NewDescription)
@@ -13,6 +10,15 @@ func LoadDraft2019_09() {
 	RegisterKeyword("examples", NewExamples)
 	RegisterKeyword("readOnly", NewReadOnly)
 	RegisterKeyword("writeOnly", NewWriteOnly)
+	RegisterKeyword("$ref", NewRef)
+	RegisterKeyword("$recursiveRef", NewRecursiveRef)
+	RegisterKeyword("$anchor", NewAnchor)
+	RegisterKeyword("$recursiveAnchor", NewRecursiveAnchor)
+	RegisterKeyword("$defs", NewDefs)
+	RegisterKeyword("default", NewDefault)
+
+	SetKeywordOrder("$ref", 0)
+	SetKeywordOrder("$recursiveRef", 0)
 
 	// standard keywords
 	RegisterKeyword("type", NewType)
@@ -45,11 +51,9 @@ func LoadDraft2019_09() {
 	RegisterKeyword("propertyNames", NewPropertyNames)
 	RegisterKeyword("maxProperties", NewMaxProperties)
 	RegisterKeyword("minProperties", NewMinProperties)
-	//Check if this is stil actual
-	// RegisterKeyword("dependencies", NewDependencies)
 	RegisterKeyword("dependentSchemas", NewDependentSchemas)
-	// RegisterKeyword("dependentRequired", NewDependentRequired)
-	
+	RegisterKeyword("dependentRequired", NewDependentRequired)
+
 	SetKeywordOrder("properties", 2)
 	SetKeywordOrder("additionalProperties", 3)
 

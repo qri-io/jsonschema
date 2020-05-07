@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+
 	jptr "github.com/qri-io/jsonpointer"
 )
 
@@ -22,6 +23,7 @@ func NewConst() Keyword {
 func (c Const) Validate(propPath string, data interface{}, errs *[]KeyError) {}
 
 func (c Const) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	SchemaDebug("[Const] Validating")
 	var con interface{}
 	if err := json.Unmarshal(c, &con); err != nil {
 		AddErrorCtx(errs, schCtx, err.Error())
@@ -69,6 +71,7 @@ func NewEnum() Keyword {
 func (e Enum) Validate(propPath string, data interface{}, errs *[]KeyError) {}
 
 func (e Enum) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	SchemaDebug("[Enum] Validating")
 	for _, v := range e {
 		test := &[]KeyError{}
 		v.ValidateFromContext(schCtx, test)
@@ -152,23 +155,9 @@ func DataType(data interface{}) string {
 	}
 }
 
-// TODO: this should not be default behavior,
-// maybe skip in some type of "strict" mode
 func DataTypeWithHint(data interface{}, hint string) string {
 	dt := DataType(data)
 	if dt == "string" {
-		// if hint == "number" || hint == "integer" {
-		// 	number, err := strconv.ParseFloat(data.(string), 64)
-		// 	if err == nil {
-		// 		if hint == "integer" && float64(int(number)) == number {
-		// 			return "integer"
-		// 		} else {
-		// 			return "number"
-		// 		}
-		// 	} else {
-		// 		fmt.Println(err)
-		// 	}
-		// }
 		if hint == "boolean" {
 			_, err := strconv.ParseBool(data.(string))
 			if err == nil {
@@ -202,6 +191,7 @@ func (t *Type) Resolve(pointer jptr.Pointer, uri string) *Schema {
 }
 
 func (t Type) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	SchemaDebug("[Type] Validating")
 	jt := DataType(schCtx.Instance)
 	for _, typestr := range t.vals {
 		if jt == typestr || jt == "integer" && typestr == "number" {
@@ -214,7 +204,7 @@ func (t Type) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 		}
 	}
 	if len(t.vals) == 1 {
-		t.AddError(errs, schCtx.Local.DocPath, schCtx.Instance, fmt.Sprintf(`type should be %s`, t.vals[0]))
+		AddErrorCtx(errs, schCtx, fmt.Sprintf(`type should be %s`, t.vals[0]))
 		return
 	}
 

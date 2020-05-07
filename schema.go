@@ -1,11 +1,12 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/url"
-	"path/filepath"
 	"sort"
+	"strings"
 
 	jptr "github.com/qri-io/jsonpointer"
 )
@@ -28,86 +29,104 @@ const (
 
 type Schema struct {
 	schemaType    schemaType
-	DocPath       string
-	HasRegistered bool
-	isValid       bool
+	docPath       string
+	hasRegistered bool
+	// isValid       bool
 
-	ID     string `json:"$id,omitempty"`
-	Anchor string
+	id string
 
 	extraDefinitions map[string]json.RawMessage
-	Keywords         map[string]Keyword
-	orderedKeywords  []string
+	keywords         map[string]Keyword
+	orderedkeywords  []string
 }
 
 func NewSchema() Keyword {
 	return &Schema{}
 }
 
-func (s *Schema) Path() string {
-	if s.DocPath != "" {
-		return s.DocPath
-	}
-	if s.ID != "" {
-		s.DocPath = s.ID
-	}
-	return s.DocPath
+func (s *Schema) HasKeyword(key string) bool {
+	_, ok := s.keywords[key]
+	return ok
 }
 
 func (s *Schema) Register(uri string, registry *SchemaRegistry) {
-	if s.HasRegistered {
+	if s.hasRegistered {
 		return
 	}
-	s.HasRegistered = true
+	s.hasRegistered = true
 	registry.RegisterLocal(s)
 
-	address := s.ID
+	address := s.id
 	if uri != "" && address != "" {
 		address, _ = SafeResolveUrl(uri, address)
 	}
 
-	if s.DocPath == "" && address != "" && address[0] != '#' {
+	if s.docPath == "" && address != "" && address[0] != '#' {
 		docUri := ""
 		if u, err := url.Parse(address); err != nil {
 			docUri, _ = SafeResolveUrl("https://qri.io", address)
 		} else {
 			docUri = u.String()
 		}
-		s.DocPath = docUri
+		s.docPath = docUri
 		GetSchemaRegistry().Register(s)
 		uri = docUri
 	}
 
-	for _, keyword := range s.Keywords {
+	for _, keyword := range s.keywords {
 		keyword.Register(uri, registry)
 	}
 }
 
 func (s *Schema) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	if pointer.IsEmpty() {
-		if s.DocPath != "" {
-			s.DocPath, _ = SafeResolveUrl(uri, s.DocPath)
+		if s.docPath != "" {
+			s.docPath, _ = SafeResolveUrl(uri, s.docPath)
 		} else {
-			s.DocPath = uri
+			s.docPath = uri
 		}
 		return s
 	}
 
-	if _, err := url.Parse(s.ID); err == nil {
-		if filepath.IsAbs(s.ID) {
-			uri = s.ID
-		} else {
-			uri, _ = SafeResolveUrl(uri, s.ID)
+	current := pointer.Head()
+
+	if s.id != "" {
+		if u, err := url.Parse(s.id); err == nil {
+			if u.IsAbs() {
+				uri = s.id
+			} else {
+				uri, _ = SafeResolveUrl(uri, s.id)
+			}
 		}
 	}
 
-	// TODO: grok and finish this
+	keyword := s.keywords[*current]
+	var keywordSchema *Schema
+	if keyword != nil {
+		keywordSchema = keyword.Resolve(pointer.Tail(), uri)
+	}
+
+	if keywordSchema != nil {
+		return keywordSchema
+	}
+
+	found, err := pointer.Eval(s.extraDefinitions)
+	if err != nil {
+		return nil
+	}
+	if found == nil {
+		return nil
+	}
+
+	if foundSchema, ok := found.(*Schema); ok {
+		return foundSchema
+	}
 
 	return nil
 }
 
 func (s Schema) JSONProp(name string) interface{} {
-	if keyword, ok := s.Keywords[name]; ok {
+	if keyword, ok := s.keywords[name]; ok {
 		return keyword
 	}
 	return s.extraDefinitions[name]
@@ -116,8 +135,8 @@ func (s Schema) JSONProp(name string) interface{} {
 func (s Schema) JSONChildren() map[string]JSONPather {
 	ch := map[string]JSONPather{}
 
-	if s.Keywords != nil {
-		for key, val := range s.Keywords {
+	if s.keywords != nil {
+		for key, val := range s.keywords {
 			if jp, ok := val.(JSONPather); ok {
 				ch[key] = jp
 			}
@@ -150,8 +169,8 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 	}
 
 	sch := &Schema{
-		ID:       _s.ID,
-		Keywords: map[string]Keyword{},
+		id:       _s.ID,
+		keywords: map[string]Keyword{},
 	}
 
 	valprops := map[string]json.RawMessage{}
@@ -164,7 +183,7 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 		if IsKeyword(prop) {
 			keyword = GetKeyword(prop)
 		} else if IsNotSupportedKeyword(prop) {
-			fmt.Printf("WARN: '%s' is not supported and will be ignored\n", prop)
+			SchemaDebug(fmt.Sprintf("[Schema] WARN: '%s' is not supported and will be ignored\n", prop))
 			continue
 		} else {
 			if sch.extraDefinitions == nil {
@@ -178,12 +197,12 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 				return fmt.Errorf("error unmarshaling %s from json: %s", prop, err.Error())
 			}
 		}
-		sch.Keywords[prop] = keyword
+		sch.keywords[prop] = keyword
 	}
 
-	keyOrders := make([]_keyOrder, len(sch.Keywords))
+	keyOrders := make([]_keyOrder, len(sch.keywords))
 	i := 0
-	for k := range sch.Keywords {
+	for k := range sch.keywords {
 		keyOrders[i] = _keyOrder{
 			Key:   k,
 			Order: GetKeywordOrder(k),
@@ -191,15 +210,18 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 		i++
 	}
 	sort.SliceStable(keyOrders, func(i, j int) bool {
+		if keyOrders[i].Order == keyOrders[j].Order {
+			return GetKeywordInsertOrder(keyOrders[i].Key) < GetKeywordInsertOrder(keyOrders[j].Key)
+		}
 		return keyOrders[i].Order < keyOrders[j].Order
 	})
-	orderedKeys := make([]string, len(sch.Keywords))
+	orderedKeys := make([]string, len(sch.keywords))
 	i = 0
 	for _, keyOrder := range keyOrders {
 		orderedKeys[i] = keyOrder.Key
 		i++
 	}
-	sch.orderedKeywords = orderedKeys
+	sch.orderedkeywords = orderedKeys
 
 	*s = Schema(*sch)
 	return nil
@@ -211,11 +233,16 @@ type _keyOrder struct {
 }
 
 func (s *Schema) Validate(propPath string, data interface{}, errs *[]KeyError) {
-	schCtx := NewSchemaContext(s, data, &jptr.Pointer{}, &jptr.Pointer{}, &jptr.Pointer{})
+	appCtx := context.Background()
+	schCtx := NewSchemaContext(s, data, &jptr.Pointer{}, &jptr.Pointer{}, &jptr.Pointer{}, &appCtx)
 	s.ValidateFromContext(schCtx, errs)
 }
 
 func (s *Schema) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	if s == nil {
+		AddErrorCtx(errs, schCtx, fmt.Sprintf("schema is nil"))
+		return
+	}
 	if s.schemaType == schemaTypeTrue {
 		return
 	}
@@ -223,42 +250,45 @@ func (s *Schema) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 		AddErrorCtx(errs, schCtx, fmt.Sprintf("schema is always false"))
 		return
 	}
-	// IsValid := false
+
+	s.Register("", schCtx.LocalRegistry)
+	schCtx.LocalRegistry.RegisterLocal(s)
+
 	schCtx.Local = s
 
-	// TODO: handle non draft2019-09 ref resolution
-	// ref := s.Ref
-	// if ref != "" {
-	// 	if schCtx.BaseURI == "" {
-	// 		schCtx.BaseURI = s.DocPath
-	// 	} else if s.DocPath != "" {
-	// 		if filepath.IsAbs(s.DocPath) {
-	// 			schCtx.BaseURI = s.DocPath
-	// 		} else {
-	// 			schCtx.BaseURI, _ = SafeResolveUrl(schCtx.BaseURI, s.DocPath)
-	// 		}
-	// 	}
+	refKeyword := s.keywords["$ref"]
+
+	if refKeyword != nil {
+		if schCtx.BaseURI == "" {
+			schCtx.BaseURI = s.docPath
+		} else if s.docPath != "" {
+			if u, err := url.Parse(s.docPath); err == nil {
+				if u.IsAbs() {
+					schCtx.BaseURI = s.docPath
+				} else {
+					schCtx.BaseURI, _ = SafeResolveUrl(schCtx.BaseURI, s.docPath)
+				}
+			}
+		}
+	}
+
+	if schCtx.BaseURI != "" && strings.HasSuffix(schCtx.BaseURI, "#") {
+		schCtx.BaseURI = strings.TrimRight(schCtx.BaseURI, "#")
+	}
+
+	// TODO(arqu): only on versions bellow draft2019_09
+	// if refKeyword != nil {
+	// 	refKeyword.ValidateFromContext(schCtx, errs)
+	// 	return
 	// }
 
-	// if schCtx.BaseURI != "" && strings.HasSuffix(schCtx.BaseURI, "#") {
-	// 	schCtx.BaseURI = strings.TrimRight(schCtx.BaseURI, "#")
-	// }
-
-	// TODO: handle non draft2019-09 ref resolution
-	// if ref != "" {}
-
-	// if s.Keywords != nil {
-	// for _, keyword := range s.orderedKeywords() {
-	// 	keyword.ValidateFromContext(schCtx, errs)
-	// }
-	// }
-	s.validateSchemaKeywords(schCtx, errs)
+	s.validateSchemakeywords(schCtx, errs)
 }
 
-func (s *Schema) validateSchemaKeywords(schCtx *SchemaContext, errs *[]KeyError) {
-	if s.Keywords != nil {
-		for _, keyword := range s.orderedKeywords {
-			s.Keywords[keyword].ValidateFromContext(schCtx, errs)
+func (s *Schema) validateSchemakeywords(schCtx *SchemaContext, errs *[]KeyError) {
+	if s.keywords != nil {
+		for _, keyword := range s.orderedkeywords {
+			s.keywords[keyword].ValidateFromContext(schCtx, errs)
 		}
 	}
 }
@@ -274,7 +304,7 @@ func (s *Schema) ValidateBytes(data []byte) ([]KeyError, error) {
 }
 
 func (s *Schema) TopLevelType() string {
-	if t, ok := s.Keywords["type"].(*Type); ok {
+	if t, ok := s.keywords["type"].(*Type); ok {
 		return t.String()
 	}
 	return "unknown"
@@ -289,7 +319,7 @@ func (s Schema) MarshalJSON() ([]byte, error) {
 	default:
 		obj := map[string]interface{}{}
 
-		for k, v := range s.Keywords {
+		for k, v := range s.keywords {
 			obj[k] = v
 		}
 		for k, v := range s.extraDefinitions {

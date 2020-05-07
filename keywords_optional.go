@@ -51,6 +51,7 @@ func (f *Format) Resolve(pointer jptr.Pointer, uri string) *Schema {
 }
 
 func (f Format) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	SchemaDebug("[Format] Validating")
 	var err error
 	if str, ok := schCtx.Instance.(string); ok {
 		switch f {
@@ -92,7 +93,7 @@ func (f Format) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 			err = nil
 		}
 		if err != nil {
-			AddError(errs, schCtx.Local.DocPath, schCtx.Instance, fmt.Sprintf("invalid %s: %s", f, err.Error()))
+			AddErrorCtx(errs, schCtx, fmt.Sprintf("invalid %s: %s", f, err.Error()))
 		}
 	}
 }

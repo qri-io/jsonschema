@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"strconv"
+
 	jptr "github.com/qri-io/jsonpointer"
 )
 
@@ -20,16 +21,35 @@ func (a *AllOf) Validate(propPath string, data interface{}, errs *[]KeyError) {}
 
 func (a *AllOf) Register(uri string, registry *SchemaRegistry) {
 	for _, sch := range *a {
-		sch.Register(uri, registry)	
+		sch.Register(uri, registry)
 	}
 }
 
 func (a *AllOf) Resolve(pointer jptr.Pointer, uri string) *Schema {
-	// TODO: implement this
+	if pointer == nil {
+		return nil
+	}
+	current := pointer.Head()
+	if current == nil {
+		return nil
+	}
+
+	pos, err := strconv.Atoi(*current)
+	if err != nil {
+		return nil
+	}
+
+	if pos < 0 || pos >= len(*a) {
+		return nil
+	}
+
+	return (*a)[pos].Resolve(pointer.Tail(), uri)
+
 	return nil
 }
 
 func (a *AllOf) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	SchemaDebug("[AllOf] Validating")
 	for i, sch := range *a {
 		subCtx := NewSchemaContextFromSource(*schCtx)
 		if subCtx.BaseRelativeLocation != nil {
@@ -40,8 +60,8 @@ func (a *AllOf) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 		if newPtr, err := schCtx.RelativeLocation.Descendant("allOf/" + strconv.Itoa(i)); err == nil {
 			subCtx.RelativeLocation = &newPtr
 		}
-		// TODO: count indexes
 		sch.ValidateFromContext(subCtx, errs)
+		schCtx.UpdateEvaluatedPropsAndItems(subCtx)
 	}
 }
 
@@ -78,16 +98,35 @@ func (a *AnyOf) Validate(propPath string, data interface{}, errs *[]KeyError) {}
 
 func (a *AnyOf) Register(uri string, registry *SchemaRegistry) {
 	for _, sch := range *a {
-		sch.Register(uri, registry)	
+		sch.Register(uri, registry)
 	}
 }
 
 func (a *AnyOf) Resolve(pointer jptr.Pointer, uri string) *Schema {
-	// TODO: implement this
+	if pointer == nil {
+		return nil
+	}
+	current := pointer.Head()
+	if current == nil {
+		return nil
+	}
+
+	pos, err := strconv.Atoi(*current)
+	if err != nil {
+		return nil
+	}
+
+	if pos < 0 || pos >= len(*a) {
+		return nil
+	}
+
+	return (*a)[pos].Resolve(pointer.Tail(), uri)
+
 	return nil
 }
 
 func (a *AnyOf) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	SchemaDebug("[AnyOf] Validating")
 	for i, sch := range *a {
 		subCtx := NewSchemaContextFromSource(*schCtx)
 		if subCtx.BaseRelativeLocation != nil {
@@ -98,10 +137,10 @@ func (a *AnyOf) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 		if newPtr, err := schCtx.RelativeLocation.Descendant("anyOf/" + strconv.Itoa(i)); err == nil {
 			subCtx.RelativeLocation = &newPtr
 		}
-		// TODO: count indexes
 		test := &[]KeyError{}
 		sch.ValidateFromContext(subCtx, test)
 		if len(*test) == 0 {
+			schCtx.UpdateEvaluatedPropsAndItems(subCtx)
 			return
 		}
 	}
@@ -142,17 +181,37 @@ func (o *OneOf) Validate(propPath string, data interface{}, errs *[]KeyError) {}
 
 func (o *OneOf) Register(uri string, registry *SchemaRegistry) {
 	for _, sch := range *o {
-		sch.Register(uri, registry)	
+		sch.Register(uri, registry)
 	}
 }
 
 func (o *OneOf) Resolve(pointer jptr.Pointer, uri string) *Schema {
-	// TODO: implement this
+	if pointer == nil {
+		return nil
+	}
+	current := pointer.Head()
+	if current == nil {
+		return nil
+	}
+
+	pos, err := strconv.Atoi(*current)
+	if err != nil {
+		return nil
+	}
+
+	if pos < 0 || pos >= len(*o) {
+		return nil
+	}
+
+	return (*o)[pos].Resolve(pointer.Tail(), uri)
+
 	return nil
 }
 
 func (o *OneOf) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	SchemaDebug("[OneOf] Validating")
 	matched := false
+	contextCopy := NewSchemaContextFromSource(*schCtx)
 	for i, sch := range *o {
 		subCtx := NewSchemaContextFromSource(*schCtx)
 		if subCtx.BaseRelativeLocation != nil {
@@ -163,9 +222,9 @@ func (o *OneOf) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 		if newPtr, err := schCtx.RelativeLocation.Descendant("anyOf/" + strconv.Itoa(i)); err == nil {
 			subCtx.RelativeLocation = &newPtr
 		}
-		// TODO: count indexes
 		test := &[]KeyError{}
 		sch.ValidateFromContext(subCtx, test)
+		contextCopy.UpdateEvaluatedPropsAndItems(subCtx)
 		if len(*test) == 0 {
 			if matched {
 				AddErrorCtx(errs, schCtx, "matched more than one specified OneOf schemas")
@@ -176,6 +235,8 @@ func (o *OneOf) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	}
 	if !matched {
 		AddErrorCtx(errs, schCtx, "did not match any of the specified OneOf schemas")
+	} else {
+		schCtx.UpdateEvaluatedPropsAndItems(contextCopy)
 	}
 }
 
@@ -219,7 +280,7 @@ func (n *Not) Resolve(pointer jptr.Pointer, uri string) *Schema {
 }
 
 func (n *Not) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-
+	SchemaDebug("[Not] Validating")
 	subCtx := NewSchemaContextFromSource(*schCtx)
 	if subCtx.BaseRelativeLocation != nil {
 		if newPtr, err := schCtx.BaseRelativeLocation.Descendant("not"); err == nil {
@@ -234,8 +295,7 @@ func (n *Not) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	sch := Schema(*n)
 	sch.ValidateFromContext(subCtx, test)
 	if len(*test) == 0 {
-		// TODO - make this error actually make sense
-		AddErrorCtx(errs, schCtx, "cannot match schema")
+		AddErrorCtx(errs, schCtx, "result was valid, ('not') expected invalid")
 	}
 }
 

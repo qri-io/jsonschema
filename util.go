@@ -1,24 +1,25 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 )
 
-func SplitUrl(url string) (string, string) {
-	urlSlice := strings.SplitN(url, "#", 2)
-	ref := ""
-	fragment := ""
-	if len(urlSlice) > 0 {
-		ref = urlSlice[0]
+func SchemaDebug(message string) {
+	debug := false
+	debugEnvVar := os.Getenv("JSON_SCHEMA_DEBUG")
+	if debugEnvVar == "1" {
+		debug = true
 	}
-	if len(urlSlice) > 1 {
-		fragment = urlSlice[1]
+	if debug {
+		fmt.Printf("%s\n", message)
 	}
-	return ref, fragment
 }
 
 func SafeResolveUrl(ctxUrl, resUrl string) (string, error) {
@@ -39,21 +40,40 @@ func SafeResolveUrl(ctxUrl, resUrl string) (string, error) {
 }
 
 func IsLocalSchemaId(id string) bool {
-	return id != "#" && !strings.Contains(id, "#/") && strings.Contains(id, "#")
+	splitId := strings.Split(id, "#")
+	if len(splitId) > 1 && len(splitId[0]) > 0 && splitId[0][0] != '#' {
+		return false
+	}
+	return id != "#" && !strings.HasPrefix(id, "#/") && strings.Contains(id, "#")
 }
 
-func FetchSchema(uri string, schema *Schema) error {
+func FetchSchema(ctx *context.Context, uri string, schema *Schema) error {
+	SchemaDebug(fmt.Sprintf("[FetchSchema] Fetching: %s", uri))
 	u, err := url.Parse(uri)
 	if err != nil {
 		return err
 	}
 	if u.Scheme == "http" || u.Scheme == "https" {
-		res, err := http.Get(u.String())
+		var req *http.Request
+		if ctx != nil {
+			req, _ = http.NewRequestWithContext(*ctx, "GET", u.String(), nil)
+		}  else {
+			req, _ = http.NewRequest("GET", u.String(), nil)	
+		}
+		client := &http.Client{}
+		res, err := client.Do(req)
 		if err != nil {
 			return err
 		}
-		return json.NewDecoder(res.Body).Decode(schema)
+		body, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			return err
+		}
+		if schema == nil {
+			schema = &Schema{}
+		}
+		return json.Unmarshal(body, schema)
 	} else {
-		return fmt.Errorf("URI scheme %s is not supported", u.Scheme)
+		return fmt.Errorf("URI scheme %s is not supported for uri: %s", u.Scheme, uri)
 	}
 }

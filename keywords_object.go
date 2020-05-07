@@ -28,36 +28,46 @@ func (p *Properties) Register(uri string, registry *SchemaRegistry) {
 }
 
 func (p *Properties) Resolve(pointer jptr.Pointer, uri string) *Schema {
-	// TODO: implement this
+	if pointer == nil {
+		return nil
+	}
+	current := pointer.Head()
+	if current == nil {
+		return nil
+	}
+
+	if schema, ok := (*p)[*current]; ok {
+		return schema.Resolve(pointer.Tail(), uri)
+	}
+
 	return nil
 }
 
 func (p Properties) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	SchemaDebug("[Properties] Validating")
 	if obj, ok := schCtx.Instance.(map[string]interface{}); ok {
 		subCtx := NewSchemaContextFromSourceClean(*schCtx)
 		for key, _ := range p {
 			if obj[key] != nil {
-				if _, ok := schCtx.Local.Keywords["additionalProperties"]; ok {
+				if _, ok := schCtx.Local.keywords["additionalProperties"]; ok {
 					schCtx.EvaluatedPropertyNames[key] = true
 					schCtx.LocalEvaluatedPropertyNames[key] = true
 				}
 				subCtx.ClearContext()
 				if schCtx.BaseRelativeLocation != nil {
-					if newPtr, err := schCtx.BaseRelativeLocation.RawDescendant("properties", key); err == nil {
-						subCtx.BaseRelativeLocation = &newPtr
-					}
+					newPtr := schCtx.BaseRelativeLocation.RawDescendant("properties", key)
+					subCtx.BaseRelativeLocation = &newPtr
 				}
-				if newPtr, err := schCtx.RelativeLocation.RawDescendant("properties", key); err == nil {
-					subCtx.RelativeLocation = &newPtr
-				}
-				if newPtr, err := schCtx.InstanceLocation.RawDescendant(key); err == nil {
-					subCtx.InstanceLocation = &newPtr
-				}
+				newPtr := schCtx.RelativeLocation.RawDescendant("properties", key)
+				subCtx.RelativeLocation = &newPtr
+				newPtr = schCtx.InstanceLocation.RawDescendant(key)
+				subCtx.InstanceLocation = &newPtr
+
 				subCtx.Instance = obj[key]
 				errCountBefore := len(*errs)
 				p[key].ValidateFromContext(subCtx, errs)
 				errCountAfter := len(*errs)
-				if _, ok := schCtx.Local.Keywords["additionalProperties"]; ok && errCountBefore == errCountAfter {
+				if _, ok := schCtx.Local.keywords["additionalProperties"]; ok && errCountBefore == errCountAfter {
 					JoinSets(&schCtx.EvaluatedPropertyNames, subCtx.EvaluatedPropertyNames)
 					JoinSets(&schCtx.LocalEvaluatedPropertyNames, subCtx.LocalEvaluatedPropertyNames)
 				}
@@ -66,12 +76,10 @@ func (p Properties) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError)
 	}
 }
 
-// JSONProp implements JSON property name indexing for Properties
 func (p Properties) JSONProp(name string) interface{} {
 	return p[name]
 }
 
-// JSONChildren implements the JSONContainer interface for Properties
 func (p Properties) JSONChildren() (res map[string]JSONPather) {
 	res = map[string]JSONPather{}
 	for key, sch := range p {
@@ -86,7 +94,6 @@ func (p Properties) JSONChildren() (res map[string]JSONPather) {
 
 type Required []string
 
-// NewRequired allocates a new Required validator
 func NewRequired() Keyword {
 	return &Required{}
 }
@@ -100,6 +107,7 @@ func (r *Required) Resolve(pointer jptr.Pointer, uri string) *Schema {
 }
 
 func (r Required) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	SchemaDebug("[Required] Validating")
 	if obj, ok := schCtx.Instance.(map[string]interface{}); ok {
 		for _, key := range r {
 			if val, ok := obj[key]; val == nil && !ok {
@@ -109,7 +117,6 @@ func (r Required) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	}
 }
 
-// JSONProp implements JSON property name indexing for Required
 func (r Required) JSONProp(name string) interface{} {
 	idx, err := strconv.Atoi(name)
 	if err != nil {
@@ -140,6 +147,7 @@ func (m *MaxProperties) Resolve(pointer jptr.Pointer, uri string) *Schema {
 }
 
 func (m MaxProperties) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	SchemaDebug("[MaxProperties] Validating")
 	if obj, ok := schCtx.Instance.(map[string]interface{}); ok {
 		if len(obj) > int(m) {
 			AddErrorCtx(errs, schCtx, fmt.Sprintf("%d object Properties exceed %d maximum", len(obj), m))
@@ -166,6 +174,7 @@ func (m *MinProperties) Resolve(pointer jptr.Pointer, uri string) *Schema {
 }
 
 func (m MinProperties) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	SchemaDebug("[MinProperties] Validating")
 	if obj, ok := schCtx.Instance.(map[string]interface{}); ok {
 		if len(obj) < int(m) {
 			AddErrorCtx(errs, schCtx, fmt.Sprintf("%d object Properties below %d minimum", len(obj), m))
@@ -179,7 +188,6 @@ func (m MinProperties) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyErr
 
 type PatternProperties []patternSchema
 
-// NewRequired allocates a new Required validator
 func NewPatternProperties() Keyword {
 	return &PatternProperties{}
 }
@@ -199,11 +207,28 @@ func (p *PatternProperties) Register(uri string, registry *SchemaRegistry) {
 }
 
 func (p *PatternProperties) Resolve(pointer jptr.Pointer, uri string) *Schema {
-	// TODO: implement this
-	return nil
+	if pointer == nil {
+		return nil
+	}
+	current := pointer.Head()
+	if current == nil {
+		return nil
+	}
+
+	patProp := &patternSchema{}
+
+	for _, v := range *p {
+		if v.key == *current {
+			patProp = &v
+			break
+		}
+	}
+
+	return patProp.schema.Resolve(pointer.Tail(), uri)
 }
 
 func (p PatternProperties) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	SchemaDebug("[PatternProperties] Validating")
 	if obj, ok := schCtx.Instance.(map[string]interface{}); ok {
 		for key, val := range obj {
 			for _, ptn := range p {
@@ -212,23 +237,20 @@ func (p PatternProperties) ValidateFromContext(schCtx *SchemaContext, errs *[]Ke
 					schCtx.LocalEvaluatedPropertyNames[key] = true
 					subCtx := NewSchemaContextFromSource(*schCtx)
 					if schCtx.BaseRelativeLocation != nil {
-						if newPtr, err := schCtx.BaseRelativeLocation.RawDescendant("patternProperties", key); err == nil {
-							subCtx.BaseRelativeLocation = &newPtr
-						}
+						newPtr := schCtx.BaseRelativeLocation.RawDescendant("patternProperties", key)
+						subCtx.BaseRelativeLocation = &newPtr
 					}
-					if newPtr, err := schCtx.RelativeLocation.RawDescendant("patternProperties", key); err == nil {
-						subCtx.RelativeLocation = &newPtr
-					}
-					if newPtr, err := schCtx.InstanceLocation.RawDescendant(key); err == nil {
-						subCtx.InstanceLocation = &newPtr
-					}
+					newPtr := schCtx.RelativeLocation.RawDescendant("patternProperties", key)
+					subCtx.RelativeLocation = &newPtr
+					newPtr = schCtx.InstanceLocation.RawDescendant(key)
+					subCtx.InstanceLocation = &newPtr
+
 					subCtx.Instance = val
 					errCountBefore := len(*errs)
 					ptn.schema.ValidateFromContext(subCtx, errs)
 					errCountAfter := len(*errs)
 
 					if errCountBefore == errCountAfter {
-						// TODO: check if this should be done only if the result is valid
 						JoinSets(&schCtx.EvaluatedPropertyNames, subCtx.EvaluatedPropertyNames)
 						JoinSets(&schCtx.LocalEvaluatedPropertyNames, subCtx.LocalEvaluatedPropertyNames)
 						if schCtx.LastEvaluatedIndex < subCtx.LastEvaluatedIndex {
@@ -315,16 +337,15 @@ func (ap *AdditionalProperties) Resolve(pointer jptr.Pointer, uri string) *Schem
 }
 
 func (ap *AdditionalProperties) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	SchemaDebug("[AdditionalProperties] Validating")
 	if obj, ok := schCtx.Instance.(map[string]interface{}); ok {
 		subCtx := NewSchemaContextFromSourceClean(*schCtx)
 		if schCtx.BaseRelativeLocation != nil {
-			if newPtr, err := schCtx.BaseRelativeLocation.RawDescendant("additionalProperties"); err == nil {
-				subCtx.BaseRelativeLocation = &newPtr
-			}
+			newPtr := schCtx.BaseRelativeLocation.RawDescendant("additionalProperties")
+			subCtx.BaseRelativeLocation = &newPtr
 		}
-		if newPtr, err := schCtx.RelativeLocation.RawDescendant("additionalProperties"); err == nil {
-			subCtx.RelativeLocation = &newPtr
-		}
+		newPtr := schCtx.RelativeLocation.RawDescendant("additionalProperties")
+		subCtx.RelativeLocation = &newPtr
 		for key := range obj {
 			if _, ok := schCtx.LocalEvaluatedPropertyNames[key]; ok {
 				continue
@@ -336,9 +357,9 @@ func (ap *AdditionalProperties) ValidateFromContext(schCtx *SchemaContext, errs 
 			schCtx.EvaluatedPropertyNames[key] = true
 			schCtx.LocalEvaluatedPropertyNames[key] = true
 			subCtx.ClearContext()
-			if newPtr, err := schCtx.InstanceLocation.RawDescendant(key); err == nil {
-				subCtx.InstanceLocation = &newPtr
-			}
+			newPtr = schCtx.InstanceLocation.RawDescendant(key)
+			subCtx.InstanceLocation = &newPtr
+
 			subCtx.Instance = obj[key]
 			(*Schema)(ap).ValidateFromContext(subCtx, errs)
 			JoinSets(&schCtx.EvaluatedPropertyNames, subCtx.EvaluatedPropertyNames)
@@ -377,6 +398,7 @@ func (p *PropertyNames) Resolve(pointer jptr.Pointer, uri string) *Schema {
 }
 
 func (p *PropertyNames) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	SchemaDebug("[PropertyNames] Validating")
 	if obj, ok := schCtx.Instance.(map[string]interface{}); ok {
 		for key := range obj {
 			subCtx := NewSchemaContextFromSource(*schCtx)
@@ -418,63 +440,6 @@ func (p PropertyNames) MarshalJSON() ([]byte, error) {
 	return json.Marshal(Schema(p))
 }
 
-// //
-// // Dependencies
-// //
-
-// type Dependencies map[string]Dependency
-
-// func NewDependencies() Keyword {
-// 	return &Dependencies{}
-// }
-
-// func (d Dependencies) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
-// func (d *Dependencies) Register(uri string, registry *SchemaRegistry) {
-// 	for _, v := range *d {
-// 		v.schema.Register(uri, registry)
-// 	}
-// }
-
-// func (d *Dependencies) Resolve(pointer jptr.Pointer, uri string) *Schema {
-// 	// TODO: implement this
-// 	return nil
-// }
-
-// func (d *Dependencies) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-// 	for _, v := range *d {
-// 		subCtx := NewSchemaContextFromSource(*schCtx)
-// 		if schCtx.BaseRelativeLocation != nil {
-// 			if newPtr, err := schCtx.BaseRelativeLocation.Descendant("dependencies"); err == nil {
-// 				subCtx.BaseRelativeLocation = &newPtr
-// 			}
-// 		}
-// 		if newPtr, err := schCtx.RelativeLocation.Descendant("dependencies"); err == nil {
-// 			subCtx.RelativeLocation = &newPtr
-// 		}
-// 		v.ValidateFromContext(subCtx, errs)
-// 	}
-// 	// jp, err := jsonpointer.Parse(propPath)
-// 	// if err != nil {
-// 	// 	AddError(errs, propPath, nil, "invalid property path")
-// 	// 	return
-// 	// }
-
-// 	// if obj, ok := data.(map[string]interface{}); ok {
-// 	// 	for key, val := range d {
-// 	// 		if obj[key] != nil {
-// 	// 			d, _ := jp.Descendant(key)
-// 	// 			val.Validate(d.String(), obj, errs)
-// 	// 		}
-// 	// 	}
-// 	// }
-// 	// return
-// }
-
-// func (d Dependencies) JSONProp(name string) interface{} {
-// 	return d[name]
-// }
-
 //
 // DependentSchemas
 //
@@ -494,11 +459,23 @@ func (d *DependentSchemas) Register(uri string, registry *SchemaRegistry) {
 }
 
 func (d *DependentSchemas) Resolve(pointer jptr.Pointer, uri string) *Schema {
-	// TODO: implement this
+	if pointer == nil {
+		return nil
+	}
+	current := pointer.Head()
+	if current == nil {
+		return nil
+	}
+
+	if schema, ok := (*d)[*current]; ok {
+		return schema.Resolve(pointer.Tail(), uri)
+	}
+
 	return nil
 }
 
 func (d *DependentSchemas) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	SchemaDebug("[DependentSchemas] Validating")
 	for _, v := range *d {
 		subCtx := NewSchemaContextFromSource(*schCtx)
 		if schCtx.BaseRelativeLocation != nil {
@@ -565,6 +542,7 @@ func (d *SchemaDependency) Resolve(pointer jptr.Pointer, uri string) *Schema {
 }
 
 func (d *SchemaDependency) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	SchemaDebug("[SchemaDependency] Validating")
 	if data, ok := schCtx.Instance.(map[string]interface{}); !ok {
 		return
 	} else {
@@ -592,54 +570,117 @@ func (d SchemaDependency) JSONProp(name string) interface{} {
 	return d.schema.JSONProp(name)
 }
 
-// //
-// // Dependency
-// //
+//
+// DependentRequired
+//
 
-// type Dependency struct {
-// 	schema *Schema
-// 	props  []string
-// }
+type DependentRequired map[string]PropertyDependency
 
-// func NewDependency() Keyword {
-// 	return &Dependency{}
-// }
+func NewDependentRequired() Keyword {
+	return &DependentRequired{}
+}
 
-// func (d Dependency) Validate(propPath string, data interface{}, errs *[]KeyError) {}
+func (d DependentRequired) Validate(propPath string, data interface{}, errs *[]KeyError) {}
 
-// func (d *Dependency) Register(uri string, registry *SchemaRegistry) {
-// 	d.schema.Register(uri, registry)
-// }
+func (d *DependentRequired) Register(uri string, registry *SchemaRegistry) {}
 
-// func (d *Dependency) Resolve(pointer jptr.Pointer, uri string) *Schema {
-// 	// TODO: implement this
-// 	return nil
-// }
+func (d *DependentRequired) Resolve(pointer jptr.Pointer, uri string) *Schema {
+	return nil
+}
 
-// func (d *Dependency) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-// 	if d.schema != nil {
-// 		d.schema.ValidateFromContext(schCtx, errs)
-// 	}
-// }
+func (d *DependentRequired) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	SchemaDebug("[DependentRequired] Validating")
+	for _, prop := range *d {
+		subCtx := NewSchemaContextFromSource(*schCtx)
+		if schCtx.BaseRelativeLocation != nil {
+			if newPtr, err := schCtx.BaseRelativeLocation.Descendant("dependentRequired"); err == nil {
+				subCtx.BaseRelativeLocation = &newPtr
+			}
+		}
+		if newPtr, err := schCtx.RelativeLocation.Descendant("dependentRequired"); err == nil {
+			subCtx.RelativeLocation = &newPtr
+		}
+		subCtx.Misc["dependencyParent"] = "dependentRequired"
+		prop.ValidateFromContext(subCtx, errs)
+	}
+}
 
-// func (d *Dependency) UnmarshalJSON(data []byte) error {
-// 	props := []string{}
-// 	if err := json.Unmarshal(data, &props); err == nil {
-// 		*d = Dependency{props: props}
-// 		return nil
-// 	}
-// 	sch := &Schema{}
-// 	err := json.Unmarshal(data, sch)
+type _dependentRequired map[string][]string
 
-// 	if err == nil {
-// 		*d = Dependency{schema: sch}
-// 	}
-// 	return err
-// }
+func (d *DependentRequired) UnmarshalJSON(data []byte) error {
+	_d := _dependentRequired{}
+	if err := json.Unmarshal(data, &_d); err != nil {
+		return err
+	}
+	dr := DependentRequired{}
+	for k, v := range _d {
+		dr[k] = PropertyDependency{
+			dependencies: v,
+			prop:         k,
+		}
+	}
+	*d = dr
+	return nil
+}
 
-// func (d Dependency) MarshalJSON() ([]byte, error) {
-// 	if d.schema != nil {
-// 		return json.Marshal(d.schema)
-// 	}
-// 	return json.Marshal(d.props)
-// }
+func (d DependentRequired) MarshalJSON() ([]byte, error) {
+	obj := map[string]interface{}{}
+	for key, prop := range d {
+		obj[key] = prop.dependencies
+	}
+	return json.Marshal(obj)
+}
+
+func (d DependentRequired) JSONProp(name string) interface{} {
+	return d[name]
+}
+
+func (d DependentRequired) JSONChildren() (r map[string]JSONPather) {
+	r = map[string]JSONPather{}
+	for key, val := range d {
+		r[key] = val
+	}
+	return
+}
+
+//
+// PropertyDependency
+//
+
+type PropertyDependency struct {
+	dependencies []string
+	prop         string
+}
+
+func (p PropertyDependency) Validate(propPath string, data interface{}, errs *[]KeyError) {}
+
+func (p *PropertyDependency) Register(uri string, registry *SchemaRegistry) {}
+
+func (p *PropertyDependency) Resolve(pointer jptr.Pointer, uri string) *Schema {
+	return nil
+}
+
+func (p *PropertyDependency) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	SchemaDebug("[PropertyDependency] Validating")
+	if obj, ok := schCtx.Instance.(map[string]interface{}); ok {
+		if obj[p.prop] == nil {
+			return
+		}
+		for _, dep := range p.dependencies {
+			if obj[dep] == nil {
+				AddErrorCtx(errs, schCtx, fmt.Sprintf(`"%s" property is required`, dep))
+			}
+		}
+	}
+}
+
+func (p PropertyDependency) JSONProp(name string) interface{} {
+	idx, err := strconv.Atoi(name)
+	if err != nil {
+		return nil
+	}
+	if idx > len(p.dependencies) || idx < 0 {
+		return nil
+	}
+	return p.dependencies[idx]
+}
