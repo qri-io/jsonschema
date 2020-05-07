@@ -6,6 +6,9 @@ import (
 	jptr "github.com/qri-io/jsonpointer"
 )
 
+// SchemaContext holds the validation context
+// The aim is to have one global validation context
+// and use local sub contexts when evaluating parallel branches
 type SchemaContext struct {
 	Local                   *Schema
 	Root                    *Schema
@@ -27,6 +30,7 @@ type SchemaContext struct {
 	ApplicationContext *context.Context
 }
 
+// NewSchemaContext creates a new SchemaContext with the provided location pointers and data instance
 func NewSchemaContext(rs *Schema, inst interface{}, brl *jptr.Pointer, rl *jptr.Pointer, il *jptr.Pointer, appCtx *context.Context) *SchemaContext {
 	return &SchemaContext{
 		Root:                        rs,
@@ -44,6 +48,7 @@ func NewSchemaContext(rs *Schema, inst interface{}, brl *jptr.Pointer, rl *jptr.
 	}
 }
 
+// NewSchemaContextFromSource creates a new SchemaContext from an existing SchemaContext
 func NewSchemaContextFromSource(source SchemaContext) *SchemaContext {
 	sch := &SchemaContext{
 		Local:                   source.Local,
@@ -60,6 +65,7 @@ func NewSchemaContextFromSource(source SchemaContext) *SchemaContext {
 		Misc:                    map[string]interface{}{},
 		ApplicationContext:      source.ApplicationContext,
 	}
+	// The code bellow is a small optimization to avoid unnecessary map creates/copies when not required
 	hasAdditionalPropertiesKeyword := false
 	hasAdditionalItemsKeyword := false
 	if _, ok := sch.Local.keywords["additionalProperties"]; ok {
@@ -79,6 +85,8 @@ func NewSchemaContextFromSource(source SchemaContext) *SchemaContext {
 	return sch
 }
 
+// NewSchemaContextFromSourceClean creates a new SchemaContext from an existing SchemaContext but only
+// copies the core structures
 func NewSchemaContextFromSourceClean(source SchemaContext) *SchemaContext {
 	sch := &SchemaContext{
 		Local:                       source.Local,
@@ -101,6 +109,7 @@ func NewSchemaContextFromSourceClean(source SchemaContext) *SchemaContext {
 	return sch
 }
 
+// ClearContext resets a schema to it's core elements
 func (sc *SchemaContext) ClearContext() {
 	if len(sc.EvaluatedPropertyNames) > 0 {
 		sc.EvaluatedPropertyNames = map[string]bool{}
@@ -108,8 +117,13 @@ func (sc *SchemaContext) ClearContext() {
 	if len(sc.LocalEvaluatedPropertyNames) > 0 {
 		sc.LocalEvaluatedPropertyNames = map[string]bool{}
 	}
+	if len(sc.Misc) > 0 {
+		sc.Misc = map[string]interface{}{}
+	}
 }
 
+// UpdateEvaluatedPropsAndItems is a utility function to join evaluated properties and set the
+// current evaluation position index
 func (sc *SchemaContext) UpdateEvaluatedPropsAndItems(subCtx *SchemaContext) {
 	JoinSets(&sc.EvaluatedPropertyNames, subCtx.EvaluatedPropertyNames)
 	JoinSets(&sc.LocalEvaluatedPropertyNames, subCtx.LocalEvaluatedPropertyNames)
@@ -129,6 +143,7 @@ func copySet(input map[string]bool) map[string]bool {
 	return copy
 }
 
+// JoinSets is a utility function to join two existance check maps
 func JoinSets(consumer *map[string]bool, supplier map[string]bool) {
 	for k, v := range supplier {
 		(*consumer)[k] = v

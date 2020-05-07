@@ -1,9 +1,13 @@
 package main
 
+// LoadDraft2019_09 loads the keywords for schema validation
+// based on draft2019_09
+// this is also the default keyword set loaded automatically
+// if no other is loaded
 func LoadDraft2019_09() {
 	// core keywords
 	RegisterKeyword("$schema", NewSchemaURI)
-	RegisterKeyword("$id", NewId)
+	RegisterKeyword("$id", NewID)
 	RegisterKeyword("description", NewDescription)
 	RegisterKeyword("title", NewTitle)
 	RegisterKeyword("$comment", NewComment)

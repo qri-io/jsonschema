@@ -9,27 +9,25 @@ import (
 	jptr "github.com/qri-io/jsonpointer"
 )
 
-//
-// Items
-//
-
+// Items defines the items JSON Schema keyword
 type Items struct {
 	single  bool
 	Schemas []*Schema
 }
 
+// NewItems allocates a new Items keyword
 func NewItems() Keyword {
 	return &Items{}
 }
 
-func (it Items) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
+// Register implements the Keyword interface for Items
 func (it *Items) Register(uri string, registry *SchemaRegistry) {
 	for _, v := range it.Schemas {
 		v.Register(uri, registry)
 	}
 }
 
+// Resolve implements the Keyword interface for Items
 func (it *Items) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	if pointer == nil {
 		return nil
@@ -53,6 +51,7 @@ func (it *Items) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
+// ValidateFromContext implements the Keyword interface for Items
 func (it Items) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[Items] Validating")
 	if arr, ok := schCtx.Instance.([]interface{}); ok {
@@ -123,6 +122,7 @@ func (it Items) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	}
 }
 
+// JSONProp implements the JSONPather for Items
 func (it Items) JSONProp(name string) interface{} {
 	idx, err := strconv.Atoi(name)
 	if err != nil {
@@ -134,6 +134,7 @@ func (it Items) JSONProp(name string) interface{} {
 	return it.Schemas[idx]
 }
 
+// JSONChildren implements the JSONContainer interface for Items
 func (it Items) JSONChildren() (res map[string]JSONPather) {
 	res = map[string]JSONPather{}
 	for i, sch := range it.Schemas {
@@ -142,6 +143,7 @@ func (it Items) JSONChildren() (res map[string]JSONPather) {
 	return
 }
 
+// UnmarshalJSON implements the json.Unmarshaler interface for Items
 func (it *Items) UnmarshalJSON(data []byte) error {
 	s := &Schema{}
 	if err := json.Unmarshal(data, s); err == nil {
@@ -156,6 +158,7 @@ func (it *Items) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// MarshalJSON implements the json.Marshaler interface for Items
 func (it Items) MarshalJSON() ([]byte, error) {
 	if it.single {
 		return json.Marshal(it.Schemas[0])
@@ -163,24 +166,23 @@ func (it Items) MarshalJSON() ([]byte, error) {
 	return json.Marshal([]*Schema(it.Schemas))
 }
 
-//
-// MaxItems
-//
-
+// MaxItems defines the maxItems JSON Schema keyword
 type MaxItems int
 
+// NewMaxItems allocates a new MaxItems keyword
 func NewMaxItems() Keyword {
 	return new(MaxItems)
 }
 
-func (m MaxItems) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
+// Register implements the Keyword interface for MaxItems
 func (m *MaxItems) Register(uri string, registry *SchemaRegistry) {}
 
+// Resolve implements the Keyword interface for MaxItems
 func (m *MaxItems) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
+// ValidateFromContext implements the Keyword interface for MaxItems
 func (m MaxItems) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[MaxItems] Validating")
 	if arr, ok := schCtx.Instance.([]interface{}); ok {
@@ -191,24 +193,23 @@ func (m MaxItems) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	}
 }
 
-//
-// MinItems
-//
-
+// MinItems defines the minItems JSON Schema keyword
 type MinItems int
 
+// NewMinItems allocates a new MinItems keyword
 func NewMinItems() Keyword {
 	return new(MinItems)
 }
 
-func (m MinItems) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
+// Register implements the Keyword interface for MinItems
 func (m *MinItems) Register(uri string, registry *SchemaRegistry) {}
 
+// Resolve implements the Keyword interface for MinItems
 func (m *MinItems) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
+// ValidateFromContext implements the Keyword interface for MinItems
 func (m MinItems) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[MinItems] Validating")
 	if arr, ok := schCtx.Instance.([]interface{}); ok {
@@ -219,24 +220,23 @@ func (m MinItems) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	}
 }
 
-//
-// UniqueItems
-//
-
+// UniqueItems defines the uniqueItems JSON Schema keyword
 type UniqueItems bool
 
+// NewUniqueItems allocates a new UniqueItems keyword
 func NewUniqueItems() Keyword {
 	return new(UniqueItems)
 }
 
-func (u UniqueItems) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
+// Register implements the Keyword interface for UniqueItems
 func (u *UniqueItems) Register(uri string, registry *SchemaRegistry) {}
 
+// Resolve implements the Keyword interface for UniqueItems
 func (u *UniqueItems) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
+// ValidateFromContext implements the Keyword interface for UniqueItems
 func (u UniqueItems) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[UniqueItems] Validating")
 	if arr, ok := schCtx.Instance.([]interface{}); ok {
@@ -253,26 +253,25 @@ func (u UniqueItems) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError
 	}
 }
 
-//
-// Contains
-//
-
+// Contains defines the contains JSON Schema keyword
 type Contains Schema
 
+// NewContains allocates a new Contains keyword
 func NewContains() Keyword {
 	return &Contains{}
 }
 
-func (c Contains) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
+// Register implements the Keyword interface for Contains
 func (c *Contains) Register(uri string, registry *SchemaRegistry) {
 	(*Schema)(c).Register(uri, registry)
 }
 
+// Resolve implements the Keyword interface for Contains
 func (c *Contains) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return (*Schema)(c).Resolve(pointer, uri)
 }
 
+// ValidateFromContext implements the Keyword interface for Contains
 func (c *Contains) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[Contains] Validating")
 	v := Schema(*c)
@@ -306,14 +305,17 @@ func (c *Contains) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) 
 	}
 }
 
+// JSONProp implements the JSONPather for Contains
 func (c Contains) JSONProp(name string) interface{} {
 	return Schema(c).JSONProp(name)
 }
 
+// JSONChildren implements the JSONContainer interface for Contains
 func (c Contains) JSONChildren() (res map[string]JSONPather) {
 	return Schema(c).JSONChildren()
 }
 
+// UnmarshalJSON implements the json.Unmarshaler interface for Contains
 func (c *Contains) UnmarshalJSON(data []byte) error {
 	var sch Schema
 	if err := json.Unmarshal(data, &sch); err != nil {
@@ -323,24 +325,23 @@ func (c *Contains) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-//
-// MaxContains
-//
-
+// MaxContains defines the maxContains JSON Schema keyword
 type MaxContains int
 
+// NewMaxContains allocates a new MaxContains keyword
 func NewMaxContains() Keyword {
 	return new(MaxContains)
 }
 
-func (m MaxContains) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
+// Register implements the Keyword interface for MaxContains
 func (m *MaxContains) Register(uri string, registry *SchemaRegistry) {}
 
+// Resolve implements the Keyword interface for MaxContains
 func (m *MaxContains) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
+// ValidateFromContext implements the Keyword interface for MaxContains
 func (m MaxContains) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[MaxContains] Validating")
 	if arr, ok := schCtx.Instance.([]interface{}); ok {
@@ -352,24 +353,23 @@ func (m MaxContains) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError
 	}
 }
 
-//
-// MinContains
-//
-
+// MinContains defines the minContains JSON Schema keyword
 type MinContains int
 
+// NewMinContains allocates a new MinContains keyword
 func NewMinContains() Keyword {
 	return new(MinContains)
 }
 
-func (m MinContains) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
+// Register implements the Keyword interface for MinContains
 func (m *MinContains) Register(uri string, registry *SchemaRegistry) {}
 
+// Resolve implements the Keyword interface for MinContains
 func (m *MinContains) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
+// ValidateFromContext implements the Keyword interface for MinContains
 func (m MinContains) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[MinContains] Validating")
 	if arr, ok := schCtx.Instance.([]interface{}); ok {
@@ -381,26 +381,25 @@ func (m MinContains) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError
 	}
 }
 
-//
-// AdditionalItems
-//
-
+// AdditionalItems defines the additionalItems JSON Schema keyword
 type AdditionalItems Schema
 
+// NewAdditionalItems allocates a new AdditionalItems keyword
 func NewAdditionalItems() Keyword {
 	return &AdditionalItems{}
 }
 
-func (ai AdditionalItems) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
+// Register implements the Keyword interface for AdditionalItems
 func (ai *AdditionalItems) Register(uri string, registry *SchemaRegistry) {
 	(*Schema)(ai).Register(uri, registry)
 }
 
+// Resolve implements the Keyword interface for AdditionalItems
 func (ai *AdditionalItems) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return (*Schema)(ai).Resolve(pointer, uri)
 }
 
+// ValidateFromContext implements the Keyword interface for AdditionalItems
 func (ai *AdditionalItems) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[AdditionalItems] Validating")
 	if arr, ok := schCtx.Instance.([]interface{}); ok {
@@ -429,6 +428,7 @@ func (ai *AdditionalItems) ValidateFromContext(schCtx *SchemaContext, errs *[]Ke
 	}
 }
 
+// UnmarshalJSON implements the json.Unmarshaler interface for AdditionalItems
 func (ai *AdditionalItems) UnmarshalJSON(data []byte) error {
 	sch := &Schema{}
 	if err := json.Unmarshal(data, sch); err != nil {

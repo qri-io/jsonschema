@@ -10,24 +10,24 @@ import (
 
 func main() {
 	LoadDraft2019_09()
-	// RunDraft2019_09()
-	// TestVB()
-	TestEM()
+	// runDraft2019_09()
+	// testVB()
+	testEM()
 }
 
-type MainTestSet struct {
+type mainTestSet struct {
 	Description string         `json:"description"`
 	Schema      *Schema        `json:"schema"`
-	Tests       []MainTestCase `json:"tests"`
+	Tests       []mainTestCase `json:"tests"`
 }
 
-type MainTestCase struct {
+type mainTestCase struct {
 	Description string      `json:"description"`
 	Data        interface{} `json:"data"`
 	Valid       bool        `json:"valid"`
 }
 
-func TestEM() {
+func testEM() {
 	cases := []struct {
 		schema, doc, message string
 	}{
@@ -59,7 +59,6 @@ func TestEM() {
 	}
 }
 
-
 func mainRunJSONTests(testFilepaths []string) {
 	tests := 0
 	passed := 0
@@ -67,7 +66,7 @@ func mainRunJSONTests(testFilepaths []string) {
 	for _, path := range testFilepaths {
 		fmt.Println("Testing: " + path)
 		base := filepath.Base(path)
-		testSets := []*MainTestSet{}
+		testSets := []*mainTestSet{}
 		data, err := ioutil.ReadFile(path)
 		if err != nil {
 			fmt.Errorf("error loading test file: %s", err.Error())
@@ -109,15 +108,7 @@ func mainRunJSONTests(testFilepaths []string) {
 	fmt.Printf("%d/%d tests passed\n", passed, tests)
 }
 
-func ReadErrors(errors []KeyError) string {
-	result := ""
-	for _, err := range errors {
-		result += err.Error() + "\n"
-	}
-	return result
-}
-
-func TestVB() {
+func testVB() {
 	cases := []struct {
 		schema string
 		input  string
@@ -161,7 +152,7 @@ func TestVB() {
 	}
 }
 
-func RunDraft2019_09() {
+func runDraft2019_09() {
 	path := "testdata/draft2019-09_schema.json"
 	data, err := ioutil.ReadFile(path)
 	if err != nil {

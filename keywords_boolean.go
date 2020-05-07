@@ -7,24 +7,22 @@ import (
 	jptr "github.com/qri-io/jsonpointer"
 )
 
-//
-// AllOf
-//
-
+// AllOf defines the allOf JSON Schema keyword
 type AllOf []*Schema
 
+// NewAllOf allocates a new AllOf keyword
 func NewAllOf() Keyword {
 	return &AllOf{}
 }
 
-func (a *AllOf) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
+// Register implements the Keyword interface for AllOf
 func (a *AllOf) Register(uri string, registry *SchemaRegistry) {
 	for _, sch := range *a {
 		sch.Register(uri, registry)
 	}
 }
 
+// Resolve implements the Keyword interface for AllOf
 func (a *AllOf) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	if pointer == nil {
 		return nil
@@ -48,6 +46,7 @@ func (a *AllOf) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
+// ValidateFromContext implements the Keyword interface for AllOf
 func (a *AllOf) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[AllOf] Validating")
 	for i, sch := range *a {
@@ -65,6 +64,7 @@ func (a *AllOf) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	}
 }
 
+// JSONProp implements the JSONPather for AllOf
 func (a AllOf) JSONProp(name string) interface{} {
 	idx, err := strconv.Atoi(name)
 	if err != nil {
@@ -76,6 +76,7 @@ func (a AllOf) JSONProp(name string) interface{} {
 	return a[idx]
 }
 
+// JSONChildren implements the JSONContainer interface for AllOf
 func (a AllOf) JSONChildren() (res map[string]JSONPather) {
 	res = map[string]JSONPather{}
 	for i, sch := range a {
@@ -84,24 +85,22 @@ func (a AllOf) JSONChildren() (res map[string]JSONPather) {
 	return
 }
 
-//
-// AnyOf
-//
-
+// AnyOf defines the anyOf JSON Schema keyword
 type AnyOf []*Schema
 
+// NewAnyOf allocates a new AnyOf keyword
 func NewAnyOf() Keyword {
 	return &AnyOf{}
 }
 
-func (a *AnyOf) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
+// Register implements the Keyword interface for AnyOf
 func (a *AnyOf) Register(uri string, registry *SchemaRegistry) {
 	for _, sch := range *a {
 		sch.Register(uri, registry)
 	}
 }
 
+// Resolve implements the Keyword interface for AnyOf
 func (a *AnyOf) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	if pointer == nil {
 		return nil
@@ -125,6 +124,7 @@ func (a *AnyOf) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
+// ValidateFromContext implements the Keyword interface for AnyOf
 func (a *AnyOf) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[AnyOf] Validating")
 	for i, sch := range *a {
@@ -148,6 +148,7 @@ func (a *AnyOf) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	AddErrorCtx(errs, schCtx, "did Not match any specified AnyOf schemas")
 }
 
+// JSONProp implements the JSONPather for AnyOf
 func (a AnyOf) JSONProp(name string) interface{} {
 	idx, err := strconv.Atoi(name)
 	if err != nil {
@@ -159,6 +160,7 @@ func (a AnyOf) JSONProp(name string) interface{} {
 	return a[idx]
 }
 
+// JSONChildren implements the JSONContainer interface for AnyOf
 func (a AnyOf) JSONChildren() (res map[string]JSONPather) {
 	res = map[string]JSONPather{}
 	for i, sch := range a {
@@ -167,24 +169,22 @@ func (a AnyOf) JSONChildren() (res map[string]JSONPather) {
 	return
 }
 
-//
-// OneOf
-//
-
+// OneOf defines the oneOf JSON Schema keyword
 type OneOf []*Schema
 
+// NewOneOf allocates a new OneOf keyword
 func NewOneOf() Keyword {
 	return &OneOf{}
 }
 
-func (o *OneOf) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
+// Register implements the Keyword interface for OneOf
 func (o *OneOf) Register(uri string, registry *SchemaRegistry) {
 	for _, sch := range *o {
 		sch.Register(uri, registry)
 	}
 }
 
+// Resolve implements the Keyword interface for OneOf
 func (o *OneOf) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	if pointer == nil {
 		return nil
@@ -208,6 +208,7 @@ func (o *OneOf) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
+// ValidateFromContext implements the Keyword interface for OneOf
 func (o *OneOf) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[OneOf] Validating")
 	matched := false
@@ -240,6 +241,7 @@ func (o *OneOf) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	}
 }
 
+// JSONProp implements the JSONPather for OneOf
 func (o OneOf) JSONProp(name string) interface{} {
 	idx, err := strconv.Atoi(name)
 	if err != nil {
@@ -251,6 +253,7 @@ func (o OneOf) JSONProp(name string) interface{} {
 	return o[idx]
 }
 
+// JSONChildren implements the JSONContainer interface for OneOf
 func (o OneOf) JSONChildren() (res map[string]JSONPather) {
 	res = map[string]JSONPather{}
 	for i, sch := range o {
@@ -259,26 +262,25 @@ func (o OneOf) JSONChildren() (res map[string]JSONPather) {
 	return
 }
 
-//
-// Not
-//
-
+// Not defines the not JSON Schema keyword
 type Not Schema
 
+// NewNot allocates a new Not keyword
 func NewNot() Keyword {
 	return &Not{}
 }
 
-func (n *Not) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
+// Register implements the Keyword interface for Not
 func (n *Not) Register(uri string, registry *SchemaRegistry) {
 	(*Schema)(n).Register(uri, registry)
 }
 
+// Resolve implements the Keyword interface for Not
 func (n *Not) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return (*Schema)(n).Resolve(pointer, uri)
 }
 
+// ValidateFromContext implements the Keyword interface for Not
 func (n *Not) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[Not] Validating")
 	subCtx := NewSchemaContextFromSource(*schCtx)
@@ -299,14 +301,17 @@ func (n *Not) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	}
 }
 
+// JSONProp implements the JSONPather for Not
 func (n Not) JSONProp(name string) interface{} {
 	return Schema(n).JSONProp(name)
 }
 
+// JSONChildren implements the JSONContainer interface for Not
 func (n Not) JSONChildren() (res map[string]JSONPather) {
 	return Schema(n).JSONChildren()
 }
 
+// UnmarshalJSON implements the json.Unmarshaler interface for Not
 func (n *Not) UnmarshalJSON(data []byte) error {
 	var sch Schema
 	if err := json.Unmarshal(data, &sch); err != nil {
@@ -316,6 +321,7 @@ func (n *Not) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// MarshalJSON implements the json.Marshaler interface for Not
 func (n Not) MarshalJSON() ([]byte, error) {
 	return json.Marshal(Schema(n))
 }

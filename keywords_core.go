@@ -9,141 +9,136 @@ import (
 	jptr "github.com/qri-io/jsonpointer"
 )
 
-//
-// $schema
-//
-
+// SchemaURI defines the $schema JSON Schema keyword
 type SchemaURI string
 
+// NewSchemaURI allocates a new SchemaURI keyword
 func NewSchemaURI() Keyword {
 	return new(SchemaURI)
 }
 
-func (s *SchemaURI) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
+// ValidateFromContext implements the Keyword interface for SchemaURI
 func (s *SchemaURI) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[SchemaURI] Validating")
 }
 
+// Register implements the Keyword interface for SchemaURI
 func (s *SchemaURI) Register(uri string, registry *SchemaRegistry) {}
 
+// Resolve implements the Keyword interface for SchemaURI
 func (s *SchemaURI) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
-//
-// $id
-//
+// ID defines the $id JSON Schema keyword
+type ID string
 
-type Id string
-
-func NewId() Keyword {
-	return new(Id)
+// NewID allocates a new Id keyword
+func NewID() Keyword {
+	return new(ID)
 }
 
-func (i *Id) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
-func (i *Id) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateFromContext implements the Keyword interface for ID
+func (i *ID) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[Id] Validating")
 	// TODO(arqu): make sure ID is valid URI for draft2019
 }
 
-func (i *Id) Register(uri string, registry *SchemaRegistry) {}
+// Register implements the Keyword interface for ID
+func (i *ID) Register(uri string, registry *SchemaRegistry) {}
 
-func (i *Id) Resolve(pointer jptr.Pointer, uri string) *Schema {
+// Resolve implements the Keyword interface for ID
+func (i *ID) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
-//
-// Description
-//
-
+// Description defines the description JSON Schema keyword
 type Description string
 
+// NewDescription allocates a new Description keyword
 func NewDescription() Keyword {
 	return new(Description)
 }
 
-func (d *Description) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
+// ValidateFromContext implements the Keyword interface for Description
 func (d *Description) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[Description] Validating")
 }
 
+// Register implements the Keyword interface for Description
 func (d *Description) Register(uri string, registry *SchemaRegistry) {}
 
+// Resolve implements the Keyword interface for Description
 func (d *Description) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
-//
-// Title
-//
-
+// Title defines the title JSON Schema keyword
 type Title string
 
+// NewTitle allocates a new Title keyword
 func NewTitle() Keyword {
 	return new(Title)
 }
 
-func (t *Title) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
+// ValidateFromContext implements the Keyword interface for Title
 func (t *Title) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[Title] Validating")
 }
 
+// Register implements the Keyword interface for Title
 func (t *Title) Register(uri string, registry *SchemaRegistry) {}
 
+// Resolve implements the Keyword interface for Title
 func (t *Title) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
-//
-// Comment
-//
-
+// Comment defines the comment JSON Schema keyword
 type Comment string
 
+// NewComment allocates a new Comment keyword
 func NewComment() Keyword {
 	return new(Comment)
 }
 
-func (c *Comment) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
+// ValidateFromContext implements the Keyword interface for Comment
 func (c *Comment) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[Comment] Validating")
 }
 
+// Register implements the Keyword interface for Comment
 func (c *Comment) Register(uri string, registry *SchemaRegistry) {}
 
+// Resolve implements the Keyword interface for Comment
 func (c *Comment) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
-//
-// Default
-//
-
+// Default defines the default JSON Schema keyword
 type Default struct {
 	data interface{}
 }
 
+// NewDefault allocates a new Default keyword
 func NewDefault() Keyword {
 	return &Default{}
 }
 
-func (d *Default) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
+// ValidateFromContext implements the Keyword interface for Default
 func (d *Default) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[Default] Validating")
 }
 
+// Register implements the Keyword interface for Default
 func (d *Default) Register(uri string, registry *SchemaRegistry) {}
 
+// Resolve implements the Keyword interface for Default
 func (d *Default) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
+// UnmarshalJSON implements the json.Unmarshaler interface for Default
 func (d *Default) UnmarshalJSON(data []byte) error {
 	var defaultData interface{}
 	if err := json.Unmarshal(data, &defaultData); err != nil {
@@ -155,76 +150,70 @@ func (d *Default) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-//
-// Examples
-//
-
+// Examples defines the examples JSON Schema keyword
 type Examples []interface{}
 
+// NewExamples allocates a new Examples keyword
 func NewExamples() Keyword {
 	return new(Examples)
 }
 
-func (e *Examples) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
+// ValidateFromContext implements the Keyword interface for Examples
 func (e *Examples) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[Examples] Validating")
 }
 
+// Register implements the Keyword interface for Examples
 func (e *Examples) Register(uri string, registry *SchemaRegistry) {}
 
+// Resolve implements the Keyword interface for Examples
 func (e *Examples) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
-//
-// ReadOnly
-//
-
+// ReadOnly defines the readOnly JSON Schema keyword
 type ReadOnly bool
 
+// NewReadOnly allocates a new ReadOnly keyword
 func NewReadOnly() Keyword {
 	return new(ReadOnly)
 }
 
-func (r *ReadOnly) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
+// ValidateFromContext implements the Keyword interface for ReadOnly
 func (r *ReadOnly) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[ReadOnly] Validating")
 }
 
+// Register implements the Keyword interface for ReadOnly
 func (r *ReadOnly) Register(uri string, registry *SchemaRegistry) {}
 
+// Resolve implements the Keyword interface for ReadOnly
 func (r *ReadOnly) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
-//
-// WriteOnly
-//
-
+// WriteOnly defines the writeOnly JSON Schema keyword
 type WriteOnly bool
 
+// NewWriteOnly allocates a new WriteOnly keyword
 func NewWriteOnly() Keyword {
 	return new(WriteOnly)
 }
 
-func (w *WriteOnly) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
+// ValidateFromContext implements the Keyword interface for WriteOnly
 func (w *WriteOnly) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[WriteOnly] Validating")
 }
 
+// Register implements the Keyword interface for WriteOnly
 func (w *WriteOnly) Register(uri string, registry *SchemaRegistry) {}
 
+// Resolve implements the Keyword interface for WriteOnly
 func (w *WriteOnly) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
-//
-// $ref
-//
-
+// Ref defines the $ref JSON Schema keyword
 type Ref struct {
 	reference         string
 	resolved          *Schema
@@ -233,12 +222,12 @@ type Ref struct {
 	fragmentLocalized bool
 }
 
+// NewRef allocates a new Ref keyword
 func NewRef() Keyword {
 	return new(Ref)
 }
 
-func (r *Ref) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
+// ValidateFromContext implements the Keyword interface for Ref
 func (r *Ref) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[Ref] Validating")
 	if r.resolved == nil {
@@ -265,8 +254,9 @@ func (r *Ref) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	schCtx.UpdateEvaluatedPropsAndItems(subCtx)
 }
 
+// _resolveRef attempts to resolve the reference from the top-level context
 func (r *Ref) _resolveRef(schCtx *SchemaContext) {
-	if IsLocalSchemaId(r.reference) {
+	if IsLocalSchemaID(r.reference) {
 		r.resolved = schCtx.LocalRegistry.GetLocal(r.reference)
 		if r.resolved != nil {
 			return
@@ -312,7 +302,7 @@ func (r *Ref) _resolveRef(schCtx *SchemaContext) {
 						pathComponents = pathComponents[:len(pathComponents)-1]
 						uriFolder = strings.Join(pathComponents, "/") + "/"
 					}
-					address, _ = SafeResolveUrl(uriFolder, address)
+					address, _ = SafeResolveURL(uriFolder, address)
 				}
 			}
 		}
@@ -331,9 +321,9 @@ func (r *Ref) _resolveRef(schCtx *SchemaContext) {
 		return
 	}
 
-	localUri := schCtx.BaseURI
+	localURI := schCtx.BaseURI
 	if r.resolvedRoot != nil && r.resolvedRoot.docPath != "" {
-		localUri = r.resolvedRoot.docPath
+		localURI = r.resolvedRoot.docPath
 		if r.fragmentLocalized && !r.resolvedFragment.IsEmpty() {
 			current := r.resolvedFragment.Head()
 			sch := schCtx.LocalRegistry.GetLocal("#" + *current)
@@ -343,9 +333,10 @@ func (r *Ref) _resolveRef(schCtx *SchemaContext) {
 			}
 		}
 	}
-	r._resolveLocalRef(localUri)
+	r._resolveLocalRef(localURI)
 }
 
+// _resolveLocalRef attempts to resolve the reference from a local context
 func (r *Ref) _resolveLocalRef(uri string) {
 	if r.resolvedFragment.IsEmpty() {
 		r.resolved = r.resolvedRoot
@@ -357,12 +348,15 @@ func (r *Ref) _resolveLocalRef(uri string) {
 	}
 }
 
+// Register implements the Keyword interface for Ref
 func (r *Ref) Register(uri string, registry *SchemaRegistry) {}
 
+// Resolve implements the Keyword interface for Ref
 func (r *Ref) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
+// UnmarshalJSON implements the json.Unmarshaler interface for Ref
 func (r *Ref) UnmarshalJSON(data []byte) error {
 	var ref string
 	if err := json.Unmarshal(data, &ref); err != nil {
@@ -375,14 +369,12 @@ func (r *Ref) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// MarshalJSON implements the json.Marshaler interface for Ref
 func (r Ref) MarshalJSON() ([]byte, error) {
 	return json.Marshal(r.reference)
 }
 
-//
-// $recursiveRef
-//
-
+// RecursiveRef defines the $recursiveRef JSON Schema keyword
 type RecursiveRef struct {
 	reference        string
 	resolved         *Schema
@@ -392,15 +384,15 @@ type RecursiveRef struct {
 	validatingLocations map[string]bool
 }
 
+// NewRecursiveRef allocates a new RecursiveRef keyword
 func NewRecursiveRef() Keyword {
 	return new(RecursiveRef)
 }
 
-func (r *RecursiveRef) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
+// ValidateFromContext implements the Keyword interface for RecursiveRef
 func (r *RecursiveRef) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[RecursiveRef] Validating")
-	if r.IsLocationVisited(schCtx.InstanceLocation.String()) {
+	if r.isLocationVisited(schCtx.InstanceLocation.String()) {
 		// recursion detected aborting further descent
 		return
 	}
@@ -434,18 +426,18 @@ func (r *RecursiveRef) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyErr
 	schCtx.UpdateEvaluatedPropsAndItems(subCtx)
 }
 
-func (r *RecursiveRef) IsLocationVisited(location string) bool {
+func (r *RecursiveRef) isLocationVisited(location string) bool {
 	if r.validatingLocations == nil {
 		return false
 	}
 	v, ok := r.validatingLocations[location]
 	if !ok {
 		return false
-	} else {
-		return v
 	}
+	return v
 }
 
+// _resolveRef attempts to resolve the reference from the top-level context
 func (r *RecursiveRef) _resolveRef(schCtx *SchemaContext, errs *[]KeyError) {
 	if schCtx.RecursiveAnchor != nil {
 		if schCtx.BaseURI == "" {
@@ -458,7 +450,7 @@ func (r *RecursiveRef) _resolveRef(schCtx *SchemaContext, errs *[]KeyError) {
 		}
 	}
 
-	if IsLocalSchemaId(r.reference) {
+	if IsLocalSchemaID(r.reference) {
 		r.resolved = schCtx.LocalRegistry.GetLocal(r.reference)
 		if r.resolved != nil {
 			return
@@ -505,7 +497,7 @@ func (r *RecursiveRef) _resolveRef(schCtx *SchemaContext, errs *[]KeyError) {
 							pathComponents = pathComponents[:len(pathComponents)-1]
 							uriFolder = strings.Join(pathComponents, "/")
 						}
-						address, _ = SafeResolveUrl(uriFolder, address)
+						address, _ = SafeResolveURL(uriFolder, address)
 					}
 				}
 			}
@@ -525,13 +517,14 @@ func (r *RecursiveRef) _resolveRef(schCtx *SchemaContext, errs *[]KeyError) {
 		return
 	}
 
-	localUri := schCtx.BaseURI
+	localURI := schCtx.BaseURI
 	if r.resolvedRoot != nil && r.resolvedRoot.docPath != "" {
-		localUri = r.resolvedRoot.docPath
+		localURI = r.resolvedRoot.docPath
 	}
-	r._resolveLocalRef(localUri)
+	r._resolveLocalRef(localURI)
 }
 
+// _resolveLocalRef attempts to resolve the reference from a local context
 func (r *RecursiveRef) _resolveLocalRef(uri string) {
 	if r.resolvedFragment.IsEmpty() {
 		r.resolved = r.resolvedRoot
@@ -543,12 +536,15 @@ func (r *RecursiveRef) _resolveLocalRef(uri string) {
 	}
 }
 
+// Register implements the Keyword interface for RecursiveRef
 func (r *RecursiveRef) Register(uri string, registry *SchemaRegistry) {}
 
+// Resolve implements the Keyword interface for RecursiveRef
 func (r *RecursiveRef) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
+// UnmarshalJSON implements the json.Unmarshaler interface for RecursiveRef
 func (r *RecursiveRef) UnmarshalJSON(data []byte) error {
 	var ref string
 	if err := json.Unmarshal(data, &ref); err != nil {
@@ -560,52 +556,51 @@ func (r *RecursiveRef) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// MarshalJSON implements the json.Marshaler interface for RecursiveRef
 func (r RecursiveRef) MarshalJSON() ([]byte, error) {
 	return json.Marshal(r.reference)
 }
 
-//
-// $anchor
-//
-
+// Anchor defines the $anchor JSON Schema keyword
 type Anchor string
 
+// NewAnchor allocates a new Anchor keyword
 func NewAnchor() Keyword {
 	return new(Anchor)
 }
 
-func (a *Anchor) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
+// ValidateFromContext implements the Keyword interface for Anchor
 func (a *Anchor) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[Anchor] Validating")
 }
 
+// Register implements the Keyword interface for Anchor
 func (a *Anchor) Register(uri string, registry *SchemaRegistry) {}
 
+// Resolve implements the Keyword interface for Anchor
 func (a *Anchor) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
-//
-// $recursiveAnchor
-//
-
+// RecursiveAnchor defines the $recursiveAnchor JSON Schema keyword
 type RecursiveAnchor Schema
 
+// NewRecursiveAnchor allocates a new RecursiveAnchor keyword
 func NewRecursiveAnchor() Keyword {
 	return &RecursiveAnchor{}
 }
 
-func (r RecursiveAnchor) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
+// Register implements the Keyword interface for RecursiveAnchor
 func (r *RecursiveAnchor) Register(uri string, registry *SchemaRegistry) {
 	(*Schema)(r).Register(uri, registry)
 }
 
+// Resolve implements the Keyword interface for RecursiveAnchor
 func (r *RecursiveAnchor) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return (*Schema)(r).Resolve(pointer, uri)
 }
 
+// ValidateFromContext implements the Keyword interface for RecursiveAnchor
 func (r *RecursiveAnchor) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[RecursiveAnchor] Validating")
 	if schCtx.RecursiveAnchor == nil {
@@ -613,6 +608,7 @@ func (r *RecursiveAnchor) ValidateFromContext(schCtx *SchemaContext, errs *[]Key
 	}
 }
 
+// UnmarshalJSON implements the json.Unmarshaler interface for RecursiveAnchor
 func (r *RecursiveAnchor) UnmarshalJSON(data []byte) error {
 	sch := &Schema{}
 	if err := json.Unmarshal(data, sch); err != nil {
@@ -622,24 +618,22 @@ func (r *RecursiveAnchor) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-//
-// $defs
-//
-
+// Defs defines the $defs JSON Schema keyword
 type Defs map[string]*Schema
 
+// NewDefs allocates a new Defs keyword
 func NewDefs() Keyword {
 	return &Defs{}
 }
 
-func (d Defs) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
+// Register implements the Keyword interface for Defs
 func (d *Defs) Register(uri string, registry *SchemaRegistry) {
 	for _, v := range *d {
 		v.Register(uri, registry)
 	}
 }
 
+// Resolve implements the Keyword interface for Defs
 func (d *Defs) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	if pointer == nil {
 		return nil
@@ -656,14 +650,17 @@ func (d *Defs) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
-func (p Defs) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateFromContext implements the Keyword interface for Defs
+func (d Defs) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[Defs] Validating")
 }
 
+// JSONProp implements the JSONPather for Defs
 func (d Defs) JSONProp(name string) interface{} {
 	return d[name]
 }
 
+// JSONChildren implements the JSONContainer interface for Defs
 func (d Defs) JSONChildren() (res map[string]JSONPather) {
 	res = map[string]JSONPather{}
 	for key, sch := range d {
@@ -672,28 +669,23 @@ func (d Defs) JSONChildren() (res map[string]JSONPather) {
 	return
 }
 
-//
-// VOID
-//
-
+// Void is a placeholder definition for a keyword
 type Void struct{}
 
+// NewVoid allocates a new Void keyword
 func NewVoid() Keyword {
 	return &Void{}
 }
 
-func (vo *Void) Validate(propPath string, data interface{}, errs *[]KeyError) {
-	SchemaDebug("[Void] Validating")
-	SchemaDebug("[Void] WARNING this is a placeholder and should not be used")
-	SchemaDebug("[Void] Void is always true")
-}
-
+// Register implements the Keyword interface for Void
 func (vo *Void) Register(uri string, registry *SchemaRegistry) {}
 
+// Resolve implements the Keyword interface for Void
 func (vo *Void) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
+// ValidateFromContext implements the Keyword interface for Void
 func (vo *Void) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[Void] Validating")
 	SchemaDebug("[Void] WARNING this is a placeholder and should not be used")

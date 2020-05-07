@@ -10,11 +10,14 @@ var (
 	sr *SchemaRegistry
 )
 
+// SchemaRegistry maintains a lookup table between schema string references
+// and actual schemas
 type SchemaRegistry struct {
 	schemaLookup  map[string]*Schema
 	contextLookup map[string]*Schema
 }
 
+// GetSchemaRegistry provides an accessor to a globally available schema registry
 func GetSchemaRegistry() *SchemaRegistry {
 	if sr == nil {
 		sr = &SchemaRegistry{
@@ -25,6 +28,7 @@ func GetSchemaRegistry() *SchemaRegistry {
 	return sr
 }
 
+// Get fetches a schema from the top level context registry or fetches it from a remote
 func (sr *SchemaRegistry) Get(uri string, ctx *context.Context) *Schema {
 	uri = strings.TrimRight(uri, "#")
 	schema := sr.schemaLookup[uri]
@@ -46,16 +50,19 @@ func (sr *SchemaRegistry) Get(uri string, ctx *context.Context) *Schema {
 	return schema
 }
 
+// GetKnown fetches a schema from the top level context registry
 func (sr *SchemaRegistry) GetKnown(uri string) *Schema {
 	uri = strings.TrimRight(uri, "#")
 	return sr.schemaLookup[uri]
 }
 
+// GetLocal fetches a schema from the local context registry
 func (sr *SchemaRegistry) GetLocal(uri string) *Schema {
 	uri = strings.TrimRight(uri, "#")
 	return sr.contextLookup[uri]
 }
 
+// Register registers a schema to the top level context
 func (sr *SchemaRegistry) Register(sch *Schema) {
 	if sch.docPath == "" {
 		return
@@ -63,17 +70,18 @@ func (sr *SchemaRegistry) Register(sch *Schema) {
 	sr.schemaLookup[sch.docPath] = sch
 }
 
+// RegisterLocal registers a schema to a local context
 func (sr *SchemaRegistry) RegisterLocal(sch *Schema) {
-	if sch.id != "" && IsLocalSchemaId(sch.id) {
+	if sch.id != "" && IsLocalSchemaID(sch.id) {
 		sr.contextLookup[sch.id] = sch
 	}
 
 	if sch.HasKeyword("$anchor") {
 		anchorKeyword := sch.keywords["$anchor"].(*Anchor)
-		anchorUri := sch.docPath + "#" + string(*anchorKeyword)
+		anchorURI := sch.docPath + "#" + string(*anchorKeyword)
 		if sr.contextLookup == nil {
 			sr.contextLookup = map[string]*Schema{}
 		}
-		sr.contextLookup[anchorUri] = sch
+		sr.contextLookup[anchorURI] = sch
 	}
 }

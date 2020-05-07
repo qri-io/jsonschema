@@ -11,6 +11,8 @@ import (
 	jptr "github.com/qri-io/jsonpointer"
 )
 
+// Must turns a JSON string into a *Schema, panicing if parsing fails.
+// Useful for declaring Schemas in Go code.
 func Must(jsonString string) *Schema {
 	s := &Schema{}
 	if err := s.UnmarshalJSON([]byte(jsonString)); err != nil {
@@ -27,11 +29,11 @@ const (
 	schemaTypeTrue
 )
 
+// Schema is the top-level structure defining a json schema
 type Schema struct {
 	schemaType    schemaType
 	docPath       string
 	hasRegistered bool
-	// isValid       bool
 
 	id string
 
@@ -40,15 +42,19 @@ type Schema struct {
 	orderedkeywords  []string
 }
 
+// NewSchema allocates a new Schema Keyword/Validator
 func NewSchema() Keyword {
 	return &Schema{}
 }
 
+// HasKeyword is a utility function for checking if the given schema
+// has an instance of the required keyword
 func (s *Schema) HasKeyword(key string) bool {
 	_, ok := s.keywords[key]
 	return ok
 }
 
+// Register implements the Keyword interface for Schema
 func (s *Schema) Register(uri string, registry *SchemaRegistry) {
 	if s.hasRegistered {
 		return
@@ -56,25 +62,26 @@ func (s *Schema) Register(uri string, registry *SchemaRegistry) {
 	s.hasRegistered = true
 	registry.RegisterLocal(s)
 
+	// load default keyset if no other is present
 	if !IsRegistryLoaded() {
 		LoadDraft2019_09()
 	}
 
 	address := s.id
 	if uri != "" && address != "" {
-		address, _ = SafeResolveUrl(uri, address)
+		address, _ = SafeResolveURL(uri, address)
 	}
 
 	if s.docPath == "" && address != "" && address[0] != '#' {
-		docUri := ""
+		docURI := ""
 		if u, err := url.Parse(address); err != nil {
-			docUri, _ = SafeResolveUrl("https://qri.io", address)
+			docURI, _ = SafeResolveURL("https://qri.io", address)
 		} else {
-			docUri = u.String()
+			docURI = u.String()
 		}
-		s.docPath = docUri
+		s.docPath = docURI
 		GetSchemaRegistry().Register(s)
-		uri = docUri
+		uri = docURI
 	}
 
 	for _, keyword := range s.keywords {
@@ -82,10 +89,11 @@ func (s *Schema) Register(uri string, registry *SchemaRegistry) {
 	}
 }
 
+// Resolve implements the Keyword interface for Schema
 func (s *Schema) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	if pointer.IsEmpty() {
 		if s.docPath != "" {
-			s.docPath, _ = SafeResolveUrl(uri, s.docPath)
+			s.docPath, _ = SafeResolveURL(uri, s.docPath)
 		} else {
 			s.docPath = uri
 		}
@@ -99,7 +107,7 @@ func (s *Schema) Resolve(pointer jptr.Pointer, uri string) *Schema {
 			if u.IsAbs() {
 				uri = s.id
 			} else {
-				uri, _ = SafeResolveUrl(uri, s.id)
+				uri, _ = SafeResolveURL(uri, s.id)
 			}
 		}
 	}
@@ -129,6 +137,7 @@ func (s *Schema) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
+// JSONProp implements the JSONPather for Schema
 func (s Schema) JSONProp(name string) interface{} {
 	if keyword, ok := s.keywords[name]; ok {
 		return keyword
@@ -136,6 +145,7 @@ func (s Schema) JSONProp(name string) interface{} {
 	return s.extraDefinitions[name]
 }
 
+// JSONChildren implements the JSONContainer interface for Schema
 func (s Schema) JSONChildren() map[string]JSONPather {
 	ch := map[string]JSONPather{}
 
@@ -150,10 +160,12 @@ func (s Schema) JSONChildren() map[string]JSONPather {
 	return ch
 }
 
+// _schema is an internal struct for encoding & decoding purposes
 type _schema struct {
 	ID string `json:"$id,omitempty"`
 }
 
+// UnmarshalJSON implements the json.Unmarshaler interface for Schema
 func (s *Schema) UnmarshalJSON(data []byte) error {
 	var b bool
 	if err := json.Unmarshal(data, &b); err == nil {
@@ -231,17 +243,22 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// _keyOrder is an internal struct assigning evaluation order of keywords
 type _keyOrder struct {
 	Key   string
 	Order int
 }
 
+// Validate is a wrapper function to maintain some level of backwards
+// compatibility with versions v0.1.2 and prior
 func (s *Schema) Validate(propPath string, data interface{}, errs *[]KeyError) {
 	appCtx := context.Background()
 	schCtx := NewSchemaContext(s, data, &jptr.Pointer{}, &jptr.Pointer{}, &jptr.Pointer{}, &appCtx)
 	s.ValidateFromContext(schCtx, errs)
 }
 
+// ValidateFromContext uses the schema to check an instance, collecting validation
+// errors in a slice
 func (s *Schema) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	if s == nil {
 		AddErrorCtx(errs, schCtx, fmt.Sprintf("schema is nil"))
@@ -270,7 +287,7 @@ func (s *Schema) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 				if u.IsAbs() {
 					schCtx.BaseURI = s.docPath
 				} else {
-					schCtx.BaseURI, _ = SafeResolveUrl(schCtx.BaseURI, s.docPath)
+					schCtx.BaseURI, _ = SafeResolveURL(schCtx.BaseURI, s.docPath)
 				}
 			}
 		}
@@ -289,6 +306,7 @@ func (s *Schema) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	s.validateSchemakeywords(schCtx, errs)
 }
 
+// validateSchemakeywords triggers validation of sub schemas and keywords
 func (s *Schema) validateSchemakeywords(schCtx *SchemaContext, errs *[]KeyError) {
 	if s.keywords != nil {
 		for _, keyword := range s.orderedkeywords {
@@ -297,6 +315,8 @@ func (s *Schema) validateSchemakeywords(schCtx *SchemaContext, errs *[]KeyError)
 	}
 }
 
+// ValidateBytes performs schema validation against a slice of json
+// byte data
 func (s *Schema) ValidateBytes(data []byte) ([]KeyError, error) {
 	var doc interface{}
 	errs := []KeyError{}
@@ -307,6 +327,7 @@ func (s *Schema) ValidateBytes(data []byte) ([]KeyError, error) {
 	return errs, nil
 }
 
+// TopLevelType returns a string representing the schema's top-level type.
 func (s *Schema) TopLevelType() string {
 	if t, ok := s.keywords["type"].(*Type); ok {
 		return t.String()
@@ -314,6 +335,7 @@ func (s *Schema) TopLevelType() string {
 	return "unknown"
 }
 
+// MarshalJSON implements the json.Marshaler interface for Schema
 func (s Schema) MarshalJSON() ([]byte, error) {
 	switch s.schemaType {
 	case schemaTypeFalse:

@@ -10,18 +10,23 @@ import (
 	jptr "github.com/qri-io/jsonpointer"
 )
 
-//
-// Const
-//
-
+// Const defines the const JSON Schema keyword
 type Const json.RawMessage
 
+// NewConst allocates a new Const keyword
 func NewConst() Keyword {
 	return &Const{}
 }
 
-func (c Const) Validate(propPath string, data interface{}, errs *[]KeyError) {}
+// Register implements the Keyword interface for Const
+func (c *Const) Register(uri string, registry *SchemaRegistry) {}
 
+// Resolve implements the Keyword interface for Const
+func (c *Const) Resolve(pointer jptr.Pointer, uri string) *Schema {
+	return nil
+}
+
+// ValidateFromContext implements the Keyword interface for Const
 func (c Const) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[Const] Validating")
 	var con interface{}
@@ -35,41 +40,44 @@ func (c Const) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	}
 }
 
-func (c *Const) Register(uri string, registry *SchemaRegistry) {}
-
-func (c *Const) Resolve(pointer jptr.Pointer, uri string) *Schema {
-	return nil
-}
-
+// JSONProp implements the JSONPather for Const
 func (c Const) JSONProp(name string) interface{} {
 	return nil
 }
 
+// String implements the Stringer for Const
 func (c Const) String() string {
 	return string(c)
 }
 
+// UnmarshalJSON implements the json.Unmarshaler interface for Const
 func (c *Const) UnmarshalJSON(data []byte) error {
 	*c = data
 	return nil
 }
 
+// MarshalJSON implements the json.Marshaler interface for Const
 func (c Const) MarshalJSON() ([]byte, error) {
 	return json.Marshal(json.RawMessage(c))
 }
 
-//
-// Enum
-//
-
+// Enum defines the enum JSON Schema keyword
 type Enum []Const
 
+// NewEnum allocates a new Enum keyword
 func NewEnum() Keyword {
 	return &Enum{}
 }
 
-func (e Enum) Validate(propPath string, data interface{}, errs *[]KeyError) {}
+// Register implements the Keyword interface for Enum
+func (e *Enum) Register(uri string, registry *SchemaRegistry) {}
 
+// Resolve implements the Keyword interface for Enum
+func (e *Enum) Resolve(pointer jptr.Pointer, uri string) *Schema {
+	return nil
+}
+
+// ValidateFromContext implements the Keyword interface for Enum
 func (e Enum) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[Enum] Validating")
 	for _, v := range e {
@@ -83,12 +91,7 @@ func (e Enum) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	AddErrorCtx(errs, schCtx, fmt.Sprintf("should be one of %s", e.String()))
 }
 
-func (e *Enum) Register(uri string, registry *SchemaRegistry) {}
-
-func (e *Enum) Resolve(pointer jptr.Pointer, uri string) *Schema {
-	return nil
-}
-
+// JSONProp implements the JSONPather for Enum
 func (e Enum) JSONProp(name string) interface{} {
 	idx, err := strconv.Atoi(name)
 	if err != nil {
@@ -100,6 +103,7 @@ func (e Enum) JSONProp(name string) interface{} {
 	return e[idx]
 }
 
+// JSONChildren implements the JSONContainer interface for Enum
 func (e Enum) JSONChildren() (res map[string]JSONPather) {
 	res = map[string]JSONPather{}
 	for i, bs := range e {
@@ -108,6 +112,7 @@ func (e Enum) JSONChildren() (res map[string]JSONPather) {
 	return
 }
 
+// String implements the Stringer for Enum
 func (e Enum) String() string {
 	str := "["
 	for _, c := range e {
@@ -116,10 +121,7 @@ func (e Enum) String() string {
 	return str[:len(str)-2] + "]"
 }
 
-//
-// Type
-//
-
+// List of primitive types supported and used by JSON Schema
 var primitiveTypes = map[string]bool{
 	"null":    true,
 	"boolean": true,
@@ -130,6 +132,8 @@ var primitiveTypes = map[string]bool{
 	"integer": true,
 }
 
+// DataType attempts to parse the underlying data type
+// from the raw data interface
 func DataType(data interface{}) string {
 	if data == nil {
 		return "null"
@@ -155,6 +159,8 @@ func DataType(data interface{}) string {
 	}
 }
 
+// DataTypeWithHint attempts to parse the underlying data type
+// by leveraging the schema expectations for better results
 func DataTypeWithHint(data interface{}, hint string) string {
 	dt := DataType(data)
 	if dt == "string" {
@@ -172,24 +178,26 @@ func DataTypeWithHint(data interface{}, hint string) string {
 	return dt
 }
 
+// Type defines the type JSON Schema keyword
 type Type struct {
-	BaseKeyword
 	strVal bool
 	vals   []string
 }
 
+// NewType allocates a new Type keyword
 func NewType() Keyword {
 	return &Type{}
 }
 
-func (t *Type) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
+// Register implements the Keyword interface for Type
 func (t *Type) Register(uri string, registry *SchemaRegistry) {}
 
+// Resolve implements the Keyword interface for Type
 func (t *Type) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
+// ValidateFromContext implements the Keyword interface for Type
 func (t Type) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[Type] Validating")
 	jt := DataType(schCtx.Instance)
@@ -216,6 +224,7 @@ func (t Type) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	AddErrorCtx(errs, schCtx, fmt.Sprintf(`type should be one of: %s`, str[:len(str)-1]))
 }
 
+// String implements the Stringer for Type
 func (t Type) String() string {
 	if len(t.vals) == 0 {
 		return "unknown"
@@ -223,6 +232,7 @@ func (t Type) String() string {
 	return strings.Join(t.vals, ",")
 }
 
+// JSONProp implements the JSONPather for Type
 func (t Type) JSONProp(name string) interface{} {
 	idx, err := strconv.Atoi(name)
 	if err != nil {
@@ -234,6 +244,7 @@ func (t Type) JSONProp(name string) interface{} {
 	return t.vals[idx]
 }
 
+// UnmarshalJSON implements the json.Unmarshaler interface for Type
 func (t *Type) UnmarshalJSON(data []byte) error {
 	var single string
 	if err := json.Unmarshal(data, &single); err == nil {
@@ -255,6 +266,7 @@ func (t *Type) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// MarshalJSON implements the json.Marshaler interface for Type
 func (t Type) MarshalJSON() ([]byte, error) {
 	if t.strVal {
 		return json.Marshal(t.vals[0])

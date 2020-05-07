@@ -32,24 +32,23 @@ var (
 	disallowedIdnChars = map[string]bool{"\u0020": true, "\u002D": true, "\u00A2": true, "\u00A3": true, "\u00A4": true, "\u00A5": true, "\u034F": true, "\u0640": true, "\u07FA": true, "\u180B": true, "\u180C": true, "\u180D": true, "\u200B": true, "\u2060": true, "\u2104": true, "\u2108": true, "\u2114": true, "\u2117": true, "\u2118": true, "\u211E": true, "\u211F": true, "\u2123": true, "\u2125": true, "\u2282": true, "\u2283": true, "\u2284": true, "\u2285": true, "\u2286": true, "\u2287": true, "\u2288": true, "\u2616": true, "\u2617": true, "\u2619": true, "\u262F": true, "\u2638": true, "\u266C": true, "\u266D": true, "\u266F": true, "\u2752": true, "\u2756": true, "\u2758": true, "\u275E": true, "\u2761": true, "\u2775": true, "\u2794": true, "\u2798": true, "\u27AF": true, "\u27B1": true, "\u27BE": true, "\u3004": true, "\u3012": true, "\u3013": true, "\u3020": true, "\u302E": true, "\u302F": true, "\u3031": true, "\u3032": true, "\u3035": true, "\u303B": true, "\u3164": true, "\uFFA0": true}
 )
 
-//
-// Format
-//
-
+// Format defines the format JSON Schema keyword
 type Format string
 
+// NewFormat allocates a new Format keyword
 func NewFormat() Keyword {
 	return new(Format)
 }
 
-func (f Format) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
+// Register implements the Keyword interface for Format
 func (f *Format) Register(uri string, registry *SchemaRegistry) {}
 
+// Resolve implements the Keyword interface for Format
 func (f *Format) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
+// ValidateFromContext implements the Keyword interface for Format
 func (f Format) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[Format] Validating")
 	var err error

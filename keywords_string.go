@@ -9,24 +9,23 @@ import (
 	jptr "github.com/qri-io/jsonpointer"
 )
 
-//
-// MaxLength
-//
-
+// MaxLength defines the maxLenght JSON Schema keyword
 type MaxLength int
 
+// NewMaxLength allocates a new MaxLength keyword
 func NewMaxLength() Keyword {
 	return new(MaxLength)
 }
 
-func (m MaxLength) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
+// Register implements the Keyword interface for MaxLength
 func (m *MaxLength) Register(uri string, registry *SchemaRegistry) {}
 
+// Resolve implements the Keyword interface for MaxLength
 func (m *MaxLength) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
+// ValidateFromContext implements the Keyword interface for MaxLength
 func (m MaxLength) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[MaxLength] Validating")
 	if str, ok := schCtx.Instance.(string); ok {
@@ -36,24 +35,23 @@ func (m MaxLength) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) 
 	}
 }
 
-//
-// MinLength
-//
-
+// MinLength defines the maxLenght JSON Schema keyword
 type MinLength int
 
+// NewMinLength allocates a new MinLength keyword
 func NewMinLength() Keyword {
 	return new(MinLength)
 }
 
-func (m MinLength) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
+// Register implements the Keyword interface for MinLength
 func (m *MinLength) Register(uri string, registry *SchemaRegistry) {}
 
+// Resolve implements the Keyword interface for MinLength
 func (m *MinLength) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
+// ValidateFromContext implements the Keyword interface for MinLength
 func (m MinLength) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[MinLength] Validating")
 	if str, ok := schCtx.Instance.(string); ok {
@@ -63,24 +61,23 @@ func (m MinLength) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) 
 	}
 }
 
-//
-// Pattern
-//
-
+// Pattern defines the pattern JSON Schema keyword
 type Pattern regexp.Regexp
 
+// NewPattern allocates a new Pattern keyword
 func NewPattern() Keyword {
 	return &Pattern{}
 }
 
-func (p Pattern) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
+// Register implements the Keyword interface for Pattern
 func (p *Pattern) Register(uri string, registry *SchemaRegistry) {}
 
+// Resolve implements the Keyword interface for Pattern
 func (p *Pattern) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
+// ValidateFromContext implements the Keyword interface for Pattern
 func (p Pattern) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[Pattern] Validating")
 	re := regexp.Regexp(p)
@@ -91,6 +88,7 @@ func (p Pattern) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	}
 }
 
+// UnmarshalJSON implements the json.Unmarshaler interface for Pattern
 func (p *Pattern) UnmarshalJSON(data []byte) error {
 	var str string
 	if err := json.Unmarshal(data, &str); err != nil {
@@ -106,6 +104,7 @@ func (p *Pattern) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// MarshalJSON implements the json.Marshaler interface for Pattern
 func (p Pattern) MarshalJSON() ([]byte, error) {
 	re := regexp.Regexp(p)
 	rep := &re

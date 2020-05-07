@@ -29,95 +29,104 @@ var notSupported = map[string]bool{
 	"dependencies": true,
 }
 
-var KeywordRegistry = map[string]KeyMaker{}
-var KeywordOrder = map[string]int{}
-var KeywordInsertOrder = map[string]int{}
+var keywordRegistry = map[string]KeyMaker{}
+var keywordOrder = map[string]int{}
+var keywordInsertOrder = map[string]int{}
 
+// IsKeyword validates if a given prop string is a registered keyword
 func IsKeyword(prop string) bool {
-	_, ok := KeywordRegistry[prop]
+	_, ok := keywordRegistry[prop]
 	return ok
 }
 
+// GetKeyword returns a new instance of the keyword
 func GetKeyword(prop string) Keyword {
 	if !IsKeyword(prop) {
 		return NewVoid()
 	}
-	return KeywordRegistry[prop]()
+	return keywordRegistry[prop]()
 }
 
+// GetKeywordOrder returns the order index of
+// the given keyword or defaults to 1
 func GetKeywordOrder(prop string) int {
-	if order, ok := KeywordOrder[prop]; ok {
+	if order, ok := keywordOrder[prop]; ok {
 		return order
 	}
 	return 1
 }
 
+// GetKeywordInsertOrder returns the insert index of
+// the given keyword
 func GetKeywordInsertOrder(prop string) int {
-	if order, ok := KeywordInsertOrder[prop]; ok {
+	if order, ok := keywordInsertOrder[prop]; ok {
 		return order
 	}
 	// TODO(arqu): this is an arbitrary max
 	return 1000
 }
 
+// SetKeywordOrder assignes a given order to a keyword
 func SetKeywordOrder(prop string, order int) {
-	KeywordOrder[prop] = order
+	keywordOrder[prop] = order
 }
 
+// IsNotSupportedKeyword is a utility function to clarify when
+// a given keyword, while expected is not supported
 func IsNotSupportedKeyword(prop string) bool {
 	_, ok := notSupported[prop]
 	return ok
 }
 
+// IsRegistryLoaded checks if any keywords are present
 func IsRegistryLoaded() bool {
-	return KeywordRegistry != nil && len(KeywordRegistry) > 0
+	return keywordRegistry != nil && len(keywordRegistry) > 0
 }
 
+// RegisterKeyword registers a keyword with the registry
 func RegisterKeyword(prop string, maker KeyMaker) {
-	KeywordRegistry[prop] = maker
-	KeywordInsertOrder[prop] = len(KeywordInsertOrder)
+	keywordRegistry[prop] = maker
+	keywordInsertOrder[prop] = len(keywordInsertOrder)
 }
 
+// MaxKeywordErrStringLen sets how long a value can be before it's length is truncated
+// when printing error strings
+// a special value of -1 disables output trimming
 var MaxKeywordErrStringLen = 20
 
+// Keyword is an interface for anything that can validate.
+// JSON-Schema keywords are all examples of Keyword
 type Keyword interface {
-	Validate(propPath string, data interface{}, errs *[]KeyError)
+	// ValidateFromContext checks decoded JSON data and writes
+	// validation errors (if any) to an outparam slice of KeyErrors
 	ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError)
 
+	// Register subscribes all subschema to the parent schema
+	// which is later used for ref resolution
 	Register(uri string, registry *SchemaRegistry)
+	// Resolve resolves the pointer to the respective schema
+	// allowing validation to flow through referenced schemas
 	Resolve(pointer jptr.Pointer, uri string) *Schema
 }
 
-type BaseKeyword struct {
-	path string
-}
-
-func (b *BaseKeyword) SetPath(path string) {
-	b.path = path
-}
-
-func (b BaseKeyword) Path() string {
-	return b.path
-}
-
-func (b BaseKeyword) AddError(errs *[]KeyError, propPath string, data interface{}, msg string) {
-	*errs = append(*errs, KeyError{
-		PropertyPath: propPath,
-		RulePath:     b.Path(),
-		InvalidValue: data,
-		Message:      msg,
-	})
-}
-
+// KeyMaker is a function that generates instances of a Keyword.
+// Calls to KeyMaker will be passed directly to json.Marshal,
+// so the returned value should be a pointer
 type KeyMaker func() Keyword
 
+// KeyError represents a single error in an instance of a schema
+// The only absolutely-required property is Message.
 type KeyError struct {
-	PropertyPath string      `json:"propertyPath,omitempty"`
+	// PropertyPath is a string path that leads to the
+	// property that produced the error
+	PropertyPath string `json:"propertyPath,omitempty"`
+	// InvalidValue is the value that returned the error
 	InvalidValue interface{} `json:"invalidValue,omitempty"`
-	RulePath     string      `json:"rulePath,omitempty"`
-	Message      string      `json:"message"`
+	// Message is a human-readable description of the error
+	Message string `json:"message"`
 }
 
+// Error implements the error interface for KeyError
 func (v KeyError) Error() string {
 	if v.PropertyPath != "" && v.InvalidValue != nil {
 		return fmt.Sprintf("%s: %s %s", v.PropertyPath, InvalidValueString(v.InvalidValue), v.Message)
@@ -127,6 +136,7 @@ func (v KeyError) Error() string {
 	return v.Message
 }
 
+// InvalidValueString returns the errored value as a string
 func InvalidValueString(data interface{}) string {
 	bt, err := json.Marshal(data)
 	if err != nil {
@@ -139,10 +149,8 @@ func InvalidValueString(data interface{}) string {
 	return string(bt)
 }
 
-func (k KeyError) String() string {
-	return fmt.Sprintf("for: '%s' msg:'%s'", k.InvalidValue, k.Message)
-}
-
+// AddError creates and appends a KeyError to errs
+// deprecated but kept for backwards compatibility
 func AddError(errs *[]KeyError, propPath string, data interface{}, msg string) {
 	*errs = append(*errs, KeyError{
 		PropertyPath: propPath,
@@ -151,6 +159,7 @@ func AddError(errs *[]KeyError, propPath string, data interface{}, msg string) {
 	})
 }
 
+// AddErrorCtx creates and appends a KeyError to errs from the provided schema context
 func AddErrorCtx(errs *[]KeyError, schCtx *SchemaContext, msg string) {
 	instancePath := schCtx.InstanceLocation.String()
 	if len(instancePath) == 0 {

@@ -11,6 +11,9 @@ import (
 	"strings"
 )
 
+// SchemaDebug provides a logging interface
+// which is off by defauly but can be activated
+// for debuging purposes
 func SchemaDebug(message string) {
 	debug := false
 	debugEnvVar := os.Getenv("JSON_SCHEMA_DEBUG")
@@ -22,43 +25,47 @@ func SchemaDebug(message string) {
 	}
 }
 
-func SafeResolveUrl(ctxUrl, resUrl string) (string, error) {
-	cu, err := url.Parse(ctxUrl)
+// SafeResolveURL resolves a string url against the current context url
+func SafeResolveURL(ctxURL, resURL string) (string, error) {
+	cu, err := url.Parse(ctxURL)
 	if err != nil {
 		return "", err
 	}
-	u, err := url.Parse(resUrl)
+	u, err := url.Parse(resURL)
 	if err != nil {
 		return "", err
 	}
-	resolvedUrl := cu.ResolveReference(u)
-	if resolvedUrl.Scheme == "file" && cu.Scheme != "file" {
+	resolvedURL := cu.ResolveReference(u)
+	if resolvedURL.Scheme == "file" && cu.Scheme != "file" {
 		return "", fmt.Errorf("cannot access file resources from network context")
 	}
-	resolvedUrlString := resolvedUrl.String()
-	return resolvedUrlString, nil
+	resolvedURLString := resolvedURL.String()
+	return resolvedURLString, nil
 }
 
-func IsLocalSchemaId(id string) bool {
-	splitId := strings.Split(id, "#")
-	if len(splitId) > 1 && len(splitId[0]) > 0 && splitId[0][0] != '#' {
+// IsLocalSchemaID validates if a given id is a local id
+func IsLocalSchemaID(id string) bool {
+	splitID := strings.Split(id, "#")
+	if len(splitID) > 1 && len(splitID[0]) > 0 && splitID[0][0] != '#' {
 		return false
 	}
 	return id != "#" && !strings.HasPrefix(id, "#/") && strings.Contains(id, "#")
 }
 
+// FetchSchema downloads and loads a schema from a remote location
 func FetchSchema(ctx *context.Context, uri string, schema *Schema) error {
 	SchemaDebug(fmt.Sprintf("[FetchSchema] Fetching: %s", uri))
 	u, err := url.Parse(uri)
 	if err != nil {
 		return err
 	}
+	// TODO(arqu): support other schemas like file or ipfs
 	if u.Scheme == "http" || u.Scheme == "https" {
 		var req *http.Request
 		if ctx != nil {
 			req, _ = http.NewRequestWithContext(*ctx, "GET", u.String(), nil)
-		}  else {
-			req, _ = http.NewRequest("GET", u.String(), nil)	
+		} else {
+			req, _ = http.NewRequest("GET", u.String(), nil)
 		}
 		client := &http.Client{}
 		res, err := client.Do(req)
@@ -73,7 +80,6 @@ func FetchSchema(ctx *context.Context, uri string, schema *Schema) error {
 			schema = &Schema{}
 		}
 		return json.Unmarshal(body, schema)
-	} else {
-		return fmt.Errorf("URI scheme %s is not supported for uri: %s", u.Scheme, uri)
 	}
+	return fmt.Errorf("URI scheme %s is not supported for uri: %s", u.Scheme, uri)
 }

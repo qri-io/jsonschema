@@ -9,24 +9,22 @@ import (
 	jptr "github.com/qri-io/jsonpointer"
 )
 
-//
-// Properties
-//
-
+// Properties defines the properties JSON Schema keyword
 type Properties map[string]*Schema
 
+// NewProperties allocates a new Properties keyword
 func NewProperties() Keyword {
 	return &Properties{}
 }
 
-func (p Properties) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
+// Register implements the Keyword interface for Properties
 func (p *Properties) Register(uri string, registry *SchemaRegistry) {
 	for _, v := range *p {
 		v.Register(uri, registry)
 	}
 }
 
+// Resolve implements the Keyword interface for Properties
 func (p *Properties) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	if pointer == nil {
 		return nil
@@ -43,11 +41,12 @@ func (p *Properties) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
+// ValidateFromContext implements the Keyword interface for Properties
 func (p Properties) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[Properties] Validating")
 	if obj, ok := schCtx.Instance.(map[string]interface{}); ok {
 		subCtx := NewSchemaContextFromSourceClean(*schCtx)
-		for key, _ := range p {
+		for key := range p {
 			if obj[key] != nil {
 				if _, ok := schCtx.Local.keywords["additionalProperties"]; ok {
 					schCtx.EvaluatedPropertyNames[key] = true
@@ -76,10 +75,12 @@ func (p Properties) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError)
 	}
 }
 
+// JSONProp implements the JSONPather for Properties
 func (p Properties) JSONProp(name string) interface{} {
 	return p[name]
 }
 
+// JSONChildren implements the JSONContainer interface for Properties
 func (p Properties) JSONChildren() (res map[string]JSONPather) {
 	res = map[string]JSONPather{}
 	for key, sch := range p {
@@ -88,24 +89,23 @@ func (p Properties) JSONChildren() (res map[string]JSONPather) {
 	return
 }
 
-//
-// Required
-//
-
+// Required defines the required JSON Schema keyword
 type Required []string
 
+// NewRequired allocates a new Required keyword
 func NewRequired() Keyword {
 	return &Required{}
 }
 
-func (r Required) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
+// Register implements the Keyword interface for Required
 func (r *Required) Register(uri string, registry *SchemaRegistry) {}
 
+// Resolve implements the Keyword interface for Required
 func (r *Required) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
+// ValidateFromContext implements the Keyword interface for Required
 func (r Required) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[Required] Validating")
 	if obj, ok := schCtx.Instance.(map[string]interface{}); ok {
@@ -117,6 +117,7 @@ func (r Required) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	}
 }
 
+// JSONProp implements the JSONPather for Required
 func (r Required) JSONProp(name string) interface{} {
 	idx, err := strconv.Atoi(name)
 	if err != nil {
@@ -128,24 +129,23 @@ func (r Required) JSONProp(name string) interface{} {
 	return r[idx]
 }
 
-//
-// MaxProperties
-//
-
+// MaxProperties defines the maxProperties JSON Schema keyword
 type MaxProperties int
 
+// NewMaxProperties allocates a new MaxProperties keyword
 func NewMaxProperties() Keyword {
 	return new(MaxProperties)
 }
 
-func (m MaxProperties) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
+// Register implements the Keyword interface for MaxProperties
 func (m *MaxProperties) Register(uri string, registry *SchemaRegistry) {}
 
+// Resolve implements the Keyword interface for MaxProperties
 func (m *MaxProperties) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
+// ValidateFromContext implements the Keyword interface for MaxProperties
 func (m MaxProperties) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[MaxProperties] Validating")
 	if obj, ok := schCtx.Instance.(map[string]interface{}); ok {
@@ -155,24 +155,23 @@ func (m MaxProperties) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyErr
 	}
 }
 
-//
-// MinProperties
-//
-
+// MinProperties defines the minProperties JSON Schema keyword
 type MinProperties int
 
+// NewMinProperties allocates a new MinProperties keyword
 func NewMinProperties() Keyword {
 	return new(MinProperties)
 }
 
-func (m MinProperties) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
+// Register implements the Keyword interface for MinProperties
 func (m *MinProperties) Register(uri string, registry *SchemaRegistry) {}
 
+// Resolve implements the Keyword interface for MinProperties
 func (m *MinProperties) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
+// ValidateFromContext implements the Keyword interface for MinProperties
 func (m MinProperties) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[MinProperties] Validating")
 	if obj, ok := schCtx.Instance.(map[string]interface{}); ok {
@@ -182,12 +181,10 @@ func (m MinProperties) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyErr
 	}
 }
 
-//
-// PatternProperties
-//
-
+// PatternProperties defines the patternProperties JSON Schema keyword
 type PatternProperties []patternSchema
 
+// NewPatternProperties allocates a new PatternProperties keyword
 func NewPatternProperties() Keyword {
 	return &PatternProperties{}
 }
@@ -198,14 +195,14 @@ type patternSchema struct {
 	schema *Schema
 }
 
-func (p PatternProperties) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
+// Register implements the Keyword interface for PatternProperties
 func (p *PatternProperties) Register(uri string, registry *SchemaRegistry) {
 	for _, v := range *p {
 		v.schema.Register(uri, registry)
 	}
 }
 
+// Resolve implements the Keyword interface for PatternProperties
 func (p *PatternProperties) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	if pointer == nil {
 		return nil
@@ -227,6 +224,7 @@ func (p *PatternProperties) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return patProp.schema.Resolve(pointer.Tail(), uri)
 }
 
+// ValidateFromContext implements the Keyword interface for PatternProperties
 func (p PatternProperties) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[PatternProperties] Validating")
 	if obj, ok := schCtx.Instance.(map[string]interface{}); ok {
@@ -266,6 +264,7 @@ func (p PatternProperties) ValidateFromContext(schCtx *SchemaContext, errs *[]Ke
 	}
 }
 
+// JSONProp implements the JSONPather for PatternProperties
 func (p PatternProperties) JSONProp(name string) interface{} {
 	for _, pp := range p {
 		if pp.key == name {
@@ -275,6 +274,7 @@ func (p PatternProperties) JSONProp(name string) interface{} {
 	return nil
 }
 
+// JSONChildren implements the JSONContainer interface for PatternProperties
 func (p PatternProperties) JSONChildren() (res map[string]JSONPather) {
 	res = map[string]JSONPather{}
 	for i, pp := range p {
@@ -283,6 +283,7 @@ func (p PatternProperties) JSONChildren() (res map[string]JSONPather) {
 	return
 }
 
+// UnmarshalJSON implements the json.Unmarshaler interface for PatternProperties
 func (p *PatternProperties) UnmarshalJSON(data []byte) error {
 	var props map[string]*Schema
 	if err := json.Unmarshal(data, &props); err != nil {
@@ -308,6 +309,7 @@ func (p *PatternProperties) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// MarshalJSON implements the json.Marshaler interface for PatternProperties
 func (p PatternProperties) MarshalJSON() ([]byte, error) {
 	obj := map[string]interface{}{}
 	for _, prop := range p {
@@ -316,26 +318,25 @@ func (p PatternProperties) MarshalJSON() ([]byte, error) {
 	return json.Marshal(obj)
 }
 
-//
-// AdditionalProperties
-//
-
+// AdditionalProperties defines the additionalProperties JSON Schema keyword
 type AdditionalProperties Schema
 
+// NewAdditionalProperties allocates a new AdditionalProperties keyword
 func NewAdditionalProperties() Keyword {
 	return &AdditionalProperties{}
 }
 
-func (ap AdditionalProperties) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
+// Register implements the Keyword interface for AdditionalProperties
 func (ap *AdditionalProperties) Register(uri string, registry *SchemaRegistry) {
 	(*Schema)(ap).Register(uri, registry)
 }
 
+// Resolve implements the Keyword interface for AdditionalProperties
 func (ap *AdditionalProperties) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return (*Schema)(ap).Resolve(pointer, uri)
 }
 
+// ValidateFromContext implements the Keyword interface for AdditionalProperties
 func (ap *AdditionalProperties) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[AdditionalProperties] Validating")
 	if obj, ok := schCtx.Instance.(map[string]interface{}); ok {
@@ -368,6 +369,7 @@ func (ap *AdditionalProperties) ValidateFromContext(schCtx *SchemaContext, errs 
 	}
 }
 
+// UnmarshalJSON implements the json.Unmarshaler interface for AdditionalProperties
 func (ap *AdditionalProperties) UnmarshalJSON(data []byte) error {
 	sch := &Schema{}
 	if err := json.Unmarshal(data, sch); err != nil {
@@ -377,26 +379,25 @@ func (ap *AdditionalProperties) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-//
-// PropertyNames
-//
-
+// PropertyNames defines the propertyNames JSON Schema keyword
 type PropertyNames Schema
 
+// NewPropertyNames allocates a new PropertyNames keyword
 func NewPropertyNames() Keyword {
 	return &PropertyNames{}
 }
 
-func (p PropertyNames) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
+// Register implements the Keyword interface for PropertyNames
 func (p *PropertyNames) Register(uri string, registry *SchemaRegistry) {
 	(*Schema)(p).Register(uri, registry)
 }
 
+// Resolve implements the Keyword interface for PropertyNames
 func (p *PropertyNames) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return (*Schema)(p).Resolve(pointer, uri)
 }
 
+// ValidateFromContext implements the Keyword interface for PropertyNames
 func (p *PropertyNames) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[PropertyNames] Validating")
 	if obj, ok := schCtx.Instance.(map[string]interface{}); ok {
@@ -419,14 +420,17 @@ func (p *PropertyNames) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyEr
 	}
 }
 
+// JSONProp implements the JSONPather for PropertyNames
 func (p PropertyNames) JSONProp(name string) interface{} {
 	return Schema(p).JSONProp(name)
 }
 
+// JSONChildren implements the JSONContainer interface for PropertyNames
 func (p PropertyNames) JSONChildren() (res map[string]JSONPather) {
 	return Schema(p).JSONChildren()
 }
 
+// UnmarshalJSON implements the json.Unmarshaler interface for PropertyNames
 func (p *PropertyNames) UnmarshalJSON(data []byte) error {
 	var sch Schema
 	if err := json.Unmarshal(data, &sch); err != nil {
@@ -436,28 +440,27 @@ func (p *PropertyNames) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// MarshalJSON implements the json.Marshaler interface for PropertyNames
 func (p PropertyNames) MarshalJSON() ([]byte, error) {
 	return json.Marshal(Schema(p))
 }
 
-//
-// DependentSchemas
-//
-
+// DependentSchemas defines the dependentSchemas JSON Schema keyword
 type DependentSchemas map[string]SchemaDependency
 
+// NewDependentSchemas allocates a new DependentSchemas keyword
 func NewDependentSchemas() Keyword {
 	return &DependentSchemas{}
 }
 
-func (d DependentSchemas) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
+// Register implements the Keyword interface for DependentSchemas
 func (d *DependentSchemas) Register(uri string, registry *SchemaRegistry) {
 	for _, v := range *d {
 		v.schema.Register(uri, registry)
 	}
 }
 
+// Resolve implements the Keyword interface for DependentSchemas
 func (d *DependentSchemas) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	if pointer == nil {
 		return nil
@@ -474,6 +477,7 @@ func (d *DependentSchemas) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
+// ValidateFromContext implements the Keyword interface for DependentSchemas
 func (d *DependentSchemas) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[DependentSchemas] Validating")
 	for _, v := range *d {
@@ -493,6 +497,7 @@ func (d *DependentSchemas) ValidateFromContext(schCtx *SchemaContext, errs *[]Ke
 
 type _dependentSchemas map[string]Schema
 
+// UnmarshalJSON implements the json.Unmarshaler interface for DependentSchemas
 func (d *DependentSchemas) UnmarshalJSON(data []byte) error {
 	_d := _dependentSchemas{}
 	if err := json.Unmarshal(data, &_d); err != nil {
@@ -510,10 +515,12 @@ func (d *DependentSchemas) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// JSONProp implements the JSONPather for DependentSchemas
 func (d DependentSchemas) JSONProp(name string) interface{} {
 	return d[name]
 }
 
+// JSONChildren implements the JSONContainer interface for DependentSchemas
 func (d DependentSchemas) JSONChildren() (r map[string]JSONPather) {
 	r = map[string]JSONPather{}
 	for key, val := range d {
@@ -522,33 +529,32 @@ func (d DependentSchemas) JSONChildren() (r map[string]JSONPather) {
 	return
 }
 
-//
-// SchemaDependency
-//
-
+// SchemaDependency is the internal representation of a dependent schema
 type SchemaDependency struct {
 	schema *Schema
 	prop   string
 }
 
-func (d SchemaDependency) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
+// Register implements the Keyword interface for SchemaDependency
 func (d *SchemaDependency) Register(uri string, registry *SchemaRegistry) {
 	d.schema.Register(uri, registry)
 }
 
+// Resolve implements the Keyword interface for SchemaDependency
 func (d *SchemaDependency) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return d.schema.Resolve(pointer, uri)
 }
 
+// ValidateFromContext implements the Keyword interface for SchemaDependency
 func (d *SchemaDependency) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[SchemaDependency] Validating")
-	if data, ok := schCtx.Instance.(map[string]interface{}); !ok {
+	data := map[string]interface{}{}
+	ok := false
+	if data, ok = schCtx.Instance.(map[string]interface{}); !ok {
 		return
-	} else {
-		if _, okProp := data[d.prop]; !okProp {
-			return
-		}
+	}
+	if _, okProp := data[d.prop]; !okProp {
+		return
 	}
 	subCtx := NewSchemaContextFromSource(*schCtx)
 	if schCtx.BaseRelativeLocation != nil {
@@ -562,32 +568,33 @@ func (d *SchemaDependency) ValidateFromContext(schCtx *SchemaContext, errs *[]Ke
 	d.schema.ValidateFromContext(subCtx, errs)
 }
 
+// MarshalJSON implements the json.Marshaler interface for SchemaDependency
 func (d SchemaDependency) MarshalJSON() ([]byte, error) {
 	return json.Marshal(d.schema)
 }
 
+// JSONProp implements the JSONPather for SchemaDependency
 func (d SchemaDependency) JSONProp(name string) interface{} {
 	return d.schema.JSONProp(name)
 }
 
-//
-// DependentRequired
-//
-
+// DependentRequired defines the dependentRequired JSON Schema keyword
 type DependentRequired map[string]PropertyDependency
 
+// NewDependentRequired allocates a new DependentRequired keyword
 func NewDependentRequired() Keyword {
 	return &DependentRequired{}
 }
 
-func (d DependentRequired) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
+// Register implements the Keyword interface for DependentRequired
 func (d *DependentRequired) Register(uri string, registry *SchemaRegistry) {}
 
+// Resolve implements the Keyword interface for DependentRequired
 func (d *DependentRequired) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
+// ValidateFromContext implements the Keyword interface for DependentRequired
 func (d *DependentRequired) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[DependentRequired] Validating")
 	for _, prop := range *d {
@@ -607,6 +614,7 @@ func (d *DependentRequired) ValidateFromContext(schCtx *SchemaContext, errs *[]K
 
 type _dependentRequired map[string][]string
 
+// UnmarshalJSON implements the json.Unmarshaler interface for DependentRequired
 func (d *DependentRequired) UnmarshalJSON(data []byte) error {
 	_d := _dependentRequired{}
 	if err := json.Unmarshal(data, &_d); err != nil {
@@ -623,6 +631,7 @@ func (d *DependentRequired) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// MarshalJSON implements the json.Marshaler interface for DependentRequired
 func (d DependentRequired) MarshalJSON() ([]byte, error) {
 	obj := map[string]interface{}{}
 	for key, prop := range d {
@@ -631,10 +640,12 @@ func (d DependentRequired) MarshalJSON() ([]byte, error) {
 	return json.Marshal(obj)
 }
 
+// JSONProp implements the JSONPather for DependentRequired
 func (d DependentRequired) JSONProp(name string) interface{} {
 	return d[name]
 }
 
+// JSONChildren implements the JSONContainer interface for DependentRequired
 func (d DependentRequired) JSONChildren() (r map[string]JSONPather) {
 	r = map[string]JSONPather{}
 	for key, val := range d {
@@ -643,23 +654,21 @@ func (d DependentRequired) JSONChildren() (r map[string]JSONPather) {
 	return
 }
 
-//
-// PropertyDependency
-//
-
+// PropertyDependency is the internal representation of a dependent property
 type PropertyDependency struct {
 	dependencies []string
 	prop         string
 }
 
-func (p PropertyDependency) Validate(propPath string, data interface{}, errs *[]KeyError) {}
-
+// Register implements the Keyword interface for PropertyDependency
 func (p *PropertyDependency) Register(uri string, registry *SchemaRegistry) {}
 
+// Resolve implements the Keyword interface for PropertyDependency
 func (p *PropertyDependency) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
+// ValidateFromContext implements the Keyword interface for PropertyDependency
 func (p *PropertyDependency) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[PropertyDependency] Validating")
 	if obj, ok := schCtx.Instance.(map[string]interface{}); ok {
@@ -674,6 +683,7 @@ func (p *PropertyDependency) ValidateFromContext(schCtx *SchemaContext, errs *[]
 	}
 }
 
+// JSONProp implements the JSONPather for PropertyDependency
 func (p PropertyDependency) JSONProp(name string) interface{} {
 	idx, err := strconv.Atoi(name)
 	if err != nil {
