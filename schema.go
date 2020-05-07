@@ -56,6 +56,10 @@ func (s *Schema) Register(uri string, registry *SchemaRegistry) {
 	s.hasRegistered = true
 	registry.RegisterLocal(s)
 
+	if !IsRegistryLoaded() {
+		LoadDraft2019_09()
+	}
+
 	address := s.id
 	if uri != "" && address != "" {
 		address, _ = SafeResolveUrl(uri, address)

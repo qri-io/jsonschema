@@ -91,7 +91,6 @@ func ExampleBasic() {
 }
 
 func TestTopLevelType(t *testing.T) {
-	LoadDraft2019_09()
 	schemaObject := []byte(`{
     "title": "Car",
     "type": "object",

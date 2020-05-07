@@ -10,8 +10,9 @@ import (
 
 func main() {
 	LoadDraft2019_09()
-	RunDraft2019_09()
+	// RunDraft2019_09()
 	// TestVB()
+	TestEM()
 }
 
 type MainTestSet struct {
@@ -25,6 +26,39 @@ type MainTestCase struct {
 	Data        interface{} `json:"data"`
 	Valid       bool        `json:"valid"`
 }
+
+func TestEM() {
+	cases := []struct {
+		schema, doc, message string
+	}{
+		{`{ "const" : "a value" }`, `"a different value"`, `must equal "a value"`},
+	}
+
+	for i, c := range cases {
+		rs := &Schema{}
+		if err := rs.UnmarshalJSON([]byte(c.schema)); err != nil {
+			fmt.Printf("case %d schema is invalid: %s\n", i, err.Error())
+			continue
+		}
+
+		errs, err := rs.ValidateBytes([]byte(c.doc))
+		if err != nil {
+			fmt.Printf("case %d error validating: %s\n", i, err)
+			continue
+		}
+
+		if len(errs) != 1 {
+			fmt.Printf("case %d didn't return exactly 1 validation error. got: %d\n", i, len(errs))
+			continue
+		}
+
+		if errs[0].Message != c.message {
+			fmt.Printf("case %d error mismatch. expected '%s', got: '%s'\n", i, c.message, errs[0].Message)
+		}
+		fmt.Printf("TestEM done\n")
+	}
+}
+
 
 func mainRunJSONTests(testFilepaths []string) {
 	tests := 0

@@ -69,6 +69,10 @@ func IsNotSupportedKeyword(prop string) bool {
 	return ok
 }
 
+func IsRegistryLoaded() bool {
+	return KeywordRegistry != nil && len(KeywordRegistry) > 0
+}
+
 func RegisterKeyword(prop string, maker KeyMaker) {
 	KeywordRegistry[prop] = maker
 	KeywordInsertOrder[prop] = len(KeywordInsertOrder)
