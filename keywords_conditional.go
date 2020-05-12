@@ -35,7 +35,7 @@ func (f *If) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 		return
 	}
 
-	subCtx := NewSchemaContextFromSource(*schCtx)
+	subCtx := NewSchemaContextFromSourceClean(*schCtx)
 	if subCtx.BaseRelativeLocation != nil {
 		if newPtr, err := schCtx.BaseRelativeLocation.Descendant("if"); err == nil {
 			subCtx.BaseRelativeLocation = &newPtr

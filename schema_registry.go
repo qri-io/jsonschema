@@ -28,6 +28,11 @@ func GetSchemaRegistry() *SchemaRegistry {
 	return sr
 }
 
+// Reset resets the main SchemaRegistry
+func Reset() {
+	sr = nil
+}
+
 // Get fetches a schema from the top level context registry or fetches it from a remote
 func (sr *SchemaRegistry) Get(uri string, ctx *context.Context) *Schema {
 	uri = strings.TrimRight(uri, "#")

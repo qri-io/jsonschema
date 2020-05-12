@@ -45,13 +45,11 @@ func (p *Properties) Resolve(pointer jptr.Pointer, uri string) *Schema {
 func (p Properties) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[Properties] Validating")
 	if obj, ok := schCtx.Instance.(map[string]interface{}); ok {
-		subCtx := NewSchemaContextFromSourceClean(*schCtx)
+		subCtx := NewSchemaContextFromSource(*schCtx)
 		for key := range p {
 			if obj[key] != nil {
-				if _, ok := schCtx.Local.keywords["additionalProperties"]; ok {
-					schCtx.EvaluatedPropertyNames[key] = true
-					schCtx.LocalEvaluatedPropertyNames[key] = true
-				}
+				(*schCtx.EvaluatedPropertyNames)[key] = true
+				(*schCtx.LocalEvaluatedPropertyNames)[key] = true
 				subCtx.ClearContext()
 				if schCtx.BaseRelativeLocation != nil {
 					newPtr := schCtx.BaseRelativeLocation.RawDescendant("properties", key)
@@ -66,9 +64,9 @@ func (p Properties) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError)
 				errCountBefore := len(*errs)
 				p[key].ValidateFromContext(subCtx, errs)
 				errCountAfter := len(*errs)
-				if _, ok := schCtx.Local.keywords["additionalProperties"]; ok && errCountBefore == errCountAfter {
-					JoinSets(&schCtx.EvaluatedPropertyNames, subCtx.EvaluatedPropertyNames)
-					JoinSets(&schCtx.LocalEvaluatedPropertyNames, subCtx.LocalEvaluatedPropertyNames)
+				if errCountBefore == errCountAfter {
+					JoinSets(schCtx.EvaluatedPropertyNames, *subCtx.EvaluatedPropertyNames)
+					JoinSets(schCtx.LocalEvaluatedPropertyNames, *subCtx.LocalEvaluatedPropertyNames)
 				}
 			}
 		}
@@ -231,8 +229,8 @@ func (p PatternProperties) ValidateFromContext(schCtx *SchemaContext, errs *[]Ke
 		for key, val := range obj {
 			for _, ptn := range p {
 				if ptn.re.Match([]byte(key)) {
-					schCtx.EvaluatedPropertyNames[key] = true
-					schCtx.LocalEvaluatedPropertyNames[key] = true
+					(*schCtx.EvaluatedPropertyNames)[key] = true
+					(*schCtx.LocalEvaluatedPropertyNames)[key] = true
 					subCtx := NewSchemaContextFromSource(*schCtx)
 					if schCtx.BaseRelativeLocation != nil {
 						newPtr := schCtx.BaseRelativeLocation.RawDescendant("patternProperties", key)
@@ -249,8 +247,8 @@ func (p PatternProperties) ValidateFromContext(schCtx *SchemaContext, errs *[]Ke
 					errCountAfter := len(*errs)
 
 					if errCountBefore == errCountAfter {
-						JoinSets(&schCtx.EvaluatedPropertyNames, subCtx.EvaluatedPropertyNames)
-						JoinSets(&schCtx.LocalEvaluatedPropertyNames, subCtx.LocalEvaluatedPropertyNames)
+						JoinSets(schCtx.EvaluatedPropertyNames, *subCtx.EvaluatedPropertyNames)
+						JoinSets(schCtx.LocalEvaluatedPropertyNames, *subCtx.LocalEvaluatedPropertyNames)
 						if schCtx.LastEvaluatedIndex < subCtx.LastEvaluatedIndex {
 							schCtx.LastEvaluatedIndex = subCtx.LastEvaluatedIndex
 						}
@@ -348,23 +346,23 @@ func (ap *AdditionalProperties) ValidateFromContext(schCtx *SchemaContext, errs 
 		newPtr := schCtx.RelativeLocation.RawDescendant("additionalProperties")
 		subCtx.RelativeLocation = &newPtr
 		for key := range obj {
-			if _, ok := schCtx.LocalEvaluatedPropertyNames[key]; ok {
+			if _, ok := (*schCtx.LocalEvaluatedPropertyNames)[key]; ok {
 				continue
 			}
 			if ap.schemaType == schemaTypeFalse {
 				AddErrorCtx(errs, schCtx, "additional properties are not allowed")
 				return
 			}
-			schCtx.EvaluatedPropertyNames[key] = true
-			schCtx.LocalEvaluatedPropertyNames[key] = true
+			(*schCtx.EvaluatedPropertyNames)[key] = true
+			(*schCtx.LocalEvaluatedPropertyNames)[key] = true
 			subCtx.ClearContext()
 			newPtr = schCtx.InstanceLocation.RawDescendant(key)
 			subCtx.InstanceLocation = &newPtr
 
 			subCtx.Instance = obj[key]
 			(*Schema)(ap).ValidateFromContext(subCtx, errs)
-			JoinSets(&schCtx.EvaluatedPropertyNames, subCtx.EvaluatedPropertyNames)
-			JoinSets(&schCtx.LocalEvaluatedPropertyNames, subCtx.LocalEvaluatedPropertyNames)
+			JoinSets(schCtx.EvaluatedPropertyNames, *subCtx.EvaluatedPropertyNames)
+			JoinSets(schCtx.LocalEvaluatedPropertyNames, *subCtx.LocalEvaluatedPropertyNames)
 		}
 	}
 }
@@ -693,4 +691,60 @@ func (p PropertyDependency) JSONProp(name string) interface{} {
 		return nil
 	}
 	return p.dependencies[idx]
+}
+
+// UnevaluatedProperties defines the unevaluatedProperties JSON Schema keyword
+type UnevaluatedProperties Schema
+
+// NewUnevaluatedProperties allocates a new UnevaluatedProperties keyword
+func NewUnevaluatedProperties() Keyword {
+	return &UnevaluatedProperties{}
+}
+
+// Register implements the Keyword interface for UnevaluatedProperties
+func (up *UnevaluatedProperties) Register(uri string, registry *SchemaRegistry) {
+	(*Schema)(up).Register(uri, registry)
+}
+
+// Resolve implements the Keyword interface for UnevaluatedProperties
+func (up *UnevaluatedProperties) Resolve(pointer jptr.Pointer, uri string) *Schema {
+	return (*Schema)(up).Resolve(pointer, uri)
+}
+
+// ValidateFromContext implements the Keyword interface for UnevaluatedProperties
+func (up *UnevaluatedProperties) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	SchemaDebug("[UnevaluatedProperties] Validating")
+	if obj, ok := schCtx.Instance.(map[string]interface{}); ok {
+		subCtx := NewSchemaContextFromSourceClean(*schCtx)
+		if schCtx.BaseRelativeLocation != nil {
+			newPtr := schCtx.BaseRelativeLocation.RawDescendant("unevaluatedProperties")
+			subCtx.BaseRelativeLocation = &newPtr
+		}
+		newPtr := schCtx.RelativeLocation.RawDescendant("unevaluatedProperties")
+		subCtx.RelativeLocation = &newPtr
+		for key := range obj {
+			if _, ok := (*schCtx.EvaluatedPropertyNames)[key]; ok {
+				continue
+			}
+			if up.schemaType == schemaTypeFalse {
+				AddErrorCtx(errs, schCtx, "unevaluated properties are not allowed")
+				return
+			}
+			newPtr = schCtx.InstanceLocation.RawDescendant(key)
+			subCtx.InstanceLocation = &newPtr
+
+			subCtx.Instance = obj[key]
+			(*Schema)(up).ValidateFromContext(subCtx, errs)
+		}
+	}
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface for UnevaluatedProperties
+func (up *UnevaluatedProperties) UnmarshalJSON(data []byte) error {
+	sch := &Schema{}
+	if err := json.Unmarshal(data, sch); err != nil {
+		return err
+	}
+	*up = (UnevaluatedProperties)(*sch)
+	return nil
 }

@@ -56,6 +56,7 @@ func (s *Schema) HasKeyword(key string) bool {
 
 // Register implements the Keyword interface for Schema
 func (s *Schema) Register(uri string, registry *SchemaRegistry) {
+	SchemaDebug("[Schema] Register")
 	if s.hasRegistered {
 		return
 	}
@@ -71,7 +72,6 @@ func (s *Schema) Register(uri string, registry *SchemaRegistry) {
 	if uri != "" && address != "" {
 		address, _ = SafeResolveURL(uri, address)
 	}
-
 	if s.docPath == "" && address != "" && address[0] != '#' {
 		docURI := ""
 		if u, err := url.Parse(address); err != nil {
@@ -179,6 +179,10 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
+	if !IsRegistryLoaded() {
+		LoadDraft2019_09()
+	}
+
 	_s := _schema{}
 	if err := json.Unmarshal(data, &_s); err != nil {
 		return err
@@ -216,6 +220,7 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 		sch.keywords[prop] = keyword
 	}
 
+	// ensures proper and stable keyword validation order
 	keyOrders := make([]_keyOrder, len(sch.keywords))
 	i := 0
 	for k := range sch.keywords {
@@ -260,6 +265,7 @@ func (s *Schema) Validate(propPath string, data interface{}, errs *[]KeyError) {
 // ValidateFromContext uses the schema to check an instance, collecting validation
 // errors in a slice
 func (s *Schema) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	SchemaDebug("[Schema] Validating")
 	if s == nil {
 		AddErrorCtx(errs, schCtx, fmt.Sprintf("schema is nil"))
 		return
@@ -279,7 +285,7 @@ func (s *Schema) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 
 	refKeyword := s.keywords["$ref"]
 
-	if refKeyword != nil {
+	if refKeyword == nil {
 		if schCtx.BaseURI == "" {
 			schCtx.BaseURI = s.docPath
 		} else if s.docPath != "" {

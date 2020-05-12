@@ -56,7 +56,7 @@ func (it Items) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[Items] Validating")
 	if arr, ok := schCtx.Instance.([]interface{}); ok {
 		if it.single {
-			subCtx := NewSchemaContextFromSourceClean(*schCtx)
+			subCtx := NewSchemaContextFromSource(*schCtx)
 			if schCtx.BaseRelativeLocation != nil {
 				newPtr := schCtx.BaseRelativeLocation.RawDescendant("items")
 				subCtx.BaseRelativeLocation = &newPtr
@@ -64,42 +64,21 @@ func (it Items) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 			newPtr := schCtx.RelativeLocation.RawDescendant("items")
 			subCtx.RelativeLocation = &newPtr
 			for i, elem := range arr {
-				if _, ok := schCtx.Local.keywords["additionalItems"]; ok {
-					schCtx.EvaluatedPropertyNames["0"] = true
-					schCtx.LocalEvaluatedPropertyNames["0"] = true
-					if schCtx.LastEvaluatedIndex < i {
-						schCtx.LastEvaluatedIndex = i
-					}
-					if schCtx.LocalLastEvaluatedIndex < i {
-						schCtx.LocalLastEvaluatedIndex = i
-					}
-				}
 				subCtx.ClearContext()
 				newPtr = schCtx.InstanceLocation.RawDescendant(strconv.Itoa(i))
 				subCtx.InstanceLocation = &newPtr
 				subCtx.Instance = elem
 				it.Schemas[0].ValidateFromContext(subCtx, errs)
-				if _, ok := schCtx.Local.keywords["additionalItems"]; ok {
-					// TODO(arqu): this might clash with additionalProperties
-					// should separate items out
-					JoinSets(&schCtx.EvaluatedPropertyNames, subCtx.EvaluatedPropertyNames)
-					JoinSets(&schCtx.LocalEvaluatedPropertyNames, subCtx.LocalEvaluatedPropertyNames)
-				}
+				subCtx.LastEvaluatedIndex = i
+				subCtx.LocalLastEvaluatedIndex = i
+				// TODO(arqu): this might clash with additional/unevaluated
+				// Properties/Items, should separate out
+				schCtx.UpdateEvaluatedPropsAndItems(subCtx)
 			}
 		} else {
-			subCtx := NewSchemaContextFromSourceClean(*schCtx)
+			subCtx := NewSchemaContextFromSource(*schCtx)
 			for i, vs := range it.Schemas {
 				if i < len(arr) {
-					if _, ok := schCtx.Local.keywords["additionalItems"]; ok {
-						schCtx.EvaluatedPropertyNames[strconv.Itoa(i)] = true
-						schCtx.LocalEvaluatedPropertyNames[strconv.Itoa(i)] = true
-						if schCtx.LastEvaluatedIndex < i {
-							schCtx.LastEvaluatedIndex = i
-						}
-						if schCtx.LocalLastEvaluatedIndex < i {
-							schCtx.LocalLastEvaluatedIndex = i
-						}
-					}
 					subCtx.ClearContext()
 					if schCtx.BaseRelativeLocation != nil {
 						newPtr := schCtx.BaseRelativeLocation.RawDescendant("items", strconv.Itoa(i))
@@ -112,10 +91,11 @@ func (it Items) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 
 					subCtx.Instance = arr[i]
 					vs.ValidateFromContext(subCtx, errs)
-					if _, ok := schCtx.Local.keywords["additionalItems"]; ok {
-						JoinSets(&schCtx.EvaluatedPropertyNames, subCtx.EvaluatedPropertyNames)
-						JoinSets(&schCtx.LocalEvaluatedPropertyNames, subCtx.LocalEvaluatedPropertyNames)
-					}
+					subCtx.LastEvaluatedIndex = i
+					subCtx.LocalLastEvaluatedIndex = i
+					schCtx.UpdateEvaluatedPropsAndItems(subCtx)
+					// JoinSets(schCtx.EvaluatedPropertyNames, *subCtx.EvaluatedPropertyNames)
+					// JoinSets(schCtx.LocalEvaluatedPropertyNames, *subCtx.LocalEvaluatedPropertyNames)
 				}
 			}
 		}
@@ -410,6 +390,8 @@ func (ai *AdditionalItems) ValidateFromContext(schCtx *SchemaContext, errs *[]Ke
 					return
 				}
 				subCtx := NewSchemaContextFromSourceClean(*schCtx)
+				subCtx.LastEvaluatedIndex = i
+				subCtx.LocalLastEvaluatedIndex = i
 				if schCtx.BaseRelativeLocation != nil {
 					newPtr := schCtx.BaseRelativeLocation.RawDescendant("additionalItems")
 					subCtx.BaseRelativeLocation = &newPtr
@@ -421,8 +403,7 @@ func (ai *AdditionalItems) ValidateFromContext(schCtx *SchemaContext, errs *[]Ke
 
 				subCtx.Instance = arr[i]
 				(*Schema)(ai).ValidateFromContext(subCtx, errs)
-				JoinSets(&schCtx.EvaluatedPropertyNames, subCtx.EvaluatedPropertyNames)
-				JoinSets(&schCtx.LocalEvaluatedPropertyNames, subCtx.LocalEvaluatedPropertyNames)
+				schCtx.UpdateEvaluatedPropsAndItems(subCtx)
 			}
 		}
 	}
@@ -435,5 +416,60 @@ func (ai *AdditionalItems) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	*ai = (AdditionalItems)(*sch)
+	return nil
+}
+
+// UnevaluatedItems defines the unevaluatedItems JSON Schema keyword
+type UnevaluatedItems Schema
+
+// NewUnevaluatedItems allocates a new UnevaluatedItems keyword
+func NewUnevaluatedItems() Keyword {
+	return &UnevaluatedItems{}
+}
+
+// Register implements the Keyword interface for UnevaluatedItems
+func (ui *UnevaluatedItems) Register(uri string, registry *SchemaRegistry) {
+	(*Schema)(ui).Register(uri, registry)
+}
+
+// Resolve implements the Keyword interface for UnevaluatedItems
+func (ui *UnevaluatedItems) Resolve(pointer jptr.Pointer, uri string) *Schema {
+	return (*Schema)(ui).Resolve(pointer, uri)
+}
+
+// ValidateFromContext implements the Keyword interface for UnevaluatedItems
+func (ui *UnevaluatedItems) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+	SchemaDebug("[UnevaluatedItems] Validating")
+	if arr, ok := schCtx.Instance.([]interface{}); ok {
+		if schCtx.LastEvaluatedIndex > -1 && schCtx.LastEvaluatedIndex < len(arr) {
+			for i := schCtx.LastEvaluatedIndex + 1; i < len(arr); i++ {
+				if ui.schemaType == schemaTypeFalse {
+					AddErrorCtx(errs, schCtx, "unevaluated items are not allowed")
+					return
+				}
+				subCtx := NewSchemaContextFromSourceClean(*schCtx)
+				if schCtx.BaseRelativeLocation != nil {
+					newPtr := schCtx.BaseRelativeLocation.RawDescendant("additionalItems")
+					subCtx.BaseRelativeLocation = &newPtr
+				}
+				newPtr := schCtx.RelativeLocation.RawDescendant("additionalItems")
+				subCtx.RelativeLocation = &newPtr
+				newPtr = schCtx.InstanceLocation.RawDescendant(strconv.Itoa(i))
+				subCtx.InstanceLocation = &newPtr
+
+				subCtx.Instance = arr[i]
+				(*Schema)(ui).ValidateFromContext(subCtx, errs)
+			}
+		}
+	}
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface for UnevaluatedItems
+func (ui *UnevaluatedItems) UnmarshalJSON(data []byte) error {
+	sch := &Schema{}
+	if err := json.Unmarshal(data, sch); err != nil {
+		return err
+	}
+	*ui = (UnevaluatedItems)(*sch)
 	return nil
 }

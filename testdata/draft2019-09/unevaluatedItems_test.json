@@ -1,0 +1,25 @@
+[
+    {
+        "description": "complex unevaluated schema",
+        "schema": {
+            "$schema": "https://json-schema.org/draft/2019-09/schema",
+            "unevaluatedItems": {
+                "allOf": [{"minLength": 3}, {"type": "string"}]
+            },
+            "if": {"items": [{"type": "integer"}, {"type":  "array"}]},
+            "then": {"items": [{"type": "integer"}, {"type":  "array"}]}
+        },
+        "tests": [           
+            {
+                "description": "if passes with third invalid unevaluated item",
+                "data": [1, [2, 3], "zz"],
+                "valid": false
+            },
+            {
+                "description": "if and unevaluated items fail",
+                "data": ["a", "b", "c"],
+                "valid": false
+            }
+        ]
+    }
+]

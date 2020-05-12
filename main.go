@@ -10,9 +10,9 @@ import (
 
 func main() {
 	LoadDraft2019_09()
-	// runDraft2019_09()
+	runDraft2019_09()
 	// testVB()
-	testEM()
+	// testEM()
 }
 
 type mainTestSet struct {
@@ -81,18 +81,23 @@ func mainRunJSONTests(testFilepaths []string) {
 		localPassed := 0
 		for _, ts := range testSets {
 			if debug {
-				fmt.Println("\tTest set: " + ts.Description)
+				fmt.Println("\n\n\tTest set: " + ts.Description)
 			}
 			sc := ts.Schema
-			for i, c := range ts.Tests {
-				if debug {
+			if debug {
 					buff, _ := json.MarshalIndent(sc, "", " ")
 					fmt.Println(string(buff))
-					fmt.Println("\tCase: " + strconv.Itoa(i))
+			}
+			for i, c := range ts.Tests {
+				if debug {
+					// buff, _ := json.MarshalIndent(sc, "", " ")
+					// fmt.Println(string(buff))
+					fmt.Println("\tCase: " + strconv.Itoa(i) + "\n\n")
 				}
 				tests++
 				localTests++
 				got := []KeyError{}
+				Reset()
 				sc.Validate("/", c.Data, &got)
 				valid := len(got) == 0
 				if valid != c.Valid {
@@ -168,7 +173,7 @@ func runDraft2019_09() {
 
 	mainRunJSONTests([]string{
 		// "testdata/draft2019-09/additionalItems.json",
-		// "testdata/draft2019-09/additionalProperties.json",
+		// // "testdata/draft2019-09/additionalProperties.json",
 		// "testdata/draft2019-09/allOf.json",
 		// "testdata/draft2019-09/anchor.json",
 		// "testdata/draft2019-09/anyOf.json",
@@ -200,8 +205,11 @@ func runDraft2019_09() {
 		// "testdata/draft2019-09/patternProperties.json",
 		// "testdata/draft2019-09/properties.json",
 		// "testdata/draft2019-09/propertyNames.json",
+		// "testdata/draft2019-09/ref.json",
 		// "testdata/draft2019-09/required.json",
 		// "testdata/draft2019-09/type.json",
+		// // "testdata/draft2019-09/unevaluatedProperties.json",
+		// // "testdata/draft2019-09/unevaluatedItems.json",
 		// "testdata/draft2019-09/uniqueItems.json",
 
 		// "testdata/draft2019-09/optional/zeroTerminatedFloats.json",
@@ -222,14 +230,18 @@ func runDraft2019_09() {
 		// "testdata/draft2019-09/optional/format/uri-template.json",
 		// "testdata/draft2019-09/optional/format/uri.json",
 
-		// TODO(arqu): finalize implementations
-		// "testdata/draft2019-09/ref.json",
+		// // TODO(arqu): investigate further, test is modified because
+		// // if does not formally validate and simply returns 
+		// // when no then or else is present
+		// "testdata/draft2019-09/unevaluatedProperties_modified.json",
+		// "testdata/draft2019-09/unevaluatedItems_modified.json",
 
-		// TODO(arqu): requires keeping state of validated items
-		// which is something we might not want to support
-		// due to performance reasons (esp for large/deeply nested schemas)
-		// "testdata/draft2019-09/unevaluatedItems.json",
-		// "testdata/draft2019-09/unevaluatedProperties.json",
+		// TODO(arqu): investigate further, test is modified because of inconsistent
+		// expectations from spec on how evaluated properties are tracked between
+		// additionalProperties and unevaluatedProperties
+		// "testdata/draft2019-09/additionalProperties_modified.json",
+
+		"testdata/draft2019-09/unevaluatedItems_test.json",
 
 		// TODO(arqu): wont fix
 		// "testdata/draft2019-09/refRemote.json",
