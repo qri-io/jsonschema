@@ -1,10 +1,11 @@
-package main
+package jsonschema
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"io/ioutil"
 	"path/filepath"
 	"strconv"
@@ -88,6 +89,74 @@ func ExampleBasic() {
 
 	// Output: /: {"firstName":"Prince... "lastName" value is required
 	// /friends/0: {"firstName":"Nas"} "lastName" value is required
+}
+
+func TestRAWIO(t *testing.T) {
+	var schemaData = []byte(`{
+		"$id": "https://qri.io/schema/",
+
+		"items": {
+	       "items": [
+	        {
+	         "title": "uuid",
+	         "type": "integer"
+	        },
+	        {
+	         "title": "ingest",
+	         "type": "string"
+	        },
+	        {
+	         "title": "occurred",
+	         "type": "string"
+	        },
+	        {
+	         "title": "raw_data",
+	         "type": "string"
+	        }
+	       ],
+	       "type": "array"
+	      },
+      	"type": "array"
+	}`)
+
+	rs := &Schema{}
+	if err := json.Unmarshal(schemaData, rs); err != nil {
+		panic("unmarshal schema: " + err.Error())
+	}
+
+	file, err := os.Open("bodz.json")
+	if err != nil {
+	  fmt.Println(err)
+	  return
+	}
+	defer file.Close()
+
+	fileinfo, err := file.Stat()
+	if err != nil {
+	  fmt.Println(err)
+	  return
+	}
+
+	filesize := fileinfo.Size()
+	buffer := make([]byte, filesize)
+
+	bytesread, err := file.Read(buffer)
+	if err != nil {
+	  fmt.Println(err)
+	  return
+	}
+
+	fmt.Printf("BR: %d/%d\n", bytesread, len(buffer))
+
+	// var valid = []byte(`{
+	// 	"firstName" : "George",
+	// 	"lastName" : "Michael"
+	// 	}`)
+	// errs, err := rs.ValidateBytes(buffer)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// fmt.Printf("Got %d errs\n", len(errs))
 }
 
 func TestTopLevelType(t *testing.T) {

@@ -1,4 +1,4 @@
-package main
+package jsonschema
 
 // LoadDraft2019_09 loads the keywords for schema validation
 // based on draft2019_09
