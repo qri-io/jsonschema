@@ -229,7 +229,7 @@ func TestDraft3(t *testing.T) {
 		// "testdata/draft3/additionalItems.json",
 		// "testdata/draft3/dependencies.json",
 
-		// TODO(arqu): wont fix
+		// wont fix
 		// "testdata/draft3/optional/bignum.json",
 		// "testdata/draft3/optional/ecmascript-regex.json",
 	})
@@ -272,7 +272,7 @@ func TestDraft4(t *testing.T) {
 		// "testdata/draft4/dependencies.json",
 		// "testdata/draft4/items.json",
 
-		// TODO(arqu): wont fix
+		// wont fix
 		// "testdata/draft4/additionalProperties.json",
 		// "testdata/draft4/optional/bignum.json",
 		// "testdata/draft4/optional/ecmascript-regex.json",
@@ -320,7 +320,7 @@ func TestDraft6(t *testing.T) {
 		// "testdata/draft6/items.json",
 		// "testdata/draft6/ref.json",
 
-		// TODO(arqu): wont fix
+		// wont fix
 		// "testdata/draft6/additionalProperties.json",
 		// "testdata/draft6/refRemote.json",
 		// "testdata/draft6/optional/bignum.json",
@@ -398,7 +398,7 @@ func TestDraft7(t *testing.T) {
 		// "testdata/draft7/items.json",
 		// "testdata/draft7/ref.json",
 
-		// TODO(arqu): wont fix
+		// wont fix
 		// "testdata/draft7/additionalProperties.json",
 		// "testdata/draft7/refRemote.json",
 		// "testdata/draft7/optional/bignum.json",
@@ -492,7 +492,7 @@ func TestDraft2019_09(t *testing.T) {
 		// additionalProperties and unevaluatedProperties
 		"testdata/draft2019-09/additionalProperties_modified.json",
 
-		// TODO(arqu): wont fix
+		// wont fix
 		// "testdata/draft2019-09/refRemote.json",
 		// "testdata/draft2019-09/optional/bignum.json",
 		// "testdata/draft2019-09/optional/content.json",
@@ -527,34 +527,35 @@ func runJSONTests(t *testing.T, testFilepaths []string) {
 	tests := 0
 	passed := 0
 	for _, path := range testFilepaths {
-		// fmt.Println("\nTesting: " + path)
-		base := filepath.Base(path)
-		testSets := []*TestSet{}
-		data, err := ioutil.ReadFile(path)
-		if err != nil {
-			t.Errorf("error loading test file: %s", err.Error())
-			return
-		}
+		t.Run(path, func(t *testing.T) {
+			base := filepath.Base(path)
+			testSets := []*TestSet{}
+			data, err := ioutil.ReadFile(path)
+			if err != nil {
+				t.Errorf("error loading test file: %s", err.Error())
+				return
+			}
 
-		if err := json.Unmarshal(data, &testSets); err != nil {
-			t.Errorf("error unmarshaling test set %s from JSON: %s", base, err.Error())
-			return
-		}
+			if err := json.Unmarshal(data, &testSets); err != nil {
+				t.Errorf("error unmarshaling test set %s from JSON: %s", base, err.Error())
+				return
+			}
 
-		for _, ts := range testSets {
-			sc := ts.Schema
-			for i, c := range ts.Tests {
-				tests++
-				got := []KeyError{}
-				sc.Validate("/", c.Data, &got)
-				valid := len(got) == 0
-				if valid != c.Valid {
-					t.Errorf("%s: %s test case %d: %s. error: %s", base, ts.Description, i, c.Description, got)
-				} else {
-					passed++
+			for _, ts := range testSets {
+				sc := ts.Schema
+				for i, c := range ts.Tests {
+					tests++
+					got := []KeyError{}
+					sc.Validate("/", c.Data, &got)
+					valid := len(got) == 0
+					if valid != c.Valid {
+						t.Errorf("%s: %s test case %d: %s. error: %s", base, ts.Description, i, c.Description, got)
+					} else {
+						passed++
+					}
 				}
 			}
-		}
+		})
 	}
 	t.Logf("%d/%d tests passed", passed, tests)
 }

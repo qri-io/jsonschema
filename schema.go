@@ -56,7 +56,7 @@ func (s *Schema) HasKeyword(key string) bool {
 
 // Register implements the Keyword interface for Schema
 func (s *Schema) Register(uri string, registry *SchemaRegistry) {
-	SchemaDebug("[Schema] Register")
+	schemaDebug("[Schema] Register")
 	if s.hasRegistered {
 		return
 	}
@@ -200,10 +200,10 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 
 	for prop, rawmsg := range valprops {
 		var keyword Keyword
-		if IsKeyword(prop) {
+		if IsRegisteredKeyword(prop) {
 			keyword = GetKeyword(prop)
 		} else if IsNotSupportedKeyword(prop) {
-			SchemaDebug(fmt.Sprintf("[Schema] WARN: '%s' is not supported and will be ignored\n", prop))
+			schemaDebug(fmt.Sprintf("[Schema] WARN: '%s' is not supported and will be ignored\n", prop))
 			continue
 		} else {
 			if sch.extraDefinitions == nil {
@@ -265,7 +265,7 @@ func (s *Schema) Validate(propPath string, data interface{}, errs *[]KeyError) {
 // ValidateFromContext uses the schema to check an instance, collecting validation
 // errors in a slice
 func (s *Schema) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[Schema] Validating")
+	schemaDebug("[Schema] Validating")
 	if s == nil {
 		AddErrorCtx(errs, schCtx, fmt.Sprintf("schema is nil"))
 		return

@@ -27,7 +27,7 @@ func (m *MaxLength) Resolve(pointer jptr.Pointer, uri string) *Schema {
 
 // ValidateFromContext implements the Keyword interface for MaxLength
 func (m MaxLength) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[MaxLength] Validating")
+	schemaDebug("[MaxLength] Validating")
 	if str, ok := schCtx.Instance.(string); ok {
 		if utf8.RuneCountInString(str) > int(m) {
 			AddErrorCtx(errs, schCtx, fmt.Sprintf("max length of %d characters exceeded: %s", m, str))
@@ -53,7 +53,7 @@ func (m *MinLength) Resolve(pointer jptr.Pointer, uri string) *Schema {
 
 // ValidateFromContext implements the Keyword interface for MinLength
 func (m MinLength) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[MinLength] Validating")
+	schemaDebug("[MinLength] Validating")
 	if str, ok := schCtx.Instance.(string); ok {
 		if utf8.RuneCountInString(str) < int(m) {
 			AddErrorCtx(errs, schCtx, fmt.Sprintf("max length of %d characters exceeded: %s", m, str))
@@ -79,7 +79,7 @@ func (p *Pattern) Resolve(pointer jptr.Pointer, uri string) *Schema {
 
 // ValidateFromContext implements the Keyword interface for Pattern
 func (p Pattern) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[Pattern] Validating")
+	schemaDebug("[Pattern] Validating")
 	re := regexp.Regexp(p)
 	if str, ok := schCtx.Instance.(string); ok {
 		if !re.Match([]byte(str)) {

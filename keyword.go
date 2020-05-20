@@ -18,24 +18,26 @@ var notSupported = map[string]bool{
 	"contentSchema":    true,
 	"deprecated":       true,
 
-	// backward compatibility
+	// backward compatibility with draft7
 	"definitions":  true,
 	"dependencies": true,
 }
 
-var keywordRegistry = map[string]KeyMaker{}
-var keywordOrder = map[string]int{}
-var keywordInsertOrder = map[string]int{}
+var (
+	keywordRegistry    = map[string]KeyMaker{}
+	keywordOrder       = map[string]int{}
+	keywordInsertOrder = map[string]int{}
+)
 
-// IsKeyword validates if a given prop string is a registered keyword
-func IsKeyword(prop string) bool {
+// IsRegisteredKeyword validates if a given prop string is a registered keyword
+func IsRegisteredKeyword(prop string) bool {
 	_, ok := keywordRegistry[prop]
 	return ok
 }
 
 // GetKeyword returns a new instance of the keyword
 func GetKeyword(prop string) Keyword {
-	if !IsKeyword(prop) {
+	if !IsRegisteredKeyword(prop) {
 		return NewVoid()
 	}
 	return keywordRegistry[prop]()
@@ -95,11 +97,21 @@ type Keyword interface {
 	// validation errors (if any) to an outparam slice of KeyErrors
 	ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError)
 
-	// Register subscribes all subschema to the parent schema
-	// which is later used for ref resolution
+	// Register builds up the schema tree by evaluating the current key
+	// and the current location pointer which is later used with resolve to
+	// navigate the schema tree and substitute the propper schema for a given
+	// reference.
 	Register(uri string, registry *SchemaRegistry)
-	// Resolve resolves the pointer to the respective schema
-	// allowing validation to flow through referenced schemas
+	// Resolve unraps a pointer to the destination schema
+	// It usually starts with a $ref validation call which
+	// uses the pointer token by token to navigate the
+	// schema tree to get to the last schema in the chain.
+	// Since every keyword can have it's specifics around resolving
+	// each keyword need to implement it's own version of Resolve.
+	// Terminal keywords should respond with nil as it's not a schema
+	// Keywords that wrap a schema should return the appropriate schema.
+	// In case of a non-existing location it will fail to resolve, return nil
+	// on ref resolution and error out.
 	Resolve(pointer jptr.Pointer, uri string) *Schema
 }
 

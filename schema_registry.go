@@ -6,9 +6,7 @@ import (
 	"strings"
 )
 
-var (
-	sr *SchemaRegistry
-)
+var sr *SchemaRegistry
 
 // SchemaRegistry maintains a lookup table between schema string references
 // and actual schemas
@@ -34,14 +32,14 @@ func ResetSchemaRegistry() {
 }
 
 // Get fetches a schema from the top level context registry or fetches it from a remote
-func (sr *SchemaRegistry) Get(uri string, ctx *context.Context) *Schema {
+func (sr *SchemaRegistry) Get(ctx context.Context, uri string) *Schema {
 	uri = strings.TrimRight(uri, "#")
 	schema := sr.schemaLookup[uri]
 	if schema == nil {
 		fetchedSchema := &Schema{}
 		err := FetchSchema(ctx, uri, fetchedSchema)
 		if err != nil {
-			SchemaDebug(fmt.Sprintf("[SchemaRegistry] Fetch error: %s", err.Error()))
+			schemaDebug(fmt.Sprintf("[SchemaRegistry] Fetch error: %s", err.Error()))
 			return nil
 		}
 		if fetchedSchema == nil {

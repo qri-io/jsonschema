@@ -41,10 +41,10 @@ import (
 
 func main() {
 	var schemaData = []byte(`{
-    "title": "Person",
-    "type": "object",
     "$id": "https://qri.io/schema/",
     "$comment" : "sample comment",
+    "title": "Person",
+    "type": "object",
     "properties": {
         "firstName": {
             "type": "string"
@@ -118,7 +118,7 @@ The [godoc](https://godoc.org/github.com/qri-io/jsonschema) gives an example of 
 
 It involves three steps that should happen _before_ allocating any Schema instances that use the validator:
 1. create a custom type that implements the `Keyword` interface
-2. Load the appropriate draf keyword set (see `draft2019_09_keywords.go`)
+2. Load the appropriate draft keyword set (see `draft2019_09_keywords.go`)
 3. call RegisterKeyword with the keyword you'd like to detect in JSON, and a `KeyMaker` function.
 
 

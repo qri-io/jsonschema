@@ -11,17 +11,14 @@ import (
 	"strings"
 )
 
-// SchemaDebug provides a logging interface
+var showDebug = os.Getenv("JSON_SCHEMA_DEBUG") == "1"
+
+// schemaDebug provides a logging interface
 // which is off by defauly but can be activated
 // for debuging purposes
-func SchemaDebug(message string) {
-	debug := false
-	debugEnvVar := os.Getenv("JSON_SCHEMA_DEBUG")
-	if debugEnvVar == "1" {
-		debug = true
-	}
-	if debug {
-		fmt.Printf("%s\n", message)
+func schemaDebug(message string, args ...interface{}) {
+	if showDebug {
+		fmt.Printf(message, args...)
 	}
 }
 
@@ -53,8 +50,8 @@ func IsLocalSchemaID(id string) bool {
 }
 
 // FetchSchema downloads and loads a schema from a remote location
-func FetchSchema(ctx *context.Context, uri string, schema *Schema) error {
-	SchemaDebug(fmt.Sprintf("[FetchSchema] Fetching: %s", uri))
+func FetchSchema(ctx context.Context, uri string, schema *Schema) error {
+	schemaDebug(fmt.Sprintf("[FetchSchema] Fetching: %s", uri))
 	u, err := url.Parse(uri)
 	if err != nil {
 		return err
@@ -63,7 +60,7 @@ func FetchSchema(ctx *context.Context, uri string, schema *Schema) error {
 	if u.Scheme == "http" || u.Scheme == "https" {
 		var req *http.Request
 		if ctx != nil {
-			req, _ = http.NewRequestWithContext(*ctx, "GET", u.String(), nil)
+			req, _ = http.NewRequestWithContext(ctx, "GET", u.String(), nil)
 		} else {
 			req, _ = http.NewRequest("GET", u.String(), nil)
 		}

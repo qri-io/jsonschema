@@ -24,7 +24,7 @@ func (m *MultipleOf) Resolve(pointer jptr.Pointer, uri string) *Schema {
 
 // ValidateFromContext implements the Keyword interface for MultipleOf
 func (m MultipleOf) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[MultipleOf] Validating")
+	schemaDebug("[MultipleOf] Validating")
 	if num, ok := schCtx.Instance.(float64); ok {
 		div := num / float64(m)
 		if float64(int(div)) != div {
@@ -51,7 +51,7 @@ func (m *Maximum) Resolve(pointer jptr.Pointer, uri string) *Schema {
 
 // ValidateFromContext implements the Keyword interface for Maximum
 func (m Maximum) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[Maximum] Validating")
+	schemaDebug("[Maximum] Validating")
 	if num, ok := schCtx.Instance.(float64); ok {
 		if num > float64(m) {
 			AddErrorCtx(errs, schCtx, fmt.Sprintf("must be less than or equal to %f", m))
@@ -77,7 +77,7 @@ func (m *ExclusiveMaximum) Resolve(pointer jptr.Pointer, uri string) *Schema {
 
 // ValidateFromContext implements the Keyword interface for ExclusiveMaximum
 func (m ExclusiveMaximum) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[ExclusiveMaximum] Validating")
+	schemaDebug("[ExclusiveMaximum] Validating")
 	if num, ok := schCtx.Instance.(float64); ok {
 		if num >= float64(m) {
 			AddErrorCtx(errs, schCtx, fmt.Sprintf("%f must be less than %f", num, m))
@@ -103,7 +103,7 @@ func (m *Minimum) Resolve(pointer jptr.Pointer, uri string) *Schema {
 
 // ValidateFromContext implements the Keyword interface for Minimum
 func (m Minimum) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[Minimum] Validating")
+	schemaDebug("[Minimum] Validating")
 	if num, ok := schCtx.Instance.(float64); ok {
 		if num < float64(m) {
 			AddErrorCtx(errs, schCtx, fmt.Sprintf("must be less than or equal to %f", m))
@@ -129,7 +129,7 @@ func (m *ExclusiveMinimum) Resolve(pointer jptr.Pointer, uri string) *Schema {
 
 // ValidateFromContext implements the Keyword interface for ExclusiveMinimum
 func (m ExclusiveMinimum) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[ExclusiveMinimum] Validating")
+	schemaDebug("[ExclusiveMinimum] Validating")
 	if num, ok := schCtx.Instance.(float64); ok {
 		if num <= float64(m) {
 			AddErrorCtx(errs, schCtx, fmt.Sprintf("%f must be less than %f", num, m))

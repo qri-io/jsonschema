@@ -50,7 +50,7 @@ func (f *Format) Resolve(pointer jptr.Pointer, uri string) *Schema {
 
 // ValidateFromContext implements the Keyword interface for Format
 func (f Format) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[Format] Validating")
+	schemaDebug("[Format] Validating")
 	var err error
 	if str, ok := schCtx.Instance.(string); ok {
 		switch f {

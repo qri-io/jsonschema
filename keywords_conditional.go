@@ -26,12 +26,13 @@ func (f *If) Resolve(pointer jptr.Pointer, uri string) *Schema {
 
 // ValidateFromContext implements the Keyword interface for If
 func (f *If) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[If] Validating")
+	schemaDebug("[If] Validating")
 	thenKW := schCtx.Local.keywords["then"]
 	elseKW := schCtx.Local.keywords["else"]
 
 	if thenKW == nil && elseKW == nil {
 		// no then or else for if, aborting validation
+		schemaDebug("[If] Aborting validation as no then or else is present")
 		return
 	}
 
@@ -96,7 +97,7 @@ func (t *Then) Resolve(pointer jptr.Pointer, uri string) *Schema {
 
 // ValidateFromContext implements the Keyword interface for Then
 func (t *Then) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[Then] Validating")
+	schemaDebug("[Then] Validating")
 	ifResult, okIf := schCtx.Misc["ifResult"]
 	if !okIf {
 		// if not found
@@ -166,7 +167,7 @@ func (e *Else) Resolve(pointer jptr.Pointer, uri string) *Schema {
 
 // ValidateFromContext implements the Keyword interface for Else
 func (e *Else) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[Else] Validating")
+	schemaDebug("[Else] Validating")
 	ifResult, okIf := schCtx.Misc["ifResult"]
 	if !okIf {
 		// if not found

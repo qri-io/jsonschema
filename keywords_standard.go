@@ -28,7 +28,7 @@ func (c *Const) Resolve(pointer jptr.Pointer, uri string) *Schema {
 
 // ValidateFromContext implements the Keyword interface for Const
 func (c Const) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[Const] Validating")
+	schemaDebug("[Const] Validating")
 	var con interface{}
 	if err := json.Unmarshal(c, &con); err != nil {
 		AddErrorCtx(errs, schCtx, err.Error())
@@ -79,7 +79,7 @@ func (e *Enum) Resolve(pointer jptr.Pointer, uri string) *Schema {
 
 // ValidateFromContext implements the Keyword interface for Enum
 func (e Enum) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[Enum] Validating")
+	schemaDebug("[Enum] Validating")
 	for _, v := range e {
 		test := &[]KeyError{}
 		v.ValidateFromContext(schCtx, test)
@@ -199,7 +199,7 @@ func (t *Type) Resolve(pointer jptr.Pointer, uri string) *Schema {
 
 // ValidateFromContext implements the Keyword interface for Type
 func (t Type) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[Type] Validating")
+	schemaDebug("[Type] Validating")
 	jt := DataType(schCtx.Instance)
 	for _, typestr := range t.vals {
 		if jt == typestr || jt == "integer" && typestr == "number" {

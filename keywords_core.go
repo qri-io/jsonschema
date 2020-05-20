@@ -19,7 +19,7 @@ func NewSchemaURI() Keyword {
 
 // ValidateFromContext implements the Keyword interface for SchemaURI
 func (s *SchemaURI) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[SchemaURI] Validating")
+	schemaDebug("[SchemaURI] Validating")
 }
 
 // Register implements the Keyword interface for SchemaURI
@@ -40,7 +40,7 @@ func NewID() Keyword {
 
 // ValidateFromContext implements the Keyword interface for ID
 func (i *ID) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[Id] Validating")
+	schemaDebug("[Id] Validating")
 	// TODO(arqu): make sure ID is valid URI for draft2019
 }
 
@@ -62,7 +62,7 @@ func NewDescription() Keyword {
 
 // ValidateFromContext implements the Keyword interface for Description
 func (d *Description) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[Description] Validating")
+	schemaDebug("[Description] Validating")
 }
 
 // Register implements the Keyword interface for Description
@@ -83,7 +83,7 @@ func NewTitle() Keyword {
 
 // ValidateFromContext implements the Keyword interface for Title
 func (t *Title) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[Title] Validating")
+	schemaDebug("[Title] Validating")
 }
 
 // Register implements the Keyword interface for Title
@@ -104,7 +104,7 @@ func NewComment() Keyword {
 
 // ValidateFromContext implements the Keyword interface for Comment
 func (c *Comment) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[Comment] Validating")
+	schemaDebug("[Comment] Validating")
 }
 
 // Register implements the Keyword interface for Comment
@@ -127,7 +127,7 @@ func NewDefault() Keyword {
 
 // ValidateFromContext implements the Keyword interface for Default
 func (d *Default) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[Default] Validating")
+	schemaDebug("[Default] Validating")
 }
 
 // Register implements the Keyword interface for Default
@@ -160,7 +160,7 @@ func NewExamples() Keyword {
 
 // ValidateFromContext implements the Keyword interface for Examples
 func (e *Examples) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[Examples] Validating")
+	schemaDebug("[Examples] Validating")
 }
 
 // Register implements the Keyword interface for Examples
@@ -181,7 +181,7 @@ func NewReadOnly() Keyword {
 
 // ValidateFromContext implements the Keyword interface for ReadOnly
 func (r *ReadOnly) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[ReadOnly] Validating")
+	schemaDebug("[ReadOnly] Validating")
 }
 
 // Register implements the Keyword interface for ReadOnly
@@ -202,7 +202,7 @@ func NewWriteOnly() Keyword {
 
 // ValidateFromContext implements the Keyword interface for WriteOnly
 func (w *WriteOnly) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[WriteOnly] Validating")
+	schemaDebug("[WriteOnly] Validating")
 }
 
 // Register implements the Keyword interface for WriteOnly
@@ -229,7 +229,7 @@ func NewRef() Keyword {
 
 // ValidateFromContext implements the Keyword interface for Ref
 func (r *Ref) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[Ref] Validating")
+	schemaDebug("[Ref] Validating")
 	if r.resolved == nil {
 		r._resolveRef(schCtx)
 		if r.resolved == nil {
@@ -306,7 +306,7 @@ func (r *Ref) _resolveRef(schCtx *SchemaContext) {
 				}
 			}
 		}
-		r.resolvedRoot = GetSchemaRegistry().Get(address, schCtx.ApplicationContext)
+		r.resolvedRoot = GetSchemaRegistry().Get(*schCtx.ApplicationContext, address)
 	} else {
 		r.resolvedRoot = schCtx.Root
 	}
@@ -391,7 +391,7 @@ func NewRecursiveRef() Keyword {
 
 // ValidateFromContext implements the Keyword interface for RecursiveRef
 func (r *RecursiveRef) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[RecursiveRef] Validating")
+	schemaDebug("[RecursiveRef] Validating")
 	if r.isLocationVisited(schCtx.InstanceLocation.String()) {
 		// recursion detected aborting further descent
 		return
@@ -444,7 +444,7 @@ func (r *RecursiveRef) _resolveRef(schCtx *SchemaContext, errs *[]KeyError) {
 			AddErrorCtx(errs, schCtx, fmt.Sprintf("base uri not set"))
 			return
 		}
-		baseSchema := GetSchemaRegistry().Get(schCtx.BaseURI, schCtx.ApplicationContext)
+		baseSchema := GetSchemaRegistry().Get(*schCtx.ApplicationContext, schCtx.BaseURI)
 		if baseSchema != nil && baseSchema.HasKeyword("$recursiveAnchor") {
 			r.resolvedRoot = schCtx.RecursiveAnchor
 		}
@@ -501,7 +501,7 @@ func (r *RecursiveRef) _resolveRef(schCtx *SchemaContext, errs *[]KeyError) {
 					}
 				}
 			}
-			r.resolvedRoot = GetSchemaRegistry().Get(address, schCtx.ApplicationContext)
+			r.resolvedRoot = GetSchemaRegistry().Get(*schCtx.ApplicationContext, address)
 		} else {
 			r.resolvedRoot = schCtx.Root
 		}
@@ -571,7 +571,7 @@ func NewAnchor() Keyword {
 
 // ValidateFromContext implements the Keyword interface for Anchor
 func (a *Anchor) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[Anchor] Validating")
+	schemaDebug("[Anchor] Validating")
 }
 
 // Register implements the Keyword interface for Anchor
@@ -602,7 +602,7 @@ func (r *RecursiveAnchor) Resolve(pointer jptr.Pointer, uri string) *Schema {
 
 // ValidateFromContext implements the Keyword interface for RecursiveAnchor
 func (r *RecursiveAnchor) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[RecursiveAnchor] Validating")
+	schemaDebug("[RecursiveAnchor] Validating")
 	if schCtx.RecursiveAnchor == nil {
 		schCtx.RecursiveAnchor = schCtx.Local
 	}
@@ -652,7 +652,7 @@ func (d *Defs) Resolve(pointer jptr.Pointer, uri string) *Schema {
 
 // ValidateFromContext implements the Keyword interface for Defs
 func (d Defs) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[Defs] Validating")
+	schemaDebug("[Defs] Validating")
 }
 
 // JSONProp implements the JSONPather for Defs
@@ -687,7 +687,7 @@ func (vo *Void) Resolve(pointer jptr.Pointer, uri string) *Schema {
 
 // ValidateFromContext implements the Keyword interface for Void
 func (vo *Void) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[Void] Validating")
-	SchemaDebug("[Void] WARNING this is a placeholder and should not be used")
-	SchemaDebug("[Void] Void is always true")
+	schemaDebug("[Void] Validating")
+	schemaDebug("[Void] WARNING this is a placeholder and should not be used")
+	schemaDebug("[Void] Void is always true")
 }

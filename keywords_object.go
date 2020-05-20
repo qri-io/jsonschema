@@ -43,7 +43,7 @@ func (p *Properties) Resolve(pointer jptr.Pointer, uri string) *Schema {
 
 // ValidateFromContext implements the Keyword interface for Properties
 func (p Properties) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[Properties] Validating")
+	schemaDebug("[Properties] Validating")
 	if obj, ok := schCtx.Instance.(map[string]interface{}); ok {
 		subCtx := NewSchemaContextFromSource(*schCtx)
 		for key := range p {
@@ -105,7 +105,7 @@ func (r *Required) Resolve(pointer jptr.Pointer, uri string) *Schema {
 
 // ValidateFromContext implements the Keyword interface for Required
 func (r Required) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[Required] Validating")
+	schemaDebug("[Required] Validating")
 	if obj, ok := schCtx.Instance.(map[string]interface{}); ok {
 		for _, key := range r {
 			if _, ok := obj[key]; !ok {
@@ -145,7 +145,7 @@ func (m *MaxProperties) Resolve(pointer jptr.Pointer, uri string) *Schema {
 
 // ValidateFromContext implements the Keyword interface for MaxProperties
 func (m MaxProperties) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[MaxProperties] Validating")
+	schemaDebug("[MaxProperties] Validating")
 	if obj, ok := schCtx.Instance.(map[string]interface{}); ok {
 		if len(obj) > int(m) {
 			AddErrorCtx(errs, schCtx, fmt.Sprintf("%d object Properties exceed %d maximum", len(obj), m))
@@ -171,7 +171,7 @@ func (m *MinProperties) Resolve(pointer jptr.Pointer, uri string) *Schema {
 
 // ValidateFromContext implements the Keyword interface for MinProperties
 func (m MinProperties) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[MinProperties] Validating")
+	schemaDebug("[MinProperties] Validating")
 	if obj, ok := schCtx.Instance.(map[string]interface{}); ok {
 		if len(obj) < int(m) {
 			AddErrorCtx(errs, schCtx, fmt.Sprintf("%d object Properties below %d minimum", len(obj), m))
@@ -224,7 +224,7 @@ func (p *PatternProperties) Resolve(pointer jptr.Pointer, uri string) *Schema {
 
 // ValidateFromContext implements the Keyword interface for PatternProperties
 func (p PatternProperties) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[PatternProperties] Validating")
+	schemaDebug("[PatternProperties] Validating")
 	if obj, ok := schCtx.Instance.(map[string]interface{}); ok {
 		for key, val := range obj {
 			for _, ptn := range p {
@@ -336,7 +336,7 @@ func (ap *AdditionalProperties) Resolve(pointer jptr.Pointer, uri string) *Schem
 
 // ValidateFromContext implements the Keyword interface for AdditionalProperties
 func (ap *AdditionalProperties) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[AdditionalProperties] Validating")
+	schemaDebug("[AdditionalProperties] Validating")
 	if obj, ok := schCtx.Instance.(map[string]interface{}); ok {
 		subCtx := NewSchemaContextFromSourceClean(*schCtx)
 		if schCtx.BaseRelativeLocation != nil {
@@ -397,7 +397,7 @@ func (p *PropertyNames) Resolve(pointer jptr.Pointer, uri string) *Schema {
 
 // ValidateFromContext implements the Keyword interface for PropertyNames
 func (p *PropertyNames) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[PropertyNames] Validating")
+	schemaDebug("[PropertyNames] Validating")
 	if obj, ok := schCtx.Instance.(map[string]interface{}); ok {
 		for key := range obj {
 			subCtx := NewSchemaContextFromSource(*schCtx)
@@ -477,7 +477,7 @@ func (d *DependentSchemas) Resolve(pointer jptr.Pointer, uri string) *Schema {
 
 // ValidateFromContext implements the Keyword interface for DependentSchemas
 func (d *DependentSchemas) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[DependentSchemas] Validating")
+	schemaDebug("[DependentSchemas] Validating")
 	for _, v := range *d {
 		subCtx := NewSchemaContextFromSource(*schCtx)
 		if schCtx.BaseRelativeLocation != nil {
@@ -545,7 +545,7 @@ func (d *SchemaDependency) Resolve(pointer jptr.Pointer, uri string) *Schema {
 
 // ValidateFromContext implements the Keyword interface for SchemaDependency
 func (d *SchemaDependency) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[SchemaDependency] Validating")
+	schemaDebug("[SchemaDependency] Validating")
 	data := map[string]interface{}{}
 	ok := false
 	if data, ok = schCtx.Instance.(map[string]interface{}); !ok {
@@ -594,7 +594,7 @@ func (d *DependentRequired) Resolve(pointer jptr.Pointer, uri string) *Schema {
 
 // ValidateFromContext implements the Keyword interface for DependentRequired
 func (d *DependentRequired) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[DependentRequired] Validating")
+	schemaDebug("[DependentRequired] Validating")
 	for _, prop := range *d {
 		subCtx := NewSchemaContextFromSource(*schCtx)
 		if schCtx.BaseRelativeLocation != nil {
@@ -668,7 +668,7 @@ func (p *PropertyDependency) Resolve(pointer jptr.Pointer, uri string) *Schema {
 
 // ValidateFromContext implements the Keyword interface for PropertyDependency
 func (p *PropertyDependency) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[PropertyDependency] Validating")
+	schemaDebug("[PropertyDependency] Validating")
 	if obj, ok := schCtx.Instance.(map[string]interface{}); ok {
 		if obj[p.prop] == nil {
 			return
@@ -713,7 +713,7 @@ func (up *UnevaluatedProperties) Resolve(pointer jptr.Pointer, uri string) *Sche
 
 // ValidateFromContext implements the Keyword interface for UnevaluatedProperties
 func (up *UnevaluatedProperties) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[UnevaluatedProperties] Validating")
+	schemaDebug("[UnevaluatedProperties] Validating")
 	if obj, ok := schCtx.Instance.(map[string]interface{}); ok {
 		subCtx := NewSchemaContextFromSourceClean(*schCtx)
 		if schCtx.BaseRelativeLocation != nil {

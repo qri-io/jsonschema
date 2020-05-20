@@ -48,7 +48,7 @@ func (a *AllOf) Resolve(pointer jptr.Pointer, uri string) *Schema {
 
 // ValidateFromContext implements the Keyword interface for AllOf
 func (a *AllOf) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[AllOf] Validating")
+	schemaDebug("[AllOf] Validating")
 	contextCopy := NewSchemaContextFromSourceClean(*schCtx)
 	invalid := false
 	for i, sch := range *a {
@@ -136,7 +136,7 @@ func (a *AnyOf) Resolve(pointer jptr.Pointer, uri string) *Schema {
 
 // ValidateFromContext implements the Keyword interface for AnyOf
 func (a *AnyOf) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[AnyOf] Validating")
+	schemaDebug("[AnyOf] Validating")
 	for i, sch := range *a {
 		subCtx := NewSchemaContextFromSourceClean(*schCtx)
 		if subCtx.BaseRelativeLocation != nil {
@@ -220,7 +220,7 @@ func (o *OneOf) Resolve(pointer jptr.Pointer, uri string) *Schema {
 
 // ValidateFromContext implements the Keyword interface for OneOf
 func (o *OneOf) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[OneOf] Validating")
+	schemaDebug("[OneOf] Validating")
 	matched := false
 	contextCopy := NewSchemaContextFromSourceClean(*schCtx)
 	for i, sch := range *o {
@@ -292,7 +292,7 @@ func (n *Not) Resolve(pointer jptr.Pointer, uri string) *Schema {
 
 // ValidateFromContext implements the Keyword interface for Not
 func (n *Not) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[Not] Validating")
+	schemaDebug("[Not] Validating")
 	subCtx := NewSchemaContextFromSource(*schCtx)
 	if subCtx.BaseRelativeLocation != nil {
 		if newPtr, err := schCtx.BaseRelativeLocation.Descendant("not"); err == nil {

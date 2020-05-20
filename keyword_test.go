@@ -103,7 +103,7 @@ func TestRegisterFooKeyword(t *testing.T) {
 
 	RegisterKeyword("foo", newFoo)
 
-	if !IsKeyword("foo") {
+	if !IsRegisteredKeyword("foo") {
 		t.Errorf("expected %s to be added as a default validator", "foo")
 	}
 }

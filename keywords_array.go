@@ -53,7 +53,7 @@ func (it *Items) Resolve(pointer jptr.Pointer, uri string) *Schema {
 
 // ValidateFromContext implements the Keyword interface for Items
 func (it Items) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[Items] Validating")
+	schemaDebug("[Items] Validating")
 	if arr, ok := schCtx.Instance.([]interface{}); ok {
 		if it.single {
 			subCtx := NewSchemaContextFromSource(*schCtx)
@@ -162,7 +162,7 @@ func (m *MaxItems) Resolve(pointer jptr.Pointer, uri string) *Schema {
 
 // ValidateFromContext implements the Keyword interface for MaxItems
 func (m MaxItems) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[MaxItems] Validating")
+	schemaDebug("[MaxItems] Validating")
 	if arr, ok := schCtx.Instance.([]interface{}); ok {
 		if len(arr) > int(m) {
 			AddErrorCtx(errs, schCtx, fmt.Sprintf("array length %d exceeds %d max", len(arr), m))
@@ -189,7 +189,7 @@ func (m *MinItems) Resolve(pointer jptr.Pointer, uri string) *Schema {
 
 // ValidateFromContext implements the Keyword interface for MinItems
 func (m MinItems) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[MinItems] Validating")
+	schemaDebug("[MinItems] Validating")
 	if arr, ok := schCtx.Instance.([]interface{}); ok {
 		if len(arr) < int(m) {
 			AddErrorCtx(errs, schCtx, fmt.Sprintf("array length %d below %d minimum items", len(arr), m))
@@ -216,7 +216,7 @@ func (u *UniqueItems) Resolve(pointer jptr.Pointer, uri string) *Schema {
 
 // ValidateFromContext implements the Keyword interface for UniqueItems
 func (u UniqueItems) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[UniqueItems] Validating")
+	schemaDebug("[UniqueItems] Validating")
 	if arr, ok := schCtx.Instance.([]interface{}); ok {
 		found := []interface{}{}
 		for _, elem := range arr {
@@ -251,7 +251,7 @@ func (c *Contains) Resolve(pointer jptr.Pointer, uri string) *Schema {
 
 // ValidateFromContext implements the Keyword interface for Contains
 func (c *Contains) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[Contains] Validating")
+	schemaDebug("[Contains] Validating")
 	v := Schema(*c)
 	if arr, ok := schCtx.Instance.([]interface{}); ok {
 		valid := false
@@ -321,7 +321,7 @@ func (m *MaxContains) Resolve(pointer jptr.Pointer, uri string) *Schema {
 
 // ValidateFromContext implements the Keyword interface for MaxContains
 func (m MaxContains) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[MaxContains] Validating")
+	schemaDebug("[MaxContains] Validating")
 	if arr, ok := schCtx.Instance.([]interface{}); ok {
 		if containsCount, ok := schCtx.Misc["containsCount"]; ok {
 			if containsCount.(int) > int(m) {
@@ -349,7 +349,7 @@ func (m *MinContains) Resolve(pointer jptr.Pointer, uri string) *Schema {
 
 // ValidateFromContext implements the Keyword interface for MinContains
 func (m MinContains) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[MinContains] Validating")
+	schemaDebug("[MinContains] Validating")
 	if arr, ok := schCtx.Instance.([]interface{}); ok {
 		if containsCount, ok := schCtx.Misc["containsCount"]; ok {
 			if containsCount.(int) < int(m) {
@@ -379,7 +379,7 @@ func (ai *AdditionalItems) Resolve(pointer jptr.Pointer, uri string) *Schema {
 
 // ValidateFromContext implements the Keyword interface for AdditionalItems
 func (ai *AdditionalItems) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[AdditionalItems] Validating")
+	schemaDebug("[AdditionalItems] Validating")
 	if arr, ok := schCtx.Instance.([]interface{}); ok {
 		if schCtx.LastEvaluatedIndex > -1 && schCtx.LastEvaluatedIndex < len(arr) {
 			for i := schCtx.LastEvaluatedIndex + 1; i < len(arr); i++ {
@@ -437,7 +437,7 @@ func (ui *UnevaluatedItems) Resolve(pointer jptr.Pointer, uri string) *Schema {
 
 // ValidateFromContext implements the Keyword interface for UnevaluatedItems
 func (ui *UnevaluatedItems) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	SchemaDebug("[UnevaluatedItems] Validating")
+	schemaDebug("[UnevaluatedItems] Validating")
 	if arr, ok := schCtx.Instance.([]interface{}); ok {
 		if schCtx.LastEvaluatedIndex < len(arr) {
 			for i := schCtx.LastEvaluatedIndex + 1; i < len(arr); i++ {
