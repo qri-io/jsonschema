@@ -1,4 +1,4 @@
-package main
+package jsonschema
 
 import (
 	"bytes"
@@ -12,19 +12,13 @@ var notSupported = map[string]bool{
 	// core
 	"$vocabulary": true,
 
-	// array keywords
-	"unevaluatedItems": true,
-
-	// object keywords
-	"unevaluatedProperties": true,
-
 	// other
 	"contentEncoding":  true,
 	"contentMediaType": true,
 	"contentSchema":    true,
 	"deprecated":       true,
 
-	// backward compatibilit
+	// backward compatibility
 	"definitions":  true,
 	"dependencies": true,
 }

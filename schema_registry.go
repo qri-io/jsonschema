@@ -1,4 +1,4 @@
-package main
+package jsonschema
 
 import (
 	"context"
@@ -26,6 +26,11 @@ func GetSchemaRegistry() *SchemaRegistry {
 		}
 	}
 	return sr
+}
+
+// ResetSchemaRegistry resets the main SchemaRegistry
+func ResetSchemaRegistry() {
+	sr = nil
 }
 
 // Get fetches a schema from the top level context registry or fetches it from a remote

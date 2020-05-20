@@ -1,4 +1,4 @@
-package main
+package jsonschema
 
 import (
 	"context"
@@ -23,8 +23,8 @@ type SchemaContext struct {
 
 	LocalRegistry *SchemaRegistry
 
-	EvaluatedPropertyNames      map[string]bool
-	LocalEvaluatedPropertyNames map[string]bool
+	EvaluatedPropertyNames      *map[string]bool
+	LocalEvaluatedPropertyNames *map[string]bool
 	Misc                        map[string]interface{}
 
 	ApplicationContext *context.Context
@@ -41,8 +41,8 @@ func NewSchemaContext(rs *Schema, inst interface{}, brl *jptr.Pointer, rl *jptr.
 		LocalRegistry:               &SchemaRegistry{},
 		LastEvaluatedIndex:          -1,
 		LocalLastEvaluatedIndex:     -1,
-		EvaluatedPropertyNames:      map[string]bool{},
-		LocalEvaluatedPropertyNames: map[string]bool{},
+		EvaluatedPropertyNames:      &map[string]bool{},
+		LocalEvaluatedPropertyNames: &map[string]bool{},
 		Misc:                        map[string]interface{}{},
 		ApplicationContext:          appCtx,
 	}
@@ -50,44 +50,6 @@ func NewSchemaContext(rs *Schema, inst interface{}, brl *jptr.Pointer, rl *jptr.
 
 // NewSchemaContextFromSource creates a new SchemaContext from an existing SchemaContext
 func NewSchemaContextFromSource(source SchemaContext) *SchemaContext {
-	sch := &SchemaContext{
-		Local:                   source.Local,
-		Root:                    source.Root,
-		RecursiveAnchor:         source.RecursiveAnchor,
-		Instance:                source.Instance,
-		LastEvaluatedIndex:      source.LastEvaluatedIndex,
-		LocalLastEvaluatedIndex: source.LocalLastEvaluatedIndex,
-		BaseURI:                 source.BaseURI,
-		InstanceLocation:        source.InstanceLocation,
-		RelativeLocation:        source.RelativeLocation,
-		BaseRelativeLocation:    source.RelativeLocation,
-		LocalRegistry:           source.LocalRegistry,
-		Misc:                    map[string]interface{}{},
-		ApplicationContext:      source.ApplicationContext,
-	}
-	// The code bellow is a small optimization to avoid unnecessary map creates/copies when not required
-	hasAdditionalPropertiesKeyword := false
-	hasAdditionalItemsKeyword := false
-	if _, ok := sch.Local.keywords["additionalProperties"]; ok {
-		hasAdditionalPropertiesKeyword = true
-	}
-	if _, ok := sch.Local.keywords["additionalItems"]; ok {
-		hasAdditionalItemsKeyword = true
-	}
-	if hasAdditionalPropertiesKeyword || hasAdditionalItemsKeyword {
-		sch.EvaluatedPropertyNames = copySet(source.EvaluatedPropertyNames)
-		sch.LocalEvaluatedPropertyNames = copySet(source.LocalEvaluatedPropertyNames)
-	} else {
-		sch.EvaluatedPropertyNames = map[string]bool{}
-		sch.LocalEvaluatedPropertyNames = map[string]bool{}
-	}
-
-	return sch
-}
-
-// NewSchemaContextFromSourceClean creates a new SchemaContext from an existing SchemaContext but only
-// copies the core structures
-func NewSchemaContextFromSourceClean(source SchemaContext) *SchemaContext {
 	sch := &SchemaContext{
 		Local:                       source.Local,
 		Root:                        source.Root,
@@ -100,8 +62,33 @@ func NewSchemaContextFromSourceClean(source SchemaContext) *SchemaContext {
 		RelativeLocation:            source.RelativeLocation,
 		BaseRelativeLocation:        source.RelativeLocation,
 		LocalRegistry:               source.LocalRegistry,
-		EvaluatedPropertyNames:      map[string]bool{},
-		LocalEvaluatedPropertyNames: map[string]bool{},
+		EvaluatedPropertyNames:      source.EvaluatedPropertyNames,
+		LocalEvaluatedPropertyNames: source.LocalEvaluatedPropertyNames,
+		Misc:                        map[string]interface{}{},
+		ApplicationContext:          source.ApplicationContext,
+	}
+
+	return sch
+}
+
+// NewSchemaContextFromSourceClean creates a new SchemaContext from an existing SchemaContext but only
+// copies the core structures
+func NewSchemaContextFromSourceClean(source SchemaContext) *SchemaContext {
+	// return NewSchemaContextFromSource(source)
+	sch := &SchemaContext{
+		Local:                       source.Local,
+		Root:                        source.Root,
+		RecursiveAnchor:             source.RecursiveAnchor,
+		Instance:                    source.Instance,
+		LastEvaluatedIndex:          source.LastEvaluatedIndex,
+		LocalLastEvaluatedIndex:     source.LocalLastEvaluatedIndex,
+		BaseURI:                     source.BaseURI,
+		InstanceLocation:            source.InstanceLocation,
+		RelativeLocation:            source.RelativeLocation,
+		BaseRelativeLocation:        source.RelativeLocation,
+		LocalRegistry:               source.LocalRegistry,
+		EvaluatedPropertyNames:      &map[string]bool{},
+		LocalEvaluatedPropertyNames: &map[string]bool{},
 		Misc:                        map[string]interface{}{},
 		ApplicationContext:          source.ApplicationContext,
 	}
@@ -111,11 +98,11 @@ func NewSchemaContextFromSourceClean(source SchemaContext) *SchemaContext {
 
 // ClearContext resets a schema to it's core elements
 func (sc *SchemaContext) ClearContext() {
-	if len(sc.EvaluatedPropertyNames) > 0 {
-		sc.EvaluatedPropertyNames = map[string]bool{}
+	if len(*sc.EvaluatedPropertyNames) > 0 {
+		sc.EvaluatedPropertyNames = &map[string]bool{}
 	}
-	if len(sc.LocalEvaluatedPropertyNames) > 0 {
-		sc.LocalEvaluatedPropertyNames = map[string]bool{}
+	if len(*sc.LocalEvaluatedPropertyNames) > 0 {
+		sc.LocalEvaluatedPropertyNames = &map[string]bool{}
 	}
 	if len(sc.Misc) > 0 {
 		sc.Misc = map[string]interface{}{}
@@ -125,8 +112,8 @@ func (sc *SchemaContext) ClearContext() {
 // UpdateEvaluatedPropsAndItems is a utility function to join evaluated properties and set the
 // current evaluation position index
 func (sc *SchemaContext) UpdateEvaluatedPropsAndItems(subCtx *SchemaContext) {
-	JoinSets(&sc.EvaluatedPropertyNames, subCtx.EvaluatedPropertyNames)
-	JoinSets(&sc.LocalEvaluatedPropertyNames, subCtx.LocalEvaluatedPropertyNames)
+	JoinSets(sc.EvaluatedPropertyNames, *subCtx.EvaluatedPropertyNames)
+	JoinSets(sc.LocalEvaluatedPropertyNames, *subCtx.LocalEvaluatedPropertyNames)
 	if subCtx.LastEvaluatedIndex > sc.LastEvaluatedIndex {
 		sc.LastEvaluatedIndex = subCtx.LastEvaluatedIndex
 	}

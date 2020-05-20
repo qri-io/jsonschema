@@ -1,4 +1,4 @@
-package main
+package jsonschema
 
 // LoadDraft2019_09 loads the keywords for schema validation
 // based on draft2019_09
@@ -57,9 +57,11 @@ func LoadDraft2019_09() {
 	RegisterKeyword("minProperties", NewMinProperties)
 	RegisterKeyword("dependentSchemas", NewDependentSchemas)
 	RegisterKeyword("dependentRequired", NewDependentRequired)
+	RegisterKeyword("unevaluatedProperties", NewUnevaluatedProperties)
 
 	SetKeywordOrder("properties", 2)
 	SetKeywordOrder("additionalProperties", 3)
+	SetKeywordOrder("unevaluatedProperties", 4)
 
 	// array keywords
 	RegisterKeyword("items", NewItems)
@@ -70,10 +72,12 @@ func LoadDraft2019_09() {
 	RegisterKeyword("contains", NewContains)
 	RegisterKeyword("maxContains", NewMaxContains)
 	RegisterKeyword("minContains", NewMinContains)
+	RegisterKeyword("unevaluatedItems", NewUnevaluatedItems)
 
 	SetKeywordOrder("maxContains", 2)
 	SetKeywordOrder("minContains", 2)
 	SetKeywordOrder("additionalItems", 3)
+	SetKeywordOrder("unevaluatedItems", 4)
 
 	// conditional keywords
 	RegisterKeyword("if", NewIf)

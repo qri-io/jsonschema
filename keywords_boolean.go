@@ -1,4 +1,4 @@
-package main
+package jsonschema
 
 import (
 	"encoding/json"
@@ -49,8 +49,10 @@ func (a *AllOf) Resolve(pointer jptr.Pointer, uri string) *Schema {
 // ValidateFromContext implements the Keyword interface for AllOf
 func (a *AllOf) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[AllOf] Validating")
+	contextCopy := NewSchemaContextFromSourceClean(*schCtx)
+	invalid := false
 	for i, sch := range *a {
-		subCtx := NewSchemaContextFromSource(*schCtx)
+		subCtx := NewSchemaContextFromSourceClean(*schCtx)
 		if subCtx.BaseRelativeLocation != nil {
 			if newPtr, err := schCtx.BaseRelativeLocation.Descendant("allOf/" + strconv.Itoa(i)); err == nil {
 				subCtx.BaseRelativeLocation = &newPtr
@@ -59,8 +61,16 @@ func (a *AllOf) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 		if newPtr, err := schCtx.RelativeLocation.Descendant("allOf/" + strconv.Itoa(i)); err == nil {
 			subCtx.RelativeLocation = &newPtr
 		}
+		errsBefore := len(*errs)
 		sch.ValidateFromContext(subCtx, errs)
-		schCtx.UpdateEvaluatedPropsAndItems(subCtx)
+		contextCopy.UpdateEvaluatedPropsAndItems(subCtx)
+		errsAfter := len(*errs)
+		if errsBefore != errsAfter {
+			invalid = true
+		}
+	}
+	if !invalid {
+		schCtx.UpdateEvaluatedPropsAndItems(contextCopy)
 	}
 }
 
@@ -128,7 +138,7 @@ func (a *AnyOf) Resolve(pointer jptr.Pointer, uri string) *Schema {
 func (a *AnyOf) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[AnyOf] Validating")
 	for i, sch := range *a {
-		subCtx := NewSchemaContextFromSource(*schCtx)
+		subCtx := NewSchemaContextFromSourceClean(*schCtx)
 		if subCtx.BaseRelativeLocation != nil {
 			if newPtr, err := schCtx.BaseRelativeLocation.Descendant("anyOf/" + strconv.Itoa(i)); err == nil {
 				subCtx.BaseRelativeLocation = &newPtr
@@ -212,15 +222,15 @@ func (o *OneOf) Resolve(pointer jptr.Pointer, uri string) *Schema {
 func (o *OneOf) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	SchemaDebug("[OneOf] Validating")
 	matched := false
-	contextCopy := NewSchemaContextFromSource(*schCtx)
+	contextCopy := NewSchemaContextFromSourceClean(*schCtx)
 	for i, sch := range *o {
-		subCtx := NewSchemaContextFromSource(*schCtx)
+		subCtx := NewSchemaContextFromSourceClean(*schCtx)
 		if subCtx.BaseRelativeLocation != nil {
-			if newPtr, err := schCtx.BaseRelativeLocation.Descendant("anyOf/" + strconv.Itoa(i)); err == nil {
+			if newPtr, err := schCtx.BaseRelativeLocation.Descendant("oneOf/" + strconv.Itoa(i)); err == nil {
 				subCtx.BaseRelativeLocation = &newPtr
 			}
 		}
-		if newPtr, err := schCtx.RelativeLocation.Descendant("anyOf/" + strconv.Itoa(i)); err == nil {
+		if newPtr, err := schCtx.RelativeLocation.Descendant("oneOf/" + strconv.Itoa(i)); err == nil {
 			subCtx.RelativeLocation = &newPtr
 		}
 		test := &[]KeyError{}

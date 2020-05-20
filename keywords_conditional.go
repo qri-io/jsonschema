@@ -1,4 +1,4 @@
-package main
+package jsonschema
 
 import (
 	"encoding/json"
@@ -35,7 +35,7 @@ func (f *If) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 		return
 	}
 
-	subCtx := NewSchemaContextFromSource(*schCtx)
+	subCtx := NewSchemaContextFromSourceClean(*schCtx)
 	if subCtx.BaseRelativeLocation != nil {
 		if newPtr, err := schCtx.BaseRelativeLocation.Descendant("if"); err == nil {
 			subCtx.BaseRelativeLocation = &newPtr
@@ -118,6 +118,7 @@ func (t *Then) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 	}
 	sch := Schema(*t)
 	sch.ValidateFromContext(subCtx, errs)
+	schCtx.UpdateEvaluatedPropsAndItems(subCtx)
 }
 
 // JSONProp implements the JSONPather for Then

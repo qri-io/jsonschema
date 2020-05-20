@@ -1,4 +1,4 @@
-package main
+package jsonschema
 
 import (
 	"encoding/json"
@@ -210,9 +210,14 @@ func (t Type) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 				return
 			}
 		}
+		if jt == "null" && (typestr == "string") {
+			if DataTypeWithHint(schCtx.Instance, typestr) == typestr {
+				return
+			}
+		}
 	}
 	if len(t.vals) == 1 {
-		AddErrorCtx(errs, schCtx, fmt.Sprintf(`type should be %s`, t.vals[0]))
+		AddErrorCtx(errs, schCtx, fmt.Sprintf(`type should be %s, got %s`, t.vals[0], jt))
 		return
 	}
 
@@ -221,7 +226,7 @@ func (t Type) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 		str += ts + ","
 	}
 
-	AddErrorCtx(errs, schCtx, fmt.Sprintf(`type should be one of: %s`, str[:len(str)-1]))
+	AddErrorCtx(errs, schCtx, fmt.Sprintf(`type should be one of: %s, got %s`, str[:len(str)-1], jt))
 }
 
 // String implements the Stringer for Type

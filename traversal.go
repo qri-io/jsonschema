@@ -1,4 +1,4 @@
-package main
+package jsonschema
 
 // JSONPather makes validators traversible by JSON-pointers,
 // which is required to support references in JSON schemas.
