@@ -1,99 +1,139 @@
 package jsonschema
 
 import (
+	"context"
 	"fmt"
+
+	jptr "github.com/qri-io/jsonpointer"
 )
 
-// MultipleOf MUST be a number, strictly greater than 0.
-// MultipleOf validates that a numeric instance is valid only if division
-// by this keyword's value results in an integer.
+// MultipleOf defines the multipleOf JSON Schema keyword
 type MultipleOf float64
 
-// NewMultipleOf allocates a new MultipleOf validator
-func NewMultipleOf() Validator {
+// NewMultipleOf allocates a new MultipleOf keyword
+func NewMultipleOf() Keyword {
 	return new(MultipleOf)
 }
 
-// Validate implements the Validator interface for MultipleOf
-func (m MultipleOf) Validate(propPath string, data interface{}, errs *[]ValError) {
+// Register implements the Keyword interface for MultipleOf
+func (m *MultipleOf) Register(uri string, registry *SchemaRegistry) {}
+
+// Resolve implements the Keyword interface for MultipleOf
+func (m *MultipleOf) Resolve(pointer jptr.Pointer, uri string) *Schema {
+	return nil
+}
+
+// ValidateKeyword implements the Keyword interface for MultipleOf
+func (m MultipleOf) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
+	schemaDebug("[MultipleOf] Validating")
 	if num, ok := data.(float64); ok {
 		div := num / float64(m)
 		if float64(int(div)) != div {
-			AddError(errs, propPath, data, fmt.Sprintf("must be a multiple of %f", m))
+			currentState.AddError(data, fmt.Sprintf("must be a multiple of %f", m))
 		}
 	}
 }
 
-// Maximum MUST be a number, representing an inclusive upper limit
-// for a numeric instance.
-// If the instance is a number, then this keyword validates only if the instance is less than or exactly equal to "Maximum".
+// Maximum defines the maximum JSON Schema keyword
 type Maximum float64
 
-// NewMaximum allocates a new Maximum validator
-func NewMaximum() Validator {
+// NewMaximum allocates a new Maximum keyword
+func NewMaximum() Keyword {
 	return new(Maximum)
 }
 
-// Validate implements the Validator interface for Maximum
-func (m Maximum) Validate(propPath string, data interface{}, errs *[]ValError) {
+// Register implements the Keyword interface for Maximum
+func (m *Maximum) Register(uri string, registry *SchemaRegistry) {}
+
+// Resolve implements the Keyword interface for Maximum
+func (m *Maximum) Resolve(pointer jptr.Pointer, uri string) *Schema {
+	return nil
+}
+
+// ValidateKeyword implements the Keyword interface for Maximum
+func (m Maximum) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
+	schemaDebug("[Maximum] Validating")
 	if num, ok := data.(float64); ok {
 		if num > float64(m) {
-			AddError(errs, propPath, data, fmt.Sprintf("must be less than or equal to %f", m))
+			currentState.AddError(data, fmt.Sprintf("must be less than or equal to %f", m))
 		}
 	}
 }
 
-// ExclusiveMaximum MUST be number, representing an exclusive upper limit for a numeric instance.
-// If the instance is a number, then the instance is valid only if it has a value
-// strictly less than (not equal to) "Exclusivemaximum".
+// ExclusiveMaximum defines the exclusiveMaximum JSON Schema keyword
 type ExclusiveMaximum float64
 
-// NewExclusiveMaximum allocates a new ExclusiveMaximum validator
-func NewExclusiveMaximum() Validator {
+// NewExclusiveMaximum allocates a new ExclusiveMaximum keyword
+func NewExclusiveMaximum() Keyword {
 	return new(ExclusiveMaximum)
 }
 
-// Validate implements the Validator interface for ExclusiveMaximum
-func (m ExclusiveMaximum) Validate(propPath string, data interface{}, errs *[]ValError) {
+// Register implements the Keyword interface for ExclusiveMaximum
+func (m *ExclusiveMaximum) Register(uri string, registry *SchemaRegistry) {}
+
+// Resolve implements the Keyword interface for ExclusiveMaximum
+func (m *ExclusiveMaximum) Resolve(pointer jptr.Pointer, uri string) *Schema {
+	return nil
+}
+
+// ValidateKeyword implements the Keyword interface for ExclusiveMaximum
+func (m ExclusiveMaximum) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
+	schemaDebug("[ExclusiveMaximum] Validating")
 	if num, ok := data.(float64); ok {
 		if num >= float64(m) {
-			AddError(errs, propPath, data, fmt.Sprintf("must be less than %f", m))
+			currentState.AddError(data, fmt.Sprintf("%f must be less than %f", num, m))
 		}
 	}
 }
 
-// Minimum MUST be a number, representing an inclusive lower limit for a numeric instance.
-// If the instance is a number, then this keyword validates only if the instance is greater than or exactly equal to "Minimum".
+// Minimum defines the minimum JSON Schema keyword
 type Minimum float64
 
-// NewMinimum allocates a new Minimum validator
-func NewMinimum() Validator {
+// NewMinimum allocates a new Minimum keyword
+func NewMinimum() Keyword {
 	return new(Minimum)
 }
 
-// Validate implements the Validator interface for Minimum
-func (m Minimum) Validate(propPath string, data interface{}, errs *[]ValError) {
+// Register implements the Keyword interface for Minimum
+func (m *Minimum) Register(uri string, registry *SchemaRegistry) {}
+
+// Resolve implements the Keyword interface for Minimum
+func (m *Minimum) Resolve(pointer jptr.Pointer, uri string) *Schema {
+	return nil
+}
+
+// ValidateKeyword implements the Keyword interface for Minimum
+func (m Minimum) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
+	schemaDebug("[Minimum] Validating")
 	if num, ok := data.(float64); ok {
 		if num < float64(m) {
-			AddError(errs, propPath, data, fmt.Sprintf("must be greater than or equal to %f", m))
+			currentState.AddError(data, fmt.Sprintf("must be less than or equal to %f", m))
 		}
 	}
 }
 
-// ExclusiveMinimum MUST be number, representing an exclusive lower limit for a numeric instance.
-// If the instance is a number, then the instance is valid only if it has a value strictly greater than (not equal to) "ExclusiveMinimum".
+// ExclusiveMinimum defines the exclusiveMinimum JSON Schema keyword
 type ExclusiveMinimum float64
 
-// NewExclusiveMinimum allocates a new ExclusiveMinimum validator
-func NewExclusiveMinimum() Validator {
+// NewExclusiveMinimum allocates a new ExclusiveMinimum keyword
+func NewExclusiveMinimum() Keyword {
 	return new(ExclusiveMinimum)
 }
 
-// Validate implements the Validator interface for ExclusiveMinimum
-func (m ExclusiveMinimum) Validate(propPath string, data interface{}, errs *[]ValError) {
+// Register implements the Keyword interface for ExclusiveMinimum
+func (m *ExclusiveMinimum) Register(uri string, registry *SchemaRegistry) {}
+
+// Resolve implements the Keyword interface for ExclusiveMinimum
+func (m *ExclusiveMinimum) Resolve(pointer jptr.Pointer, uri string) *Schema {
+	return nil
+}
+
+// ValidateKeyword implements the Keyword interface for ExclusiveMinimum
+func (m ExclusiveMinimum) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
+	schemaDebug("[ExclusiveMinimum] Validating")
 	if num, ok := data.(float64); ok {
 		if num <= float64(m) {
-			AddError(errs, propPath, data, fmt.Sprintf("must be greater than %f", m))
+			currentState.AddError(data, fmt.Sprintf("%f must be less than %f", num, m))
 		}
 	}
 }

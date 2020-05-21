@@ -1,27 +1,29 @@
 package jsonschema
 
 import (
+	"context"
 	"io/ioutil"
 	"testing"
 )
 
 func TestSchemaDeref(t *testing.T) {
+	ctx := context.Background()
 	sch := []byte(`{
-    "definitions": {
+    "$defs": {
         "a": {"type": "integer"},
-        "b": {"$ref": "#/definitions/a"},
-        "c": {"$ref": "#/definitions/b"}
+        "b": {"$ref": "#/$defs/a"},
+        "c": {"$ref": "#/$defs/b"}
     },
-    "$ref": "#/definitions/c"
+    "$ref": "#/$defs/c"
   }`)
 
-	rs := &RootSchema{}
+	rs := &Schema{}
 	if err := rs.UnmarshalJSON(sch); err != nil {
 		t.Errorf("unexpected unmarshal error: %s", err.Error())
 		return
 	}
 
-	got, err := rs.ValidateBytes([]byte(`"a"`))
+	got, err := rs.ValidateBytes(ctx, []byte(`"a"`))
 	if err != nil {
 		t.Errorf("error validating bytes: %s", err.Error())
 		return
@@ -34,26 +36,26 @@ func TestSchemaDeref(t *testing.T) {
 }
 
 func TestReferenceTraversal(t *testing.T) {
-	sch, err := ioutil.ReadFile("testdata/draft-07_schema.json")
+	sch, err := ioutil.ReadFile("testdata/draft2019-09_schema.json")
 	if err != nil {
 		t.Errorf("error reading file: %s", err.Error())
 		return
 	}
 
-	rs := &RootSchema{}
+	rs := &Schema{}
 	if err := rs.UnmarshalJSON(sch); err != nil {
 		t.Errorf("unexpected unmarshal error: %s", err.Error())
 		return
 	}
 
 	elements := 0
-	expectElements := 120
+	expectElements := 14
 	refs := 0
-	expectRefs := 29
+	expectRefs := 6
 	walkJSON(rs, func(elem JSONPather) error {
 		elements++
 		if sch, ok := elem.(*Schema); ok {
-			if sch.Ref != "" {
+			if sch.HasKeyword("$ref") {
 				refs++
 			}
 		}
@@ -72,11 +74,11 @@ func TestReferenceTraversal(t *testing.T) {
 		elements int
 		refs     int
 	}{
-		{`{ "not" : { "$ref":"#" }}`, 3, 1},
+		{`{ "not" : { "$ref":"#" }}`, 2, 0},
 	}
 
 	for i, c := range cases {
-		rs := &RootSchema{}
+		rs := &Schema{}
 		if err := rs.UnmarshalJSON([]byte(c.input)); err != nil {
 			t.Errorf("unexpected unmarshal error: %s", err.Error())
 			return
@@ -87,7 +89,7 @@ func TestReferenceTraversal(t *testing.T) {
 		walkJSON(rs, func(elem JSONPather) error {
 			elements++
 			if sch, ok := elem.(*Schema); ok {
-				if sch.Ref != "" {
+				if sch.HasKeyword("$ref") {
 					refs++
 				}
 			}

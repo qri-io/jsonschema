@@ -1,11 +1,13 @@
 {
   "additionalProperties": {},
-  "dependencies": {
-    "bat": false,
+  "dependentRequired": {
     "foo": [
       "bar",
       "baz"
     ]
+  },
+  "dependentSchemas": {
+    "bat": false
   },
   "maxProperties": 1,
   "minProperties": 2,
