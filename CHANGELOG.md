@@ -1,3 +1,12 @@
+# [](https://github.com/qri-io/jsonschema/compare/v0.1.2...v) (2020-05-21)
+
+This is relase v0.2.0. It's a rework of the jsonschema implementation which now has better support for the spec, equal or better performance depending on the keyword, possibility to easily extend with your own keywords and finally, draft2019_09 support.
+
+### Features
+
+* **jsonschema:** reworking json schema (migration to draft2019_09) ([bb2a1cf](https://github.com/qri-io/jsonschema/commit/bb2a1cf423024a5144c05dcced8f1226fd7e65b9))
+
+
 # [](https://github.com/qri-io/jsonschema/compare/v0.1.1...v) (2020-05-21)
 
 This is a patch release of jsonschema to mark v0.1.2. The purpose of it is to provide a stable v0.1 version for managing the dependencies as the upcoming v0.2.0 will break a lot of the existing API.
