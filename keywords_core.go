@@ -1,6 +1,7 @@
 package jsonschema
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/url"
@@ -17,8 +18,8 @@ func NewSchemaURI() Keyword {
 	return new(SchemaURI)
 }
 
-// ValidateFromContext implements the Keyword interface for SchemaURI
-func (s *SchemaURI) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for SchemaURI
+func (s *SchemaURI) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[SchemaURI] Validating")
 }
 
@@ -38,8 +39,8 @@ func NewID() Keyword {
 	return new(ID)
 }
 
-// ValidateFromContext implements the Keyword interface for ID
-func (i *ID) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for ID
+func (i *ID) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[Id] Validating")
 	// TODO(arqu): make sure ID is valid URI for draft2019
 }
@@ -60,8 +61,8 @@ func NewDescription() Keyword {
 	return new(Description)
 }
 
-// ValidateFromContext implements the Keyword interface for Description
-func (d *Description) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for Description
+func (d *Description) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[Description] Validating")
 }
 
@@ -81,8 +82,8 @@ func NewTitle() Keyword {
 	return new(Title)
 }
 
-// ValidateFromContext implements the Keyword interface for Title
-func (t *Title) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for Title
+func (t *Title) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[Title] Validating")
 }
 
@@ -102,8 +103,8 @@ func NewComment() Keyword {
 	return new(Comment)
 }
 
-// ValidateFromContext implements the Keyword interface for Comment
-func (c *Comment) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for Comment
+func (c *Comment) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[Comment] Validating")
 }
 
@@ -125,8 +126,8 @@ func NewDefault() Keyword {
 	return &Default{}
 }
 
-// ValidateFromContext implements the Keyword interface for Default
-func (d *Default) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for Default
+func (d *Default) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[Default] Validating")
 }
 
@@ -158,8 +159,8 @@ func NewExamples() Keyword {
 	return new(Examples)
 }
 
-// ValidateFromContext implements the Keyword interface for Examples
-func (e *Examples) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for Examples
+func (e *Examples) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[Examples] Validating")
 }
 
@@ -179,8 +180,8 @@ func NewReadOnly() Keyword {
 	return new(ReadOnly)
 }
 
-// ValidateFromContext implements the Keyword interface for ReadOnly
-func (r *ReadOnly) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for ReadOnly
+func (r *ReadOnly) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[ReadOnly] Validating")
 }
 
@@ -200,8 +201,8 @@ func NewWriteOnly() Keyword {
 	return new(WriteOnly)
 }
 
-// ValidateFromContext implements the Keyword interface for WriteOnly
-func (w *WriteOnly) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for WriteOnly
+func (w *WriteOnly) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[WriteOnly] Validating")
 }
 
@@ -227,43 +228,42 @@ func NewRef() Keyword {
 	return new(Ref)
 }
 
-// ValidateFromContext implements the Keyword interface for Ref
-func (r *Ref) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for Ref
+func (r *Ref) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[Ref] Validating")
 	if r.resolved == nil {
-		r._resolveRef(schCtx)
+		r._resolveRef(ctx, currentState)
 		if r.resolved == nil {
-			AddErrorCtx(errs, schCtx, fmt.Sprintf("failed to resolve schema for ref %s", r.reference))
+			currentState.AddError(data, fmt.Sprintf("failed to resolve schema for ref %s", r.reference))
 		}
 	}
 
-	subCtx := NewSchemaContextFromSourceClean(*schCtx)
+	subState := currentState.NewSubState()
+	subState.ClearState()
 	if r.resolvedRoot != nil {
-		subCtx.BaseURI = r.resolvedRoot.docPath
-		subCtx.Root = r.resolvedRoot
+		subState.BaseURI = r.resolvedRoot.docPath
+		subState.Root = r.resolvedRoot
 	}
 	if r.resolvedFragment != nil && !r.resolvedFragment.IsEmpty() {
-		subCtx.BaseRelativeLocation = r.resolvedFragment
+		subState.BaseRelativeLocation = r.resolvedFragment
 	}
-	relLocation := schCtx.RelativeLocation.RawDescendant("$ref")
-	subCtx.RelativeLocation = &relLocation
-	subCtx.Instance = schCtx.Instance
+	subState.DescendRelative("$ref")
 
-	r.resolved.ValidateFromContext(subCtx, errs)
+	r.resolved.ValidateKeyword(ctx, subState, data)
 
-	schCtx.UpdateEvaluatedPropsAndItems(subCtx)
+	currentState.UpdateEvaluatedPropsAndItems(subState)
 }
 
 // _resolveRef attempts to resolve the reference from the top-level context
-func (r *Ref) _resolveRef(schCtx *SchemaContext) {
+func (r *Ref) _resolveRef(ctx context.Context, currentState *ValidationState) {
 	if IsLocalSchemaID(r.reference) {
-		r.resolved = schCtx.LocalRegistry.GetLocal(r.reference)
+		r.resolved = currentState.LocalRegistry.GetLocal(r.reference)
 		if r.resolved != nil {
 			return
 		}
 	}
 
-	docPath := schCtx.BaseURI
+	docPath := currentState.BaseURI
 	refParts := strings.Split(r.reference, "#")
 	address := ""
 	if refParts != nil && len(strings.TrimSpace(refParts[0])) > 0 {
@@ -291,7 +291,7 @@ func (r *Ref) _resolveRef(schCtx *SchemaContext) {
 	if address != "" {
 		if u, err := url.Parse(address); err == nil {
 			if !u.IsAbs() {
-				address = schCtx.Local.id + address
+				address = currentState.Local.id + address
 				if docPath != "" {
 					uriFolder := ""
 					if docPath[len(docPath)-1] == '/' {
@@ -306,9 +306,9 @@ func (r *Ref) _resolveRef(schCtx *SchemaContext) {
 				}
 			}
 		}
-		r.resolvedRoot = GetSchemaRegistry().Get(*schCtx.ApplicationContext, address)
+		r.resolvedRoot = GetSchemaRegistry().Get(ctx, address)
 	} else {
-		r.resolvedRoot = schCtx.Root
+		r.resolvedRoot = currentState.Root
 	}
 
 	if r.resolvedRoot == nil {
@@ -321,12 +321,12 @@ func (r *Ref) _resolveRef(schCtx *SchemaContext) {
 		return
 	}
 
-	localURI := schCtx.BaseURI
+	localURI := currentState.BaseURI
 	if r.resolvedRoot != nil && r.resolvedRoot.docPath != "" {
 		localURI = r.resolvedRoot.docPath
 		if r.fragmentLocalized && !r.resolvedFragment.IsEmpty() {
 			current := r.resolvedFragment.Head()
-			sch := schCtx.LocalRegistry.GetLocal("#" + *current)
+			sch := currentState.LocalRegistry.GetLocal("#" + *current)
 			if sch != nil {
 				r.resolved = sch
 				return
@@ -389,41 +389,41 @@ func NewRecursiveRef() Keyword {
 	return new(RecursiveRef)
 }
 
-// ValidateFromContext implements the Keyword interface for RecursiveRef
-func (r *RecursiveRef) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for RecursiveRef
+func (r *RecursiveRef) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[RecursiveRef] Validating")
-	if r.isLocationVisited(schCtx.InstanceLocation.String()) {
+	if r.isLocationVisited(currentState.InstanceLocation.String()) {
 		// recursion detected aborting further descent
 		return
 	}
 
 	if r.resolved == nil {
-		r._resolveRef(schCtx, errs)
+		r._resolveRef(ctx, currentState)
 		if r.resolved == nil {
-			AddErrorCtx(errs, schCtx, fmt.Sprintf("failed to resolve schema for ref %s", r.reference))
+			currentState.AddError(data, fmt.Sprintf("failed to resolve schema for ref %s", r.reference))
 		}
 	}
 
-	subCtx := NewSchemaContextFromSourceClean(*schCtx)
+	subState := currentState.NewSubState()
+	subState.ClearState()
 	if r.resolvedRoot != nil {
-		subCtx.BaseURI = r.resolvedRoot.docPath
-		subCtx.Root = r.resolvedRoot
+		subState.BaseURI = r.resolvedRoot.docPath
+		subState.Root = r.resolvedRoot
 	}
 	if r.resolvedFragment != nil && !r.resolvedFragment.IsEmpty() {
-		subCtx.BaseRelativeLocation = r.resolvedFragment
+		subState.BaseRelativeLocation = r.resolvedFragment
 	}
-	relLocation := schCtx.RelativeLocation.RawDescendant("$recursiveRef")
-	subCtx.RelativeLocation = &relLocation
+	subState.DescendRelative("$recursiveRef")
 
 	if r.validatingLocations == nil {
 		r.validatingLocations = map[string]bool{}
 	}
 
-	r.validatingLocations[schCtx.InstanceLocation.String()] = true
-	r.resolved.ValidateFromContext(subCtx, errs)
-	r.validatingLocations[schCtx.InstanceLocation.String()] = false
+	r.validatingLocations[currentState.InstanceLocation.String()] = true
+	r.resolved.ValidateKeyword(ctx, subState, data)
+	r.validatingLocations[currentState.InstanceLocation.String()] = false
 
-	schCtx.UpdateEvaluatedPropsAndItems(subCtx)
+	currentState.UpdateEvaluatedPropsAndItems(subState)
 }
 
 func (r *RecursiveRef) isLocationVisited(location string) bool {
@@ -438,26 +438,26 @@ func (r *RecursiveRef) isLocationVisited(location string) bool {
 }
 
 // _resolveRef attempts to resolve the reference from the top-level context
-func (r *RecursiveRef) _resolveRef(schCtx *SchemaContext, errs *[]KeyError) {
-	if schCtx.RecursiveAnchor != nil {
-		if schCtx.BaseURI == "" {
-			AddErrorCtx(errs, schCtx, fmt.Sprintf("base uri not set"))
+func (r *RecursiveRef) _resolveRef(ctx context.Context, currentState *ValidationState) {
+	if currentState.RecursiveAnchor != nil {
+		if currentState.BaseURI == "" {
+			currentState.AddError(nil, fmt.Sprintf("base uri not set"))
 			return
 		}
-		baseSchema := GetSchemaRegistry().Get(*schCtx.ApplicationContext, schCtx.BaseURI)
+		baseSchema := GetSchemaRegistry().Get(ctx, currentState.BaseURI)
 		if baseSchema != nil && baseSchema.HasKeyword("$recursiveAnchor") {
-			r.resolvedRoot = schCtx.RecursiveAnchor
+			r.resolvedRoot = currentState.RecursiveAnchor
 		}
 	}
 
 	if IsLocalSchemaID(r.reference) {
-		r.resolved = schCtx.LocalRegistry.GetLocal(r.reference)
+		r.resolved = currentState.LocalRegistry.GetLocal(r.reference)
 		if r.resolved != nil {
 			return
 		}
 	}
 
-	docPath := schCtx.BaseURI
+	docPath := currentState.BaseURI
 	if r.resolvedRoot != nil && r.resolvedRoot.docPath != "" {
 		docPath = r.resolvedRoot.docPath
 	}
@@ -486,7 +486,7 @@ func (r *RecursiveRef) _resolveRef(schCtx *SchemaContext, errs *[]KeyError) {
 		if address != "" {
 			if u, err := url.Parse(address); err == nil {
 				if !u.IsAbs() {
-					address = schCtx.Local.id + address
+					address = currentState.Local.id + address
 					if docPath != "" {
 						uriFolder := ""
 						if docPath[len(docPath)-1] == '/' {
@@ -501,9 +501,9 @@ func (r *RecursiveRef) _resolveRef(schCtx *SchemaContext, errs *[]KeyError) {
 					}
 				}
 			}
-			r.resolvedRoot = GetSchemaRegistry().Get(*schCtx.ApplicationContext, address)
+			r.resolvedRoot = GetSchemaRegistry().Get(ctx, address)
 		} else {
-			r.resolvedRoot = schCtx.Root
+			r.resolvedRoot = currentState.Root
 		}
 	}
 
@@ -517,7 +517,7 @@ func (r *RecursiveRef) _resolveRef(schCtx *SchemaContext, errs *[]KeyError) {
 		return
 	}
 
-	localURI := schCtx.BaseURI
+	localURI := currentState.BaseURI
 	if r.resolvedRoot != nil && r.resolvedRoot.docPath != "" {
 		localURI = r.resolvedRoot.docPath
 	}
@@ -569,8 +569,8 @@ func NewAnchor() Keyword {
 	return new(Anchor)
 }
 
-// ValidateFromContext implements the Keyword interface for Anchor
-func (a *Anchor) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for Anchor
+func (a *Anchor) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[Anchor] Validating")
 }
 
@@ -600,11 +600,11 @@ func (r *RecursiveAnchor) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return (*Schema)(r).Resolve(pointer, uri)
 }
 
-// ValidateFromContext implements the Keyword interface for RecursiveAnchor
-func (r *RecursiveAnchor) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for RecursiveAnchor
+func (r *RecursiveAnchor) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[RecursiveAnchor] Validating")
-	if schCtx.RecursiveAnchor == nil {
-		schCtx.RecursiveAnchor = schCtx.Local
+	if currentState.RecursiveAnchor == nil {
+		currentState.RecursiveAnchor = currentState.Local
 	}
 }
 
@@ -650,8 +650,8 @@ func (d *Defs) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
-// ValidateFromContext implements the Keyword interface for Defs
-func (d Defs) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for Defs
+func (d Defs) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[Defs] Validating")
 }
 
@@ -685,8 +685,8 @@ func (vo *Void) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
-// ValidateFromContext implements the Keyword interface for Void
-func (vo *Void) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for Void
+func (vo *Void) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[Void] Validating")
 	schemaDebug("[Void] WARNING this is a placeholder and should not be used")
 	schemaDebug("[Void] Void is always true")

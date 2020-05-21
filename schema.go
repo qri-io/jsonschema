@@ -254,83 +254,81 @@ type _keyOrder struct {
 	Order int
 }
 
-// Validate is a wrapper function to maintain some level of backwards
-// compatibility with versions v0.1.2 and prior
-func (s *Schema) Validate(propPath string, data interface{}, errs *[]KeyError) {
-	appCtx := context.Background()
-	schCtx := NewSchemaContext(s, data, &jptr.Pointer{}, &jptr.Pointer{}, &jptr.Pointer{}, &appCtx)
-	s.ValidateFromContext(schCtx, errs)
+// Validate initiates a fresh validation state and triggers the evaluation
+func (s *Schema) Validate(ctx context.Context, data interface{}) *ValidationState {
+	currentState := NewValidationState(s)
+	s.ValidateKeyword(ctx, currentState, data)
+	return currentState
 }
 
-// ValidateFromContext uses the schema to check an instance, collecting validation
+// ValidateKeyword uses the schema to check an instance, collecting validation
 // errors in a slice
-func (s *Schema) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+func (s *Schema) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[Schema] Validating")
 	if s == nil {
-		AddErrorCtx(errs, schCtx, fmt.Sprintf("schema is nil"))
+		currentState.AddError(data, fmt.Sprintf("schema is nil"))
 		return
 	}
 	if s.schemaType == schemaTypeTrue {
 		return
 	}
 	if s.schemaType == schemaTypeFalse {
-		AddErrorCtx(errs, schCtx, fmt.Sprintf("schema is always false"))
+		currentState.AddError(data, fmt.Sprintf("schema is always false"))
 		return
 	}
 
-	s.Register("", schCtx.LocalRegistry)
-	schCtx.LocalRegistry.RegisterLocal(s)
+	s.Register("", currentState.LocalRegistry)
+	currentState.LocalRegistry.RegisterLocal(s)
 
-	schCtx.Local = s
+	currentState.Local = s
 
 	refKeyword := s.keywords["$ref"]
 
 	if refKeyword == nil {
-		if schCtx.BaseURI == "" {
-			schCtx.BaseURI = s.docPath
+		if currentState.BaseURI == "" {
+			currentState.BaseURI = s.docPath
 		} else if s.docPath != "" {
 			if u, err := url.Parse(s.docPath); err == nil {
 				if u.IsAbs() {
-					schCtx.BaseURI = s.docPath
+					currentState.BaseURI = s.docPath
 				} else {
-					schCtx.BaseURI, _ = SafeResolveURL(schCtx.BaseURI, s.docPath)
+					currentState.BaseURI, _ = SafeResolveURL(currentState.BaseURI, s.docPath)
 				}
 			}
 		}
 	}
 
-	if schCtx.BaseURI != "" && strings.HasSuffix(schCtx.BaseURI, "#") {
-		schCtx.BaseURI = strings.TrimRight(schCtx.BaseURI, "#")
+	if currentState.BaseURI != "" && strings.HasSuffix(currentState.BaseURI, "#") {
+		currentState.BaseURI = strings.TrimRight(currentState.BaseURI, "#")
 	}
 
 	// TODO(arqu): only on versions bellow draft2019_09
 	// if refKeyword != nil {
-	// 	refKeyword.ValidateFromContext(schCtx, errs)
+	// 	refKeyword.ValidateKeyword(currentState, errs)
 	// 	return
 	// }
 
-	s.validateSchemakeywords(schCtx, errs)
+	s.validateSchemakeywords(ctx, currentState, data)
 }
 
 // validateSchemakeywords triggers validation of sub schemas and keywords
-func (s *Schema) validateSchemakeywords(schCtx *SchemaContext, errs *[]KeyError) {
+func (s *Schema) validateSchemakeywords(ctx context.Context, currentState *ValidationState, data interface{}) {
 	if s.keywords != nil {
 		for _, keyword := range s.orderedkeywords {
-			s.keywords[keyword].ValidateFromContext(schCtx, errs)
+			s.keywords[keyword].ValidateKeyword(ctx, currentState, data)
 		}
 	}
 }
 
 // ValidateBytes performs schema validation against a slice of json
 // byte data
-func (s *Schema) ValidateBytes(data []byte) ([]KeyError, error) {
+func (s *Schema) ValidateBytes(ctx context.Context, data []byte) ([]KeyError, error) {
 	var doc interface{}
-	errs := []KeyError{}
 	if err := json.Unmarshal(data, &doc); err != nil {
-		return errs, fmt.Errorf("error parsing JSON bytes: %s", err.Error())
+		return nil, fmt.Errorf("error parsing JSON bytes: %s", err.Error())
 	}
-	s.Validate("/", doc, &errs)
-	return errs, nil
+	vs := s.Validate(ctx, doc)
+	return *vs.Errs, nil
 }
 
 // TopLevelType returns a string representing the schema's top-level type.

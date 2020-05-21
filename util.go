@@ -18,6 +18,9 @@ var showDebug = os.Getenv("JSON_SCHEMA_DEBUG") == "1"
 // for debuging purposes
 func schemaDebug(message string, args ...interface{}) {
 	if showDebug {
+		if message[len(message)-1] != '\n' {
+			message += "\n"
+		}
 		fmt.Printf(message, args...)
 	}
 }

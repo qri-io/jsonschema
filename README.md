@@ -151,11 +151,11 @@ func (f *IsFoo) Resolve(pointer jptr.Pointer, uri string) *Schema {
   return nil
 }
 
-// ValidateFromContext implements jsonschema.Keyword
-func (f *IsFoo) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-  if str, ok := schCtx.Instance.(string); ok {
+// ValidateKeyword implements jsonschema.Keyword
+func (f *IsFoo) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
+  if str, ok := data.(string); ok {
     if str != "foo" {
-      AddErrorCtx(errs, schCtx, fmt.Sprintf("should be foo. plz make '%s' == foo. plz", str))
+      currentState.AddError(data, fmt.Sprintf("should be foo. plz make '%s' == foo. plz", str))
     }
   }
 }

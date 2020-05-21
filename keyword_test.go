@@ -1,6 +1,7 @@
 package jsonschema
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -9,7 +10,7 @@ import (
 )
 
 func TestErrorMessage(t *testing.T) {
-	LoadDraft2019_09()
+	ctx := context.Background()
 	cases := []struct {
 		schema, doc, message string
 	}{
@@ -23,7 +24,7 @@ func TestErrorMessage(t *testing.T) {
 			continue
 		}
 
-		errs, err := rs.ValidateBytes([]byte(c.doc))
+		errs, err := rs.ValidateBytes(ctx, []byte(c.doc))
 		if err != nil {
 			t.Errorf("case %d error validating: %s", i, err)
 			continue
@@ -54,10 +55,10 @@ func (f *IsFoo) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
-func (f *IsFoo) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
-	if str, ok := schCtx.Instance.(string); ok {
+func (f *IsFoo) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
+	if str, ok := data.(string); ok {
 		if str != "foo" {
-			AddErrorCtx(errs, schCtx, fmt.Sprintf("should be foo. plz make '%s' == foo. plz", str))
+			currentState.AddError(data, fmt.Sprintf("should be foo. plz make '%s' == foo. plz", str))
 		}
 	}
 }
@@ -66,6 +67,7 @@ func ExampleCustomValidator() {
 	// register a custom validator by supplying a function
 	// that creates new instances of your Validator.
 	RegisterKeyword("foo", newIsFoo)
+	ctx := context.Background()
 
 	schBytes := []byte(`{ "foo": true }`)
 
@@ -75,7 +77,7 @@ func ExampleCustomValidator() {
 		panic(err)
 	}
 
-	errs, err := rs.ValidateBytes([]byte(`"bar"`))
+	errs, err := rs.ValidateBytes(ctx, []byte(`"bar"`))
 	if err != nil {
 		panic(err)
 	}
@@ -94,7 +96,8 @@ func (f *FooKeyword) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
-func (f *FooKeyword) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {}
+func (f *FooKeyword) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
+}
 
 func TestRegisterFooKeyword(t *testing.T) {
 	newFoo := func() Keyword {

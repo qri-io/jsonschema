@@ -1,6 +1,7 @@
 package jsonschema
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -41,32 +42,24 @@ func (p *Properties) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
-// ValidateFromContext implements the Keyword interface for Properties
-func (p Properties) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for Properties
+func (p Properties) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[Properties] Validating")
-	if obj, ok := schCtx.Instance.(map[string]interface{}); ok {
-		subCtx := NewSchemaContextFromSource(*schCtx)
+	if obj, ok := data.(map[string]interface{}); ok {
+		subState := currentState.NewSubState()
 		for key := range p {
 			if _, ok := obj[key]; ok {
-				(*schCtx.EvaluatedPropertyNames)[key] = true
-				(*schCtx.LocalEvaluatedPropertyNames)[key] = true
-				subCtx.ClearContext()
-				if schCtx.BaseRelativeLocation != nil {
-					newPtr := schCtx.BaseRelativeLocation.RawDescendant("properties", key)
-					subCtx.BaseRelativeLocation = &newPtr
-				}
-				newPtr := schCtx.RelativeLocation.RawDescendant("properties", key)
-				subCtx.RelativeLocation = &newPtr
-				newPtr = schCtx.InstanceLocation.RawDescendant(key)
-				subCtx.InstanceLocation = &newPtr
+				currentState.SetEvaluatedKey(key)
+				subState.ClearState()
+				subState.DescendBaseFromState(currentState, "properties", key)
+				subState.DescendRelativeFromState(currentState, "properties", key)
+				subState.DescendInstanceFromState(currentState, key)
 
-				subCtx.Instance = obj[key]
-				errCountBefore := len(*errs)
-				p[key].ValidateFromContext(subCtx, errs)
-				errCountAfter := len(*errs)
-				if errCountBefore == errCountAfter {
-					JoinSets(schCtx.EvaluatedPropertyNames, *subCtx.EvaluatedPropertyNames)
-					JoinSets(schCtx.LocalEvaluatedPropertyNames, *subCtx.LocalEvaluatedPropertyNames)
+				subState.Errs = &[]KeyError{}
+				p[key].ValidateKeyword(ctx, subState, obj[key])
+				currentState.AddSubErrors(*subState.Errs...)
+				if subState.IsValid() {
+					currentState.UpdateEvaluatedPropsAndItems(subState)
 				}
 			}
 		}
@@ -103,13 +96,13 @@ func (r *Required) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
-// ValidateFromContext implements the Keyword interface for Required
-func (r Required) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for Required
+func (r Required) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[Required] Validating")
-	if obj, ok := schCtx.Instance.(map[string]interface{}); ok {
+	if obj, ok := data.(map[string]interface{}); ok {
 		for _, key := range r {
 			if _, ok := obj[key]; !ok {
-				AddErrorCtx(errs, schCtx, fmt.Sprintf(`"%s" value is required`, key))
+				currentState.AddError(data, fmt.Sprintf(`"%s" value is required`, key))
 			}
 		}
 	}
@@ -143,12 +136,12 @@ func (m *MaxProperties) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
-// ValidateFromContext implements the Keyword interface for MaxProperties
-func (m MaxProperties) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for MaxProperties
+func (m MaxProperties) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[MaxProperties] Validating")
-	if obj, ok := schCtx.Instance.(map[string]interface{}); ok {
+	if obj, ok := data.(map[string]interface{}); ok {
 		if len(obj) > int(m) {
-			AddErrorCtx(errs, schCtx, fmt.Sprintf("%d object Properties exceed %d maximum", len(obj), m))
+			currentState.AddError(data, fmt.Sprintf("%d object Properties exceed %d maximum", len(obj), m))
 		}
 	}
 }
@@ -169,12 +162,12 @@ func (m *MinProperties) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
-// ValidateFromContext implements the Keyword interface for MinProperties
-func (m MinProperties) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for MinProperties
+func (m MinProperties) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[MinProperties] Validating")
-	if obj, ok := schCtx.Instance.(map[string]interface{}); ok {
+	if obj, ok := data.(map[string]interface{}); ok {
 		if len(obj) < int(m) {
-			AddErrorCtx(errs, schCtx, fmt.Sprintf("%d object Properties below %d minimum", len(obj), m))
+			currentState.AddError(data, fmt.Sprintf("%d object Properties below %d minimum", len(obj), m))
 		}
 	}
 }
@@ -222,39 +215,25 @@ func (p *PatternProperties) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return patProp.schema.Resolve(pointer.Tail(), uri)
 }
 
-// ValidateFromContext implements the Keyword interface for PatternProperties
-func (p PatternProperties) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for PatternProperties
+func (p PatternProperties) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[PatternProperties] Validating")
-	if obj, ok := schCtx.Instance.(map[string]interface{}); ok {
+	if obj, ok := data.(map[string]interface{}); ok {
 		for key, val := range obj {
 			for _, ptn := range p {
 				if ptn.re.Match([]byte(key)) {
-					(*schCtx.EvaluatedPropertyNames)[key] = true
-					(*schCtx.LocalEvaluatedPropertyNames)[key] = true
-					subCtx := NewSchemaContextFromSource(*schCtx)
-					if schCtx.BaseRelativeLocation != nil {
-						newPtr := schCtx.BaseRelativeLocation.RawDescendant("patternProperties", key)
-						subCtx.BaseRelativeLocation = &newPtr
-					}
-					newPtr := schCtx.RelativeLocation.RawDescendant("patternProperties", key)
-					subCtx.RelativeLocation = &newPtr
-					newPtr = schCtx.InstanceLocation.RawDescendant(key)
-					subCtx.InstanceLocation = &newPtr
+					currentState.SetEvaluatedKey(key)
+					subState := currentState.NewSubState()
+					subState.DescendBase("patternProperties", key)
+					subState.DescendRelative("patternProperties", key)
+					subState.DescendInstance(key)
 
-					subCtx.Instance = val
-					errCountBefore := len(*errs)
-					ptn.schema.ValidateFromContext(subCtx, errs)
-					errCountAfter := len(*errs)
+					subState.Errs = &[]KeyError{}
+					ptn.schema.ValidateKeyword(ctx, subState, val)
+					currentState.AddSubErrors(*subState.Errs...)
 
-					if errCountBefore == errCountAfter {
-						JoinSets(schCtx.EvaluatedPropertyNames, *subCtx.EvaluatedPropertyNames)
-						JoinSets(schCtx.LocalEvaluatedPropertyNames, *subCtx.LocalEvaluatedPropertyNames)
-						if schCtx.LastEvaluatedIndex < subCtx.LastEvaluatedIndex {
-							schCtx.LastEvaluatedIndex = subCtx.LastEvaluatedIndex
-						}
-						if schCtx.LastEvaluatedIndex < subCtx.LocalLastEvaluatedIndex {
-							schCtx.LastEvaluatedIndex = subCtx.LocalLastEvaluatedIndex
-						}
+					if subState.IsValid() {
+						currentState.UpdateEvaluatedPropsAndItems(subState)
 					}
 				}
 			}
@@ -334,35 +313,28 @@ func (ap *AdditionalProperties) Resolve(pointer jptr.Pointer, uri string) *Schem
 	return (*Schema)(ap).Resolve(pointer, uri)
 }
 
-// ValidateFromContext implements the Keyword interface for AdditionalProperties
-func (ap *AdditionalProperties) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for AdditionalProperties
+func (ap *AdditionalProperties) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[AdditionalProperties] Validating")
-	if obj, ok := schCtx.Instance.(map[string]interface{}); ok {
-		subCtx := NewSchemaContextFromSourceClean(*schCtx)
-		if schCtx.BaseRelativeLocation != nil {
-			newPtr := schCtx.BaseRelativeLocation.RawDescendant("additionalProperties")
-			subCtx.BaseRelativeLocation = &newPtr
-		}
-		newPtr := schCtx.RelativeLocation.RawDescendant("additionalProperties")
-		subCtx.RelativeLocation = &newPtr
+	if obj, ok := data.(map[string]interface{}); ok {
+		subState := currentState.NewSubState()
+		subState.ClearState()
+		subState.DescendBase("additionalProperties")
+		subState.DescendRelative("additionalProperties")
 		for key := range obj {
-			if _, ok := (*schCtx.LocalEvaluatedPropertyNames)[key]; ok {
+			if currentState.IsLocallyEvaluatedKey(key) {
 				continue
 			}
 			if ap.schemaType == schemaTypeFalse {
-				AddErrorCtx(errs, schCtx, "additional properties are not allowed")
+				currentState.AddError(data, "additional properties are not allowed")
 				return
 			}
-			(*schCtx.EvaluatedPropertyNames)[key] = true
-			(*schCtx.LocalEvaluatedPropertyNames)[key] = true
-			subCtx.ClearContext()
-			newPtr = schCtx.InstanceLocation.RawDescendant(key)
-			subCtx.InstanceLocation = &newPtr
+			currentState.SetEvaluatedKey(key)
+			subState.ClearState()
+			subState.DescendInstanceFromState(currentState, key)
 
-			subCtx.Instance = obj[key]
-			(*Schema)(ap).ValidateFromContext(subCtx, errs)
-			JoinSets(schCtx.EvaluatedPropertyNames, *subCtx.EvaluatedPropertyNames)
-			JoinSets(schCtx.LocalEvaluatedPropertyNames, *subCtx.LocalEvaluatedPropertyNames)
+			(*Schema)(ap).ValidateKeyword(ctx, subState, obj[key])
+			currentState.UpdateEvaluatedPropsAndItems(subState)
 		}
 	}
 }
@@ -395,25 +367,16 @@ func (p *PropertyNames) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return (*Schema)(p).Resolve(pointer, uri)
 }
 
-// ValidateFromContext implements the Keyword interface for PropertyNames
-func (p *PropertyNames) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for PropertyNames
+func (p *PropertyNames) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[PropertyNames] Validating")
-	if obj, ok := schCtx.Instance.(map[string]interface{}); ok {
+	if obj, ok := data.(map[string]interface{}); ok {
 		for key := range obj {
-			subCtx := NewSchemaContextFromSource(*schCtx)
-			if schCtx.BaseRelativeLocation != nil {
-				if newPtr, err := schCtx.BaseRelativeLocation.Descendant("propertyNames"); err == nil {
-					subCtx.BaseRelativeLocation = &newPtr
-				}
-			}
-			if newPtr, err := schCtx.RelativeLocation.Descendant("propertyNames"); err == nil {
-				subCtx.RelativeLocation = &newPtr
-			}
-			if newPtr, err := schCtx.InstanceLocation.Descendant(key); err == nil {
-				subCtx.InstanceLocation = &newPtr
-			}
-			subCtx.Instance = key
-			(*Schema)(p).ValidateFromContext(subCtx, errs)
+			subState := currentState.NewSubState()
+			subState.DescendBase("propertyNames")
+			subState.DescendRelative("propertyNames")
+			subState.DescendInstance(key)
+			(*Schema)(p).ValidateKeyword(ctx, subState, key)
 		}
 	}
 }
@@ -475,21 +438,15 @@ func (d *DependentSchemas) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
-// ValidateFromContext implements the Keyword interface for DependentSchemas
-func (d *DependentSchemas) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for DependentSchemas
+func (d *DependentSchemas) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[DependentSchemas] Validating")
 	for _, v := range *d {
-		subCtx := NewSchemaContextFromSource(*schCtx)
-		if schCtx.BaseRelativeLocation != nil {
-			if newPtr, err := schCtx.BaseRelativeLocation.Descendant("dependentSchemas"); err == nil {
-				subCtx.BaseRelativeLocation = &newPtr
-			}
-		}
-		if newPtr, err := schCtx.RelativeLocation.Descendant("dependentSchemas"); err == nil {
-			subCtx.RelativeLocation = &newPtr
-		}
-		subCtx.Misc["dependencyParent"] = "dependentSchemas"
-		v.ValidateFromContext(subCtx, errs)
+		subState := currentState.NewSubState()
+		subState.DescendBase("dependentSchemas")
+		subState.DescendRelative("dependentSchemas")
+		subState.Misc["dependencyParent"] = "dependentSchemas"
+		v.ValidateKeyword(ctx, subState, data)
 	}
 }
 
@@ -543,27 +500,21 @@ func (d *SchemaDependency) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return d.schema.Resolve(pointer, uri)
 }
 
-// ValidateFromContext implements the Keyword interface for SchemaDependency
-func (d *SchemaDependency) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for SchemaDependency
+func (d *SchemaDependency) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[SchemaDependency] Validating")
-	data := map[string]interface{}{}
+	depsData := map[string]interface{}{}
 	ok := false
-	if data, ok = schCtx.Instance.(map[string]interface{}); !ok {
+	if depsData, ok = data.(map[string]interface{}); !ok {
 		return
 	}
-	if _, okProp := data[d.prop]; !okProp {
+	if _, okProp := depsData[d.prop]; !okProp {
 		return
 	}
-	subCtx := NewSchemaContextFromSource(*schCtx)
-	if schCtx.BaseRelativeLocation != nil {
-		if newPtr, err := schCtx.BaseRelativeLocation.Descendant(d.prop); err == nil {
-			subCtx.BaseRelativeLocation = &newPtr
-		}
-	}
-	if newPtr, err := schCtx.RelativeLocation.Descendant(d.prop); err == nil {
-		subCtx.RelativeLocation = &newPtr
-	}
-	d.schema.ValidateFromContext(subCtx, errs)
+	subState := currentState.NewSubState()
+	subState.DescendBase(d.prop)
+	subState.DescendRelative(d.prop)
+	d.schema.ValidateKeyword(ctx, subState, data)
 }
 
 // MarshalJSON implements the json.Marshaler interface for SchemaDependency
@@ -592,21 +543,15 @@ func (d *DependentRequired) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
-// ValidateFromContext implements the Keyword interface for DependentRequired
-func (d *DependentRequired) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for DependentRequired
+func (d *DependentRequired) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[DependentRequired] Validating")
 	for _, prop := range *d {
-		subCtx := NewSchemaContextFromSource(*schCtx)
-		if schCtx.BaseRelativeLocation != nil {
-			if newPtr, err := schCtx.BaseRelativeLocation.Descendant("dependentRequired"); err == nil {
-				subCtx.BaseRelativeLocation = &newPtr
-			}
-		}
-		if newPtr, err := schCtx.RelativeLocation.Descendant("dependentRequired"); err == nil {
-			subCtx.RelativeLocation = &newPtr
-		}
-		subCtx.Misc["dependencyParent"] = "dependentRequired"
-		prop.ValidateFromContext(subCtx, errs)
+		subState := currentState.NewSubState()
+		subState.DescendBase("dependentRequired")
+		subState.DescendRelative("dependentRequired")
+		subState.Misc["dependencyParent"] = "dependentRequired"
+		prop.ValidateKeyword(ctx, subState, data)
 	}
 }
 
@@ -666,16 +611,16 @@ func (p *PropertyDependency) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
-// ValidateFromContext implements the Keyword interface for PropertyDependency
-func (p *PropertyDependency) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for PropertyDependency
+func (p *PropertyDependency) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[PropertyDependency] Validating")
-	if obj, ok := schCtx.Instance.(map[string]interface{}); ok {
+	if obj, ok := data.(map[string]interface{}); ok {
 		if obj[p.prop] == nil {
 			return
 		}
 		for _, dep := range p.dependencies {
 			if obj[dep] == nil {
-				AddErrorCtx(errs, schCtx, fmt.Sprintf(`"%s" property is required`, dep))
+				currentState.AddError(data, fmt.Sprintf(`"%s" property is required`, dep))
 			}
 		}
 	}
@@ -711,30 +656,25 @@ func (up *UnevaluatedProperties) Resolve(pointer jptr.Pointer, uri string) *Sche
 	return (*Schema)(up).Resolve(pointer, uri)
 }
 
-// ValidateFromContext implements the Keyword interface for UnevaluatedProperties
-func (up *UnevaluatedProperties) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for UnevaluatedProperties
+func (up *UnevaluatedProperties) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[UnevaluatedProperties] Validating")
-	if obj, ok := schCtx.Instance.(map[string]interface{}); ok {
-		subCtx := NewSchemaContextFromSourceClean(*schCtx)
-		if schCtx.BaseRelativeLocation != nil {
-			newPtr := schCtx.BaseRelativeLocation.RawDescendant("unevaluatedProperties")
-			subCtx.BaseRelativeLocation = &newPtr
-		}
-		newPtr := schCtx.RelativeLocation.RawDescendant("unevaluatedProperties")
-		subCtx.RelativeLocation = &newPtr
+	if obj, ok := data.(map[string]interface{}); ok {
+		subState := currentState.NewSubState()
+		subState.ClearState()
+		subState.DescendBase("unevaluatedProperties")
+		subState.DescendRelative("unevaluatedProperties")
 		for key := range obj {
-			if _, ok := (*schCtx.EvaluatedPropertyNames)[key]; ok {
+			if currentState.IsEvaluatedKey(key) {
 				continue
 			}
 			if up.schemaType == schemaTypeFalse {
-				AddErrorCtx(errs, schCtx, "unevaluated properties are not allowed")
+				currentState.AddError(data, "unevaluated properties are not allowed")
 				return
 			}
-			newPtr = schCtx.InstanceLocation.RawDescendant(key)
-			subCtx.InstanceLocation = &newPtr
+			subState.DescendInstanceFromState(currentState, key)
 
-			subCtx.Instance = obj[key]
-			(*Schema)(up).ValidateFromContext(subCtx, errs)
+			(*Schema)(up).ValidateKeyword(ctx, subState, obj[key])
 		}
 	}
 }

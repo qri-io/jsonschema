@@ -2,6 +2,7 @@ package jsonschema
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -93,9 +94,9 @@ var MaxKeywordErrStringLen = 20
 // Keyword is an interface for anything that can validate.
 // JSON-Schema keywords are all examples of Keyword
 type Keyword interface {
-	// ValidateFromContext checks decoded JSON data and writes
+	// ValidateKeyword checks decoded JSON data and writes
 	// validation errors (if any) to an outparam slice of KeyErrors
-	ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError)
+	ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{})
 
 	// Register builds up the schema tree by evaluating the current key
 	// and the current location pointer which is later used with resolve to
@@ -153,27 +154,4 @@ func InvalidValueString(data interface{}) string {
 		bt = append(bt[:MaxKeywordErrStringLen], []byte("...")...)
 	}
 	return string(bt)
-}
-
-// AddError creates and appends a KeyError to errs
-// deprecated but kept for backwards compatibility
-func AddError(errs *[]KeyError, propPath string, data interface{}, msg string) {
-	*errs = append(*errs, KeyError{
-		PropertyPath: propPath,
-		InvalidValue: data,
-		Message:      msg,
-	})
-}
-
-// AddErrorCtx creates and appends a KeyError to errs from the provided schema context
-func AddErrorCtx(errs *[]KeyError, schCtx *SchemaContext, msg string) {
-	instancePath := schCtx.InstanceLocation.String()
-	if len(instancePath) == 0 {
-		instancePath = "/"
-	}
-	*errs = append(*errs, KeyError{
-		PropertyPath: instancePath,
-		InvalidValue: schCtx.Instance,
-		Message:      msg,
-	})
 }

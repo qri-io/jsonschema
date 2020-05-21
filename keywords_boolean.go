@@ -1,6 +1,7 @@
 package jsonschema
 
 import (
+	"context"
 	"encoding/json"
 	"strconv"
 
@@ -46,31 +47,27 @@ func (a *AllOf) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
-// ValidateFromContext implements the Keyword interface for AllOf
-func (a *AllOf) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for AllOf
+func (a *AllOf) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[AllOf] Validating")
-	contextCopy := NewSchemaContextFromSourceClean(*schCtx)
+	stateCopy := currentState.NewSubState()
+	stateCopy.ClearState()
 	invalid := false
 	for i, sch := range *a {
-		subCtx := NewSchemaContextFromSourceClean(*schCtx)
-		if subCtx.BaseRelativeLocation != nil {
-			if newPtr, err := schCtx.BaseRelativeLocation.Descendant("allOf/" + strconv.Itoa(i)); err == nil {
-				subCtx.BaseRelativeLocation = &newPtr
-			}
-		}
-		if newPtr, err := schCtx.RelativeLocation.Descendant("allOf/" + strconv.Itoa(i)); err == nil {
-			subCtx.RelativeLocation = &newPtr
-		}
-		errsBefore := len(*errs)
-		sch.ValidateFromContext(subCtx, errs)
-		contextCopy.UpdateEvaluatedPropsAndItems(subCtx)
-		errsAfter := len(*errs)
-		if errsBefore != errsAfter {
+		subState := currentState.NewSubState()
+		subState.ClearState()
+		subState.DescendBase("allOf", strconv.Itoa(i))
+		subState.DescendRelative("allOf", strconv.Itoa(i))
+		subState.Errs = &[]KeyError{}
+		sch.ValidateKeyword(ctx, subState, data)
+		currentState.AddSubErrors(*subState.Errs...)
+		stateCopy.UpdateEvaluatedPropsAndItems(subState)
+		if !subState.IsValid() {
 			invalid = true
 		}
 	}
 	if !invalid {
-		schCtx.UpdateEvaluatedPropsAndItems(contextCopy)
+		currentState.UpdateEvaluatedPropsAndItems(stateCopy)
 	}
 }
 
@@ -134,28 +131,23 @@ func (a *AnyOf) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
-// ValidateFromContext implements the Keyword interface for AnyOf
-func (a *AnyOf) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for AnyOf
+func (a *AnyOf) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[AnyOf] Validating")
 	for i, sch := range *a {
-		subCtx := NewSchemaContextFromSourceClean(*schCtx)
-		if subCtx.BaseRelativeLocation != nil {
-			if newPtr, err := schCtx.BaseRelativeLocation.Descendant("anyOf/" + strconv.Itoa(i)); err == nil {
-				subCtx.BaseRelativeLocation = &newPtr
-			}
-		}
-		if newPtr, err := schCtx.RelativeLocation.Descendant("anyOf/" + strconv.Itoa(i)); err == nil {
-			subCtx.RelativeLocation = &newPtr
-		}
-		test := &[]KeyError{}
-		sch.ValidateFromContext(subCtx, test)
-		if len(*test) == 0 {
-			schCtx.UpdateEvaluatedPropsAndItems(subCtx)
+		subState := currentState.NewSubState()
+		subState.ClearState()
+		subState.DescendBase("anyOf", strconv.Itoa(i))
+		subState.DescendRelative("anyOf", strconv.Itoa(i))
+		subState.Errs = &[]KeyError{}
+		sch.ValidateKeyword(ctx, subState, data)
+		if subState.IsValid() {
+			currentState.UpdateEvaluatedPropsAndItems(subState)
 			return
 		}
 	}
 
-	AddErrorCtx(errs, schCtx, "did Not match any specified AnyOf schemas")
+	currentState.AddError(data, "did Not match any specified AnyOf schemas")
 }
 
 // JSONProp implements the JSONPather for AnyOf
@@ -218,36 +210,32 @@ func (o *OneOf) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
-// ValidateFromContext implements the Keyword interface for OneOf
-func (o *OneOf) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for OneOf
+func (o *OneOf) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[OneOf] Validating")
 	matched := false
-	contextCopy := NewSchemaContextFromSourceClean(*schCtx)
+	stateCopy := currentState.NewSubState()
+	stateCopy.ClearState()
 	for i, sch := range *o {
-		subCtx := NewSchemaContextFromSourceClean(*schCtx)
-		if subCtx.BaseRelativeLocation != nil {
-			if newPtr, err := schCtx.BaseRelativeLocation.Descendant("oneOf/" + strconv.Itoa(i)); err == nil {
-				subCtx.BaseRelativeLocation = &newPtr
-			}
-		}
-		if newPtr, err := schCtx.RelativeLocation.Descendant("oneOf/" + strconv.Itoa(i)); err == nil {
-			subCtx.RelativeLocation = &newPtr
-		}
-		test := &[]KeyError{}
-		sch.ValidateFromContext(subCtx, test)
-		contextCopy.UpdateEvaluatedPropsAndItems(subCtx)
-		if len(*test) == 0 {
+		subState := currentState.NewSubState()
+		subState.ClearState()
+		subState.DescendBase("oneOf", strconv.Itoa(i))
+		subState.DescendRelative("oneOf", strconv.Itoa(i))
+		subState.Errs = &[]KeyError{}
+		sch.ValidateKeyword(ctx, subState, data)
+		stateCopy.UpdateEvaluatedPropsAndItems(subState)
+		if subState.IsValid() {
 			if matched {
-				AddErrorCtx(errs, schCtx, "matched more than one specified OneOf schemas")
+				currentState.AddError(data, "matched more than one specified OneOf schemas")
 				return
 			}
 			matched = true
 		}
 	}
 	if !matched {
-		AddErrorCtx(errs, schCtx, "did not match any of the specified OneOf schemas")
+		currentState.AddError(data, "did not match any of the specified OneOf schemas")
 	} else {
-		schCtx.UpdateEvaluatedPropsAndItems(contextCopy)
+		currentState.UpdateEvaluatedPropsAndItems(stateCopy)
 	}
 }
 
@@ -290,24 +278,18 @@ func (n *Not) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return (*Schema)(n).Resolve(pointer, uri)
 }
 
-// ValidateFromContext implements the Keyword interface for Not
-func (n *Not) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for Not
+func (n *Not) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[Not] Validating")
-	subCtx := NewSchemaContextFromSource(*schCtx)
-	if subCtx.BaseRelativeLocation != nil {
-		if newPtr, err := schCtx.BaseRelativeLocation.Descendant("not"); err == nil {
-			subCtx.BaseRelativeLocation = &newPtr
-		}
-	}
-	if newPtr, err := schCtx.RelativeLocation.Descendant("not"); err == nil {
-		subCtx.RelativeLocation = &newPtr
-	}
+	subState := currentState.NewSubState()
+	subState.DescendBase("not")
+	subState.DescendRelative("not")
 
-	test := &[]KeyError{}
+	subState.Errs = &[]KeyError{}
 	sch := Schema(*n)
-	sch.ValidateFromContext(subCtx, test)
-	if len(*test) == 0 {
-		AddErrorCtx(errs, schCtx, "result was valid, ('not') expected invalid")
+	sch.ValidateKeyword(ctx, subState, data)
+	if subState.IsValid() {
+		currentState.AddError(data, "result was valid, ('not') expected invalid")
 	}
 }
 

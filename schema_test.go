@@ -11,11 +11,11 @@ import (
 	"strings"
 	"testing"
 
-	jptr "github.com/qri-io/jsonpointer"
 	"github.com/sergi/go-diff/diffmatchpatch"
 )
 
 func ExampleBasic() {
+	ctx := context.Background()
 	var schemaData = []byte(`{
 	"title": "Person",
 	"type": "object",
@@ -50,7 +50,7 @@ func ExampleBasic() {
 		"firstName" : "George",
 		"lastName" : "Michael"
 		}`)
-	errs, err := rs.ValidateBytes(valid)
+	errs, err := rs.ValidateBytes(ctx, valid)
 	if err != nil {
 		panic(err)
 	}
@@ -63,7 +63,7 @@ func ExampleBasic() {
 		"firstName" : "Prince"
 		}`)
 
-	errs, err = rs.ValidateBytes(invalidPerson)
+	errs, err = rs.ValidateBytes(ctx, invalidPerson)
 	if err != nil {
 		panic(err)
 	}
@@ -78,7 +78,7 @@ func ExampleBasic() {
 			"firstName" : "Nas"
 			}]
 		}`)
-	errs, err = rs.ValidateBytes(invalidFriend)
+	errs, err = rs.ValidateBytes(ctx, invalidFriend)
 	if err != nil {
 		panic(err)
 	}
@@ -526,6 +526,7 @@ type TestCase struct {
 func runJSONTests(t *testing.T, testFilepaths []string) {
 	tests := 0
 	passed := 0
+	ctx := context.Background()
 	for _, path := range testFilepaths {
 		t.Run(path, func(t *testing.T) {
 			base := filepath.Base(path)
@@ -545,11 +546,9 @@ func runJSONTests(t *testing.T, testFilepaths []string) {
 				sc := ts.Schema
 				for i, c := range ts.Tests {
 					tests++
-					got := []KeyError{}
-					sc.Validate("/", c.Data, &got)
-					valid := len(got) == 0
-					if valid != c.Valid {
-						t.Errorf("%s: %s test case %d: %s. error: %s", base, ts.Description, i, c.Description, got)
+					validationState := sc.Validate(ctx, c.Data)
+					if validationState.IsValid() != c.Valid {
+						t.Errorf("%s: %s test case %d: %s. error: %s", base, ts.Description, i, c.Description, *validationState.Errs)
 					} else {
 						passed++
 					}
@@ -643,6 +642,7 @@ func TestJSONCoding(t *testing.T) {
 }
 
 func TestValidateBytes(t *testing.T) {
+	ctx := context.Background()
 	cases := []struct {
 		schema string
 		input  string
@@ -665,7 +665,7 @@ func TestValidateBytes(t *testing.T) {
 			continue
 		}
 
-		errors, err := rs.ValidateBytes([]byte(c.input))
+		errors, err := rs.ValidateBytes(ctx, []byte(c.input))
 		if err != nil {
 			t.Errorf("case %d error validating: %s", i, err.Error())
 			continue
@@ -982,6 +982,7 @@ func BenchmarkType(b *testing.B) {
 }
 
 func runBenchmark(b *testing.B, dataFn func(sampleSize int) (string, interface{})) {
+	ctx := context.Background()
 	for _, sampleSize := range []int{1, 10, 100, 1000} {
 		b.Run(fmt.Sprintf("sample size %v", sampleSize), func(b *testing.B) {
 			schema, data := dataFn(sampleSize)
@@ -996,21 +997,16 @@ func runBenchmark(b *testing.B, dataFn func(sampleSize int) (string, interface{}
 				return
 			}
 
-			var errs []KeyError
-			bPtr := jptr.NewPointer()
-			rPtr := jptr.NewPointer()
-			iPtr := jptr.NewPointer()
-			appCtx := context.Background()
-			schCtx := NewSchemaContext(&validator, data, &bPtr, &rPtr, &iPtr, &appCtx)
-			schCtx.ClearContext()
+			currentState := NewValidationState(&validator)
+			currentState.ClearState()
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				validator.ValidateFromContext(schCtx, &errs)
+				validator.ValidateKeyword(ctx, currentState, data)
 			}
 			b.StopTimer()
 
-			if len(errs) > 0 {
-				b.Errorf("error running benchmark: %s", errs)
+			if !currentState.IsValid() {
+				b.Errorf("error running benchmark: %s", *currentState.Errs)
 			}
 		})
 	}

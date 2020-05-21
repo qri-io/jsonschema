@@ -1,6 +1,7 @@
 package jsonschema
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/mail"
@@ -48,11 +49,11 @@ func (f *Format) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
-// ValidateFromContext implements the Keyword interface for Format
-func (f Format) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for Format
+func (f Format) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[Format] Validating")
 	var err error
-	if str, ok := schCtx.Instance.(string); ok {
+	if str, ok := data.(string); ok {
 		switch f {
 		case "date-time":
 			err = isValidDateTime(str)
@@ -92,7 +93,7 @@ func (f Format) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 			err = nil
 		}
 		if err != nil {
-			AddErrorCtx(errs, schCtx, fmt.Sprintf("invalid %s: %s", f, err.Error()))
+			currentState.AddError(data, fmt.Sprintf("invalid %s: %s", f, err.Error()))
 		}
 	}
 }

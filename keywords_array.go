@@ -1,6 +1,7 @@
 package jsonschema
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -51,49 +52,35 @@ func (it *Items) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
-// ValidateFromContext implements the Keyword interface for Items
-func (it Items) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for Items
+func (it Items) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[Items] Validating")
-	if arr, ok := schCtx.Instance.([]interface{}); ok {
+	if arr, ok := data.([]interface{}); ok {
 		if it.single {
-			subCtx := NewSchemaContextFromSource(*schCtx)
-			if schCtx.BaseRelativeLocation != nil {
-				newPtr := schCtx.BaseRelativeLocation.RawDescendant("items")
-				subCtx.BaseRelativeLocation = &newPtr
-			}
-			newPtr := schCtx.RelativeLocation.RawDescendant("items")
-			subCtx.RelativeLocation = &newPtr
+			subState := currentState.NewSubState()
+			subState.DescendBase("items")
+			subState.DescendRelative("items")
 			for i, elem := range arr {
-				subCtx.ClearContext()
-				newPtr = schCtx.InstanceLocation.RawDescendant(strconv.Itoa(i))
-				subCtx.InstanceLocation = &newPtr
-				subCtx.Instance = elem
-				it.Schemas[0].ValidateFromContext(subCtx, errs)
-				subCtx.LastEvaluatedIndex = i
-				subCtx.LocalLastEvaluatedIndex = i
+				subState.ClearState()
+				subState.DescendInstanceFromState(currentState, strconv.Itoa(i))
+				it.Schemas[0].ValidateKeyword(ctx, subState, elem)
+				subState.SetEvaluatedIndex(i)
 				// TODO(arqu): this might clash with additional/unevaluated
 				// Properties/Items, should separate out
-				schCtx.UpdateEvaluatedPropsAndItems(subCtx)
+				currentState.UpdateEvaluatedPropsAndItems(subState)
 			}
 		} else {
-			subCtx := NewSchemaContextFromSource(*schCtx)
+			subState := currentState.NewSubState()
+			subState.DescendBase("items")
 			for i, vs := range it.Schemas {
 				if i < len(arr) {
-					subCtx.ClearContext()
-					if schCtx.BaseRelativeLocation != nil {
-						newPtr := schCtx.BaseRelativeLocation.RawDescendant("items", strconv.Itoa(i))
-						subCtx.BaseRelativeLocation = &newPtr
-					}
-					newPtr := schCtx.RelativeLocation.RawDescendant("items", strconv.Itoa(i))
-					subCtx.RelativeLocation = &newPtr
-					newPtr = schCtx.InstanceLocation.RawDescendant(strconv.Itoa(i))
-					subCtx.InstanceLocation = &newPtr
+					subState.ClearState()
+					subState.DescendRelativeFromState(currentState, "items", strconv.Itoa(i))
+					subState.DescendInstanceFromState(currentState, strconv.Itoa(i))
 
-					subCtx.Instance = arr[i]
-					vs.ValidateFromContext(subCtx, errs)
-					subCtx.LastEvaluatedIndex = i
-					subCtx.LocalLastEvaluatedIndex = i
-					schCtx.UpdateEvaluatedPropsAndItems(subCtx)
+					vs.ValidateKeyword(ctx, subState, arr[i])
+					subState.SetEvaluatedIndex(i)
+					currentState.UpdateEvaluatedPropsAndItems(subState)
 				}
 			}
 		}
@@ -160,12 +147,12 @@ func (m *MaxItems) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
-// ValidateFromContext implements the Keyword interface for MaxItems
-func (m MaxItems) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for MaxItems
+func (m MaxItems) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[MaxItems] Validating")
-	if arr, ok := schCtx.Instance.([]interface{}); ok {
+	if arr, ok := data.([]interface{}); ok {
 		if len(arr) > int(m) {
-			AddErrorCtx(errs, schCtx, fmt.Sprintf("array length %d exceeds %d max", len(arr), m))
+			currentState.AddError(data, fmt.Sprintf("array length %d exceeds %d max", len(arr), m))
 			return
 		}
 	}
@@ -187,12 +174,12 @@ func (m *MinItems) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
-// ValidateFromContext implements the Keyword interface for MinItems
-func (m MinItems) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for MinItems
+func (m MinItems) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[MinItems] Validating")
-	if arr, ok := schCtx.Instance.([]interface{}); ok {
+	if arr, ok := data.([]interface{}); ok {
 		if len(arr) < int(m) {
-			AddErrorCtx(errs, schCtx, fmt.Sprintf("array length %d below %d minimum items", len(arr), m))
+			currentState.AddError(data, fmt.Sprintf("array length %d below %d minimum items", len(arr), m))
 			return
 		}
 	}
@@ -214,15 +201,15 @@ func (u *UniqueItems) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
-// ValidateFromContext implements the Keyword interface for UniqueItems
-func (u UniqueItems) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for UniqueItems
+func (u UniqueItems) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[UniqueItems] Validating")
-	if arr, ok := schCtx.Instance.([]interface{}); ok {
+	if arr, ok := data.([]interface{}); ok {
 		found := []interface{}{}
 		for _, elem := range arr {
 			for _, f := range found {
 				if reflect.DeepEqual(f, elem) {
-					AddErrorCtx(errs, schCtx, fmt.Sprintf("array items must be unique. duplicated entry: %v", elem))
+					currentState.AddError(data, fmt.Sprintf("array items must be unique. duplicated entry: %v", elem))
 					return
 				}
 			}
@@ -249,36 +236,31 @@ func (c *Contains) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return (*Schema)(c).Resolve(pointer, uri)
 }
 
-// ValidateFromContext implements the Keyword interface for Contains
-func (c *Contains) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for Contains
+func (c *Contains) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[Contains] Validating")
 	v := Schema(*c)
-	if arr, ok := schCtx.Instance.([]interface{}); ok {
+	if arr, ok := data.([]interface{}); ok {
 		valid := false
 		matchCount := 0
-		subCtx := NewSchemaContextFromSourceClean(*schCtx)
-		if schCtx.BaseRelativeLocation != nil {
-			newPtr := schCtx.BaseRelativeLocation.RawDescendant("contains")
-			subCtx.BaseRelativeLocation = &newPtr
-		}
-		newPtr := schCtx.RelativeLocation.RawDescendant("contains")
-		subCtx.RelativeLocation = &newPtr
+		subState := currentState.NewSubState()
+		subState.ClearState()
+		subState.DescendBase("contains")
+		subState.DescendRelative("contains")
 		for i, elem := range arr {
-			subCtx.ClearContext()
-			newPtr = schCtx.InstanceLocation.RawDescendant(strconv.Itoa(i))
-			subCtx.InstanceLocation = &newPtr
-			subCtx.Instance = elem
-			test := &[]KeyError{}
-			v.ValidateFromContext(subCtx, test)
-			if len(*test) == 0 {
+			subState.ClearState()
+			subState.DescendInstanceFromState(currentState, strconv.Itoa(i))
+			subState.Errs = &[]KeyError{}
+			v.ValidateKeyword(ctx, subState, elem)
+			if subState.IsValid() {
 				valid = true
 				matchCount++
 			}
 		}
 		if valid {
-			schCtx.Misc["containsCount"] = matchCount
+			currentState.Misc["containsCount"] = matchCount
 		} else {
-			AddErrorCtx(errs, schCtx, fmt.Sprintf("must contain at least one of: %v", c))
+			currentState.AddError(data, fmt.Sprintf("must contain at least one of: %v", c))
 		}
 	}
 }
@@ -319,13 +301,13 @@ func (m *MaxContains) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
-// ValidateFromContext implements the Keyword interface for MaxContains
-func (m MaxContains) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for MaxContains
+func (m MaxContains) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[MaxContains] Validating")
-	if arr, ok := schCtx.Instance.([]interface{}); ok {
-		if containsCount, ok := schCtx.Misc["containsCount"]; ok {
+	if arr, ok := data.([]interface{}); ok {
+		if containsCount, ok := currentState.Misc["containsCount"]; ok {
 			if containsCount.(int) > int(m) {
-				AddErrorCtx(errs, schCtx, fmt.Sprintf("contained items %d exceeds %d max", len(arr), m))
+				currentState.AddError(data, fmt.Sprintf("contained items %d exceeds %d max", len(arr), m))
 			}
 		}
 	}
@@ -347,13 +329,13 @@ func (m *MinContains) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
-// ValidateFromContext implements the Keyword interface for MinContains
-func (m MinContains) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for MinContains
+func (m MinContains) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[MinContains] Validating")
-	if arr, ok := schCtx.Instance.([]interface{}); ok {
-		if containsCount, ok := schCtx.Misc["containsCount"]; ok {
+	if arr, ok := data.([]interface{}); ok {
+		if containsCount, ok := currentState.Misc["containsCount"]; ok {
 			if containsCount.(int) < int(m) {
-				AddErrorCtx(errs, schCtx, fmt.Sprintf("contained items %d bellow %d min", len(arr), m))
+				currentState.AddError(data, fmt.Sprintf("contained items %d bellow %d min", len(arr), m))
 			}
 		}
 	}
@@ -377,31 +359,25 @@ func (ai *AdditionalItems) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return (*Schema)(ai).Resolve(pointer, uri)
 }
 
-// ValidateFromContext implements the Keyword interface for AdditionalItems
-func (ai *AdditionalItems) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for AdditionalItems
+func (ai *AdditionalItems) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[AdditionalItems] Validating")
-	if arr, ok := schCtx.Instance.([]interface{}); ok {
-		if schCtx.LastEvaluatedIndex > -1 && schCtx.LastEvaluatedIndex < len(arr) {
-			for i := schCtx.LastEvaluatedIndex + 1; i < len(arr); i++ {
+	if arr, ok := data.([]interface{}); ok {
+		if currentState.LastEvaluatedIndex > -1 && currentState.LastEvaluatedIndex < len(arr) {
+			for i := currentState.LastEvaluatedIndex + 1; i < len(arr); i++ {
 				if ai.schemaType == schemaTypeFalse {
-					AddErrorCtx(errs, schCtx, "additional items are not allowed")
+					currentState.AddError(data, "additional items are not allowed")
 					return
 				}
-				subCtx := NewSchemaContextFromSourceClean(*schCtx)
-				subCtx.LastEvaluatedIndex = i
-				subCtx.LocalLastEvaluatedIndex = i
-				if schCtx.BaseRelativeLocation != nil {
-					newPtr := schCtx.BaseRelativeLocation.RawDescendant("additionalItems")
-					subCtx.BaseRelativeLocation = &newPtr
-				}
-				newPtr := schCtx.RelativeLocation.RawDescendant("additionalItems")
-				subCtx.RelativeLocation = &newPtr
-				newPtr = schCtx.InstanceLocation.RawDescendant(strconv.Itoa(i))
-				subCtx.InstanceLocation = &newPtr
+				subState := currentState.NewSubState()
+				subState.ClearState()
+				subState.SetEvaluatedIndex(i)
+				subState.DescendBase("additionalItems")
+				subState.DescendRelative("additionalItems")
+				subState.DescendInstance(strconv.Itoa(i))
 
-				subCtx.Instance = arr[i]
-				(*Schema)(ai).ValidateFromContext(subCtx, errs)
-				schCtx.UpdateEvaluatedPropsAndItems(subCtx)
+				(*Schema)(ai).ValidateKeyword(ctx, subState, arr[i])
+				currentState.UpdateEvaluatedPropsAndItems(subState)
 			}
 		}
 	}
@@ -435,28 +411,23 @@ func (ui *UnevaluatedItems) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return (*Schema)(ui).Resolve(pointer, uri)
 }
 
-// ValidateFromContext implements the Keyword interface for UnevaluatedItems
-func (ui *UnevaluatedItems) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for UnevaluatedItems
+func (ui *UnevaluatedItems) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[UnevaluatedItems] Validating")
-	if arr, ok := schCtx.Instance.([]interface{}); ok {
-		if schCtx.LastEvaluatedIndex < len(arr) {
-			for i := schCtx.LastEvaluatedIndex + 1; i < len(arr); i++ {
+	if arr, ok := data.([]interface{}); ok {
+		if currentState.LastEvaluatedIndex < len(arr) {
+			for i := currentState.LastEvaluatedIndex + 1; i < len(arr); i++ {
 				if ui.schemaType == schemaTypeFalse {
-					AddErrorCtx(errs, schCtx, "unevaluated items are not allowed")
+					currentState.AddError(data, "unevaluated items are not allowed")
 					return
 				}
-				subCtx := NewSchemaContextFromSourceClean(*schCtx)
-				if schCtx.BaseRelativeLocation != nil {
-					newPtr := schCtx.BaseRelativeLocation.RawDescendant("additionalItems")
-					subCtx.BaseRelativeLocation = &newPtr
-				}
-				newPtr := schCtx.RelativeLocation.RawDescendant("additionalItems")
-				subCtx.RelativeLocation = &newPtr
-				newPtr = schCtx.InstanceLocation.RawDescendant(strconv.Itoa(i))
-				subCtx.InstanceLocation = &newPtr
+				subState := currentState.NewSubState()
+				subState.ClearState()
+				subState.DescendBase("unevaluatedItems")
+				subState.DescendRelative("unevaluatedItems")
+				subState.DescendInstance(strconv.Itoa(i))
 
-				subCtx.Instance = arr[i]
-				(*Schema)(ui).ValidateFromContext(subCtx, errs)
+				(*Schema)(ui).ValidateKeyword(ctx, subState, arr[i])
 			}
 		}
 	}

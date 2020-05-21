@@ -1,6 +1,7 @@
 package jsonschema
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -26,17 +27,17 @@ func (c *Const) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
-// ValidateFromContext implements the Keyword interface for Const
-func (c Const) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for Const
+func (c Const) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[Const] Validating")
 	var con interface{}
 	if err := json.Unmarshal(c, &con); err != nil {
-		AddErrorCtx(errs, schCtx, err.Error())
+		currentState.AddError(data, err.Error())
 		return
 	}
 
-	if !reflect.DeepEqual(con, schCtx.Instance) {
-		AddErrorCtx(errs, schCtx, fmt.Sprintf(`must equal %s`, InvalidValueString(con)))
+	if !reflect.DeepEqual(con, data) {
+		currentState.AddError(data, fmt.Sprintf(`must equal %s`, InvalidValueString(con)))
 	}
 }
 
@@ -77,18 +78,20 @@ func (e *Enum) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
-// ValidateFromContext implements the Keyword interface for Enum
-func (e Enum) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for Enum
+func (e Enum) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[Enum] Validating")
+	subState := currentState.NewSubState()
+	subState.ClearState()
 	for _, v := range e {
-		test := &[]KeyError{}
-		v.ValidateFromContext(schCtx, test)
-		if len(*test) == 0 {
+		subState.Errs = &[]KeyError{}
+		v.ValidateKeyword(ctx, subState, data)
+		if subState.IsValid() {
 			return
 		}
 	}
 
-	AddErrorCtx(errs, schCtx, fmt.Sprintf("should be one of %s", e.String()))
+	currentState.AddError(data, fmt.Sprintf("should be one of %s", e.String()))
 }
 
 // JSONProp implements the JSONPather for Enum
@@ -197,27 +200,27 @@ func (t *Type) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
-// ValidateFromContext implements the Keyword interface for Type
-func (t Type) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for Type
+func (t Type) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[Type] Validating")
-	jt := DataType(schCtx.Instance)
+	jt := DataType(data)
 	for _, typestr := range t.vals {
 		if jt == typestr || jt == "integer" && typestr == "number" {
 			return
 		}
 		if jt == "string" && (typestr == "boolean" || typestr == "number" || typestr == "integer") {
-			if DataTypeWithHint(schCtx.Instance, typestr) == typestr {
+			if DataTypeWithHint(data, typestr) == typestr {
 				return
 			}
 		}
 		if jt == "null" && (typestr == "string") {
-			if DataTypeWithHint(schCtx.Instance, typestr) == typestr {
+			if DataTypeWithHint(data, typestr) == typestr {
 				return
 			}
 		}
 	}
 	if len(t.vals) == 1 {
-		AddErrorCtx(errs, schCtx, fmt.Sprintf(`type should be %s, got %s`, t.vals[0], jt))
+		currentState.AddError(data, fmt.Sprintf(`type should be %s, got %s`, t.vals[0], jt))
 		return
 	}
 
@@ -226,7 +229,7 @@ func (t Type) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 		str += ts + ","
 	}
 
-	AddErrorCtx(errs, schCtx, fmt.Sprintf(`type should be one of: %s, got %s`, str[:len(str)-1], jt))
+	currentState.AddError(data, fmt.Sprintf(`type should be one of: %s, got %s`, str[:len(str)-1], jt))
 }
 
 // String implements the Stringer for Type

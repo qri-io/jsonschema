@@ -1,11 +1,13 @@
 package jsonschema
 
 import (
+	"context"
 	"io/ioutil"
 	"testing"
 )
 
 func TestSchemaDeref(t *testing.T) {
+	ctx := context.Background()
 	sch := []byte(`{
     "$defs": {
         "a": {"type": "integer"},
@@ -21,7 +23,7 @@ func TestSchemaDeref(t *testing.T) {
 		return
 	}
 
-	got, err := rs.ValidateBytes([]byte(`"a"`))
+	got, err := rs.ValidateBytes(ctx, []byte(`"a"`))
 	if err != nil {
 		t.Errorf("error validating bytes: %s", err.Error())
 		return

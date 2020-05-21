@@ -1,6 +1,7 @@
 package jsonschema
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -25,12 +26,12 @@ func (m *MaxLength) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
-// ValidateFromContext implements the Keyword interface for MaxLength
-func (m MaxLength) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for MaxLength
+func (m MaxLength) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[MaxLength] Validating")
-	if str, ok := schCtx.Instance.(string); ok {
+	if str, ok := data.(string); ok {
 		if utf8.RuneCountInString(str) > int(m) {
-			AddErrorCtx(errs, schCtx, fmt.Sprintf("max length of %d characters exceeded: %s", m, str))
+			currentState.AddError(data, fmt.Sprintf("max length of %d characters exceeded: %s", m, str))
 		}
 	}
 }
@@ -51,12 +52,12 @@ func (m *MinLength) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
-// ValidateFromContext implements the Keyword interface for MinLength
-func (m MinLength) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for MinLength
+func (m MinLength) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[MinLength] Validating")
-	if str, ok := schCtx.Instance.(string); ok {
+	if str, ok := data.(string); ok {
 		if utf8.RuneCountInString(str) < int(m) {
-			AddErrorCtx(errs, schCtx, fmt.Sprintf("max length of %d characters exceeded: %s", m, str))
+			currentState.AddError(data, fmt.Sprintf("max length of %d characters exceeded: %s", m, str))
 		}
 	}
 }
@@ -77,13 +78,13 @@ func (p *Pattern) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
-// ValidateFromContext implements the Keyword interface for Pattern
-func (p Pattern) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for Pattern
+func (p Pattern) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[Pattern] Validating")
 	re := regexp.Regexp(p)
-	if str, ok := schCtx.Instance.(string); ok {
+	if str, ok := data.(string); ok {
 		if !re.Match([]byte(str)) {
-			AddErrorCtx(errs, schCtx, fmt.Sprintf("regexp pattern %s mismatch on string: %s", re.String(), str))
+			currentState.AddError(data, fmt.Sprintf("regexp pattern %s mismatch on string: %s", re.String(), str))
 		}
 	}
 }

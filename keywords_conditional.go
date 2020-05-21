@@ -1,6 +1,7 @@
 package jsonschema
 
 import (
+	"context"
 	"encoding/json"
 
 	jptr "github.com/qri-io/jsonpointer"
@@ -24,11 +25,11 @@ func (f *If) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
-// ValidateFromContext implements the Keyword interface for If
-func (f *If) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for If
+func (f *If) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[If] Validating")
-	thenKW := schCtx.Local.keywords["then"]
-	elseKW := schCtx.Local.keywords["else"]
+	thenKW := currentState.Local.keywords["then"]
+	elseKW := currentState.Local.keywords["else"]
 
 	if thenKW == nil && elseKW == nil {
 		// no then or else for if, aborting validation
@@ -36,20 +37,16 @@ func (f *If) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 		return
 	}
 
-	subCtx := NewSchemaContextFromSourceClean(*schCtx)
-	if subCtx.BaseRelativeLocation != nil {
-		if newPtr, err := schCtx.BaseRelativeLocation.Descendant("if"); err == nil {
-			subCtx.BaseRelativeLocation = &newPtr
-		}
-	}
-	if newPtr, err := schCtx.RelativeLocation.Descendant("if"); err == nil {
-		subCtx.RelativeLocation = &newPtr
-	}
-	test := &[]KeyError{}
-	sch := Schema(*f)
-	sch.ValidateFromContext(subCtx, test)
+	subState := currentState.NewSubState()
+	subState.ClearState()
+	subState.DescendBase("if")
+	subState.DescendRelative("if")
 
-	schCtx.Misc["ifResult"] = (len(*test) == 0)
+	subState.Errs = &[]KeyError{}
+	sch := Schema(*f)
+	sch.ValidateKeyword(ctx, subState, data)
+
+	currentState.Misc["ifResult"] = subState.IsValid()
 }
 
 // JSONProp implements the JSONPather for If
@@ -95,31 +92,28 @@ func (t *Then) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return (*Schema)(t).Resolve(pointer, uri)
 }
 
-// ValidateFromContext implements the Keyword interface for Then
-func (t *Then) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for Then
+func (t *Then) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[Then] Validating")
-	ifResult, okIf := schCtx.Misc["ifResult"]
+	ifResult, okIf := currentState.Misc["ifResult"]
 	if !okIf {
+		schemaDebug("[Then] If result not found, skipping")
 		// if not found
 		return
 	}
 	if !(ifResult.(bool)) {
+		schemaDebug("[Then] If result is false, skipping")
 		// if was false
 		return
 	}
 
-	subCtx := NewSchemaContextFromSource(*schCtx)
-	if subCtx.BaseRelativeLocation != nil {
-		if newPtr, err := schCtx.BaseRelativeLocation.Descendant("then"); err == nil {
-			subCtx.BaseRelativeLocation = &newPtr
-		}
-	}
-	if newPtr, err := schCtx.RelativeLocation.Descendant("then"); err == nil {
-		subCtx.RelativeLocation = &newPtr
-	}
+	subState := currentState.NewSubState()
+	subState.DescendBase("then")
+	subState.DescendRelative("then")
+
 	sch := Schema(*t)
-	sch.ValidateFromContext(subCtx, errs)
-	schCtx.UpdateEvaluatedPropsAndItems(subCtx)
+	sch.ValidateKeyword(ctx, subState, data)
+	currentState.UpdateEvaluatedPropsAndItems(subState)
 }
 
 // JSONProp implements the JSONPather for Then
@@ -165,10 +159,10 @@ func (e *Else) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return (*Schema)(e).Resolve(pointer, uri)
 }
 
-// ValidateFromContext implements the Keyword interface for Else
-func (e *Else) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
+// ValidateKeyword implements the Keyword interface for Else
+func (e *Else) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[Else] Validating")
-	ifResult, okIf := schCtx.Misc["ifResult"]
+	ifResult, okIf := currentState.Misc["ifResult"]
 	if !okIf {
 		// if not found
 		return
@@ -178,17 +172,12 @@ func (e *Else) ValidateFromContext(schCtx *SchemaContext, errs *[]KeyError) {
 		return
 	}
 
-	subCtx := NewSchemaContextFromSource(*schCtx)
-	if subCtx.BaseRelativeLocation != nil {
-		if newPtr, err := schCtx.BaseRelativeLocation.Descendant("else"); err == nil {
-			subCtx.BaseRelativeLocation = &newPtr
-		}
-	}
-	if newPtr, err := schCtx.RelativeLocation.Descendant("else"); err == nil {
-		subCtx.RelativeLocation = &newPtr
-	}
+	subState := currentState.NewSubState()
+	subState.DescendBase("else")
+	subState.DescendRelative("else")
+
 	sch := Schema(*e)
-	sch.ValidateFromContext(subCtx, errs)
+	sch.ValidateKeyword(ctx, subState, data)
 }
 
 // JSONProp implements the JSONPather for Else
