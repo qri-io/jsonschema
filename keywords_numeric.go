@@ -26,10 +26,10 @@ func (m *MultipleOf) Resolve(pointer jptr.Pointer, uri string) *Schema {
 // ValidateKeyword implements the Keyword interface for MultipleOf
 func (m MultipleOf) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[MultipleOf] Validating")
-	if num, ok := data.(float64); ok {
+	if num, ok := convertNumberToFloat(data); ok {
 		div := num / float64(m)
 		if float64(int(div)) != div {
-			currentState.AddError(data, fmt.Sprintf("must be a multiple of %f", m))
+			currentState.AddError(data, fmt.Sprintf("must be a multiple of %v", m))
 		}
 	}
 }
@@ -53,9 +53,9 @@ func (m *Maximum) Resolve(pointer jptr.Pointer, uri string) *Schema {
 // ValidateKeyword implements the Keyword interface for Maximum
 func (m Maximum) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[Maximum] Validating")
-	if num, ok := data.(float64); ok {
+	if num, ok := convertNumberToFloat(data); ok {
 		if num > float64(m) {
-			currentState.AddError(data, fmt.Sprintf("must be less than or equal to %f", m))
+			currentState.AddError(data, fmt.Sprintf("must be less than or equal to %v", m))
 		}
 	}
 }
@@ -79,9 +79,9 @@ func (m *ExclusiveMaximum) Resolve(pointer jptr.Pointer, uri string) *Schema {
 // ValidateKeyword implements the Keyword interface for ExclusiveMaximum
 func (m ExclusiveMaximum) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[ExclusiveMaximum] Validating")
-	if num, ok := data.(float64); ok {
+	if num, ok := convertNumberToFloat(data); ok {
 		if num >= float64(m) {
-			currentState.AddError(data, fmt.Sprintf("%f must be less than %f", num, m))
+			currentState.AddError(data, fmt.Sprintf("%v must be less than %v", num, m))
 		}
 	}
 }
@@ -105,9 +105,9 @@ func (m *Minimum) Resolve(pointer jptr.Pointer, uri string) *Schema {
 // ValidateKeyword implements the Keyword interface for Minimum
 func (m Minimum) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[Minimum] Validating")
-	if num, ok := data.(float64); ok {
+	if num, ok := convertNumberToFloat(data); ok {
 		if num < float64(m) {
-			currentState.AddError(data, fmt.Sprintf("must be less than or equal to %f", m))
+			currentState.AddError(data, fmt.Sprintf("must be less than or equal to %v", m))
 		}
 	}
 }
@@ -131,9 +131,42 @@ func (m *ExclusiveMinimum) Resolve(pointer jptr.Pointer, uri string) *Schema {
 // ValidateKeyword implements the Keyword interface for ExclusiveMinimum
 func (m ExclusiveMinimum) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[ExclusiveMinimum] Validating")
-	if num, ok := data.(float64); ok {
+	if num, ok := convertNumberToFloat(data); ok {
 		if num <= float64(m) {
-			currentState.AddError(data, fmt.Sprintf("%f must be less than %f", num, m))
+			currentState.AddError(data, fmt.Sprintf("%v must be less than %v", num, m))
 		}
 	}
+}
+
+func convertNumberToFloat(data interface{}) (float64, bool) {
+	switch v := data.(type) {
+	case uint:
+		return float64(v), true
+	case uint8:
+		return float64(v), true
+	case uint16:
+		return float64(v), true
+	case uint32:
+		return float64(v), true
+	case uint64:
+		return float64(v), true
+	case int:
+		return float64(v), true
+	case int8:
+		return float64(v), true
+	case int16:
+		return float64(v), true
+	case int32:
+		return float64(v), true
+	case int64:
+		return float64(v), true
+	case float32:
+		return float64(v), true
+	case float64:
+		return float64(v), true
+	case uintptr:
+		return float64(v), true
+	}
+
+	return 0, false
 }
