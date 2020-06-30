@@ -57,7 +57,7 @@ func (m MinLength) ValidateKeyword(ctx context.Context, currentState *Validation
 	schemaDebug("[MinLength] Validating")
 	if str, ok := data.(string); ok {
 		if utf8.RuneCountInString(str) < int(m) {
-			currentState.AddError(data, fmt.Sprintf("max length of %d characters exceeded: %s", m, str))
+			currentState.AddError(data, fmt.Sprintf("min length of %d characters required: %s", m, str))
 		}
 	}
 }
