@@ -145,7 +145,11 @@ func DataType(data interface{}) string {
 	switch reflect.TypeOf(data).Kind() {
 	case reflect.Bool:
 		return "boolean"
-	case reflect.Float64:
+
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+		reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Uintptr:
+		return "integer"
+	case reflect.Float32, reflect.Float64:
 		number := reflect.ValueOf(data).Float()
 		if float64(int(number)) == number {
 			return "integer"
