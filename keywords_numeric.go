@@ -107,7 +107,7 @@ func (m Minimum) ValidateKeyword(ctx context.Context, currentState *ValidationSt
 	schemaDebug("[Minimum] Validating")
 	if num, ok := convertNumberToFloat(data); ok {
 		if num < float64(m) {
-			currentState.AddError(data, fmt.Sprintf("must be less than or equal to %v", m))
+			currentState.AddError(data, fmt.Sprintf("must be greater than or equal to %v", m))
 		}
 	}
 }
@@ -133,7 +133,7 @@ func (m ExclusiveMinimum) ValidateKeyword(ctx context.Context, currentState *Val
 	schemaDebug("[ExclusiveMinimum] Validating")
 	if num, ok := convertNumberToFloat(data); ok {
 		if num <= float64(m) {
-			currentState.AddError(data, fmt.Sprintf("%v must be less than %v", num, m))
+			currentState.AddError(data, fmt.Sprintf("%v must be greater than %v", num, m))
 		}
 	}
 }
