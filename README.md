@@ -13,7 +13,7 @@ golang implementation of the [JSON Schema Specification](http://json-schema.org/
 * Encode schemas back to JSON
 * Supply Your own Custom Validators
 * Uses Standard Go idioms
-* Fastest Go implementation of [JSON Schema validators](http://json-schema.org/implementations.html#validators) (draft2019_9 only, (old - draft 7) benchmarks are [here](https://github.com/TheWildBlue/validator-benchmarks) - thanks [@TheWildBlue](https://github.com/TheWildBlue)!)
+* Fastest Go implementation of [JSON Schema validators](http://json-schema.org/implementations.html#validators) (draft2019_9 only, (old — draft 7) benchmarks are [here](https://github.com/TheWildBlue/validator-benchmarks) — thanks [@TheWildBlue](https://github.com/TheWildBlue)!)
 
 ### Getting Involved
 
@@ -23,16 +23,17 @@ like to submit changes, please see our
 
 ### Developing
 
-We've set up a separate document for [developer guidelines](https://github.com/qri-io/jsonschema/blob/master/DEVELOPERS.md)!
+We’ve set up a separate document for [developer guidelines](https://github.com/qri-io/jsonschema/blob/master/DEVELOPERS.md)!
 
 ## Basic Usage
 
-Here's a quick example pulled from the [godoc](https://godoc.org/github.com/qri-io/jsonschema):
+Here’s a quick example pulled from the [godoc](https://godoc.org/github.com/qri-io/jsonschema):
 
 ```go
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -40,6 +41,7 @@ import (
 )
 
 func main() {
+	ctx := context.Background()
 	var schemaData = []byte(`{
     "$id": "https://qri.io/schema/",
     "$comment" : "sample comment",
@@ -65,51 +67,55 @@ func main() {
     "required": ["firstName", "lastName"]
   }`)
 
-  rs := &Schema{}
-  if err := json.Unmarshal(schemaData, rs); err != nil {
-    panic("unmarshal schema: " + err.Error())
-  }
+	rs := &jsonschema.Schema{}
+	if err := json.Unmarshal(schemaData, rs); err != nil {
+		panic("unmarshal schema: " + err.Error())
+	}
 
-  var valid = []byte(`{
+	var valid = []byte(`{
     "firstName" : "George",
     "lastName" : "Michael"
     }`)
-  errs, err := rs.ValidateBytes(valid)
-  if err != nil {
-    panic(err)
-  }
+	errs, err := rs.ValidateBytes(ctx, valid)
+	if err != nil {
+		panic(err)
+	}
 
-  if len(errs) > 0 {
-    fmt.Println(errs[0].Error())
-  }
+	if len(errs) > 0 {
+		fmt.Println(errs[0].Error())
+	}
 
-  var invalidPerson = []byte(`{
+	var invalidPerson = []byte(`{
     "firstName" : "Prince"
     }`)
 
-  errs, err = rs.ValidateBytes(invalidPerson)
-  if err != nil {
-    panic(err)
-  }
-  if len(errs) > 0 {
-    fmt.Println(errs[0].Error())
-  }
+	errs, err = rs.ValidateBytes(ctx, invalidPerson)
+	if err != nil {
+		panic(err)
+	}
+	if len(errs) > 0 {
+		fmt.Println(errs[0].Error())
+	}
 
-  var invalidFriend = []byte(`{
+	var invalidFriend = []byte(`{
     "firstName" : "Jay",
     "lastName" : "Z",
     "friends" : [{
       "firstName" : "Nas"
       }]
     }`)
-  errs, err = rs.ValidateBytes(invalidFriend)
-  if err != nil {
-    panic(err)
-  }
-  if len(errs) > 0 {
-    fmt.Println(errs[0].Error())
-  }
+	errs, err = rs.ValidateBytes(ctx, invalidFriend)
+	if err != nil {
+		panic(err)
+	}
+	if len(errs) > 0 {
+		fmt.Println(errs[0].Error())
+	}
 }
+
+// Output:
+// /: {"firstName":"Prince... "lastName" value is required
+// /friends/0: {"firstName":"Nas"} "lastName" value is required
 ```
 
 ## Custom Keywords
@@ -119,7 +125,7 @@ The [godoc](https://godoc.org/github.com/qri-io/jsonschema) gives an example of 
 It involves three steps that should happen _before_ allocating any Schema instances that use the validator:
 1. create a custom type that implements the `Keyword` interface
 2. Load the appropriate draft keyword set (see `draft2019_09_keywords.go`)
-3. call RegisterKeyword with the keyword you'd like to detect in JSON, and a `KeyMaker` function.
+3. call RegisterKeyword with the keyword you’d like to detect in JSON, and a `KeyMaker` function.
 
 
 ```go
