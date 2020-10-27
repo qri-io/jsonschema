@@ -325,7 +325,7 @@ func (s *Schema) validateSchemakeywords(ctx context.Context, currentState *Valid
 func (s *Schema) ValidateBytes(ctx context.Context, data []byte) ([]KeyError, error) {
 	var doc interface{}
 	if err := json.Unmarshal(data, &doc); err != nil {
-		return nil, fmt.Errorf("error parsing JSON bytes: %s", err.Error())
+		return nil, fmt.Errorf("error parsing JSON bytes: %w", err)
 	}
 	vs := s.Validate(ctx, doc)
 	return *vs.Errs, nil
