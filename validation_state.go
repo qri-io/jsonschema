@@ -17,7 +17,8 @@ type ValidationState struct {
 	RelativeLocation     *jptr.Pointer
 	BaseRelativeLocation *jptr.Pointer
 
-	LocalRegistry *SchemaRegistry
+	LocalRegistry        *SchemaRegistry
+	LocalKeywordRegistry *KeywordRegistry
 
 	EvaluatedPropertyNames      *map[string]bool
 	LocalEvaluatedPropertyNames *map[string]bool
