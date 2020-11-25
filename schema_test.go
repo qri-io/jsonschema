@@ -666,6 +666,18 @@ func TestValidateBytes(t *testing.T) {
 				`/1: false type should be string, got boolean`,
 				`/2: type should be string, got null`,
 			}},
+		{`{
+		"type": "object",
+		"properties" : {
+		},
+		"additionalProperties" : false
+	}`,
+			`{
+	"port": 80
+}`,
+			[]string{
+				`/port: {"port":80} additional properties are not allowed`,
+			}},
 	}
 
 	for i, c := range cases {
