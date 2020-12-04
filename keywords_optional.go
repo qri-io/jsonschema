@@ -123,11 +123,12 @@ func isValidDate(date string) error {
 // representation as defined by RFC 5322, section 3.4.1 [RFC5322].
 // https://tools.ietf.org/html/rfc5322#section-3.4.1
 func isValidEmail(email string) error {
-	// if !emailPattern.MatchString(email) {
-	// 	return fmt.Errorf("invalid email Format")
-	// }
-	if _, err := mail.ParseAddress(email); err != nil {
+	res, err := mail.ParseAddress(email)
+	if err != nil {
 		return fmt.Errorf("email address incorrectly Formatted: %s", err.Error())
+	}
+	if res.Address != email {
+		return fmt.Errorf("email address incorrectly Formatted: %s", email)
 	}
 	return nil
 }
