@@ -81,5 +81,15 @@ func FetchSchema(ctx context.Context, uri string, schema *Schema) error {
 		}
 		return json.Unmarshal(body, schema)
 	}
+	if u.Scheme == "file" {
+		body, err := ioutil.ReadFile(u.Path)
+		if err != nil {
+			return err
+		}
+		if schema == nil {
+			schema = &Schema{}
+		}
+		return json.Unmarshal(body, schema)
+	}
 	return fmt.Errorf("URI scheme %s is not supported for uri: %s", u.Scheme, uri)
 }
