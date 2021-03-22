@@ -1,3 +1,10 @@
+Changes from upstream and other notes:
+* Fixes [#81](https://github.com/qri-io/jsonschema/issues/81)
+* I have looked at [*76](https://github.com/qri-io/jsonschema/issues/76) / [#80](https://github.com/qri-io/jsonschema/issues/80). My opinion, after reading the code, is that the global schema registry (which is the source of these concurrency issues) only gets involved when you have "$ref" elements. Since we only run this against schemas we write / generate, and I can guarantee that we don't generate "$ref" elements, this shouldn't be an issue for us, and we should be able to use this library across goroutines without additional synchronization
+* [#91](https://github.com/qri-io/jsonschema/issues/91) may still be an issue, but I don't understand from reading it exactly what the problem is
+* Fixes [#53](https://github.com/qri-io/jsonschema/issues/53) by adding a ValidateReader method that takes an io.Reader
+
+
 # jsonschema
 [![Qri](https://img.shields.io/badge/made%20by-qri-magenta.svg?style=flat-square)](https://qri.io)
 [![GoDoc](https://godoc.org/github.com/qri-io/jsonschema?status.svg)](http://godoc.org/github.com/qri-io/jsonschema)
