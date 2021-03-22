@@ -326,7 +326,7 @@ func (ap *AdditionalProperties) ValidateKeyword(ctx context.Context, currentStat
 				continue
 			}
 			if ap.schemaType == schemaTypeFalse {
-				currentState.AddError(data, "additional properties are not allowed")
+				currentState.AddError(data, "additional properties are not allowed: "+key)
 				return
 			}
 			currentState.SetEvaluatedKey(key)
@@ -669,7 +669,7 @@ func (up *UnevaluatedProperties) ValidateKeyword(ctx context.Context, currentSta
 				continue
 			}
 			if up.schemaType == schemaTypeFalse {
-				currentState.AddError(data, "unevaluated properties are not allowed")
+				currentState.AddError(data, "unevaluated properties are not allowed: "+key)
 				return
 			}
 			subState.DescendInstanceFromState(currentState, key)
