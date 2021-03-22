@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/url"
 	"sort"
 	"strings"
@@ -325,6 +326,17 @@ func (s *Schema) validateSchemakeywords(ctx context.Context, currentState *Valid
 func (s *Schema) ValidateBytes(ctx context.Context, data []byte) ([]KeyError, error) {
 	var doc interface{}
 	if err := json.Unmarshal(data, &doc); err != nil {
+		return nil, fmt.Errorf("error parsing JSON bytes: %w", err)
+	}
+	vs := s.Validate(ctx, doc)
+	return *vs.Errs, nil
+}
+
+// ValidateReader performs schema validation against a stream of json
+// byte data
+func (s *Schema) ValidateReader(ctx context.Context, data io.Reader) ([]KeyError, error) {
+	var doc interface{}
+	if err := json.NewDecoder(data).Decode(&doc); err != nil {
 		return nil, fmt.Errorf("error parsing JSON bytes: %w", err)
 	}
 	vs := s.Validate(ctx, doc)
