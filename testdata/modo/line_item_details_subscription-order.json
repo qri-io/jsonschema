@@ -1,0 +1,1 @@
+{"$schema":"https://json-schema.org/draft/2019-09/schema","type":"object","properties":{"description":{"type":"string"},"frequency":{"type":"string"},"subscription_name":{"type":"string"}},"additionalProperties":false}

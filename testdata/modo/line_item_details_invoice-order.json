@@ -1,0 +1,1 @@
+{"$schema":"https://json-schema.org/draft/2019-09/schema","type":"object","properties":{"customer_identifier":{"type":"string"},"invoice_date":{"type":"string","format":"date"},"invoice_identifier":{"type":"string"}},"additionalProperties":false}

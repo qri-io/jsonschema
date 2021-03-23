@@ -1,0 +1,1 @@
+{"$schema":"https://json-schema.org/draft/2019-09/schema","type":"object","properties":{"shipping_date":{"type":"string"},"shipping_method":{"type":"string"},"your_shipping_reference":{"type":"string"}},"additionalProperties":false}

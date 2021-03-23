@@ -1,0 +1,1 @@
+{"$schema":"https://json-schema.org/draft/2019-09/schema","type":"object","properties":{"product_id":{"type":"string"},"your_product_reference":{"type":"string"}},"additionalProperties":false}

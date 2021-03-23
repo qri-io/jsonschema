@@ -1,0 +1,1 @@
+{"$schema":"https://json-schema.org/draft/2019-09/schema","type":"object","properties":{"SKU":{"type":"string"},"manufacturer":{"type":"string"},"model":{"type":"string"},"serial_number":{"type":"string"}},"additionalProperties":false}
