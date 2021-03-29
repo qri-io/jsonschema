@@ -1,3 +1,18 @@
+# [](https://github.com/qri-io/jsonschema/compare/v0.2.0...v) (2021-03-29)
+
+
+### Bug Fixes
+
+* **error:** show error message for `minLength` ([#73](https://github.com/qri-io/jsonschema/issues/73)) ([0995c6b](https://github.com/qri-io/jsonschema/commit/0995c6b04506cc858dee03b166771edeeab95f64))
+
+
+### Features
+
+* **resolve:** file URI resolution ([#90](https://github.com/qri-io/jsonschema/issues/90)) ([dbc3af1](https://github.com/qri-io/jsonschema/commit/dbc3af1d666cc034a9ac89f10fba0ad6d5cb6c8e))
+* **type:** support additional number types ([#72](https://github.com/qri-io/jsonschema/issues/72)) ([9874480](https://github.com/qri-io/jsonschema/commit/9874480d05ec5edf3e0c19873bd2bd4fb322b3fe))
+
+
+
 # [](https://github.com/qri-io/jsonschema/compare/v0.1.2...v) (2020-05-21)
 
 This is relase v0.2.0. It's a rework of the jsonschema implementation which now has better support for the spec, equal or better performance depending on the keyword, possibility to easily extend with your own keywords and finally, draft2019_09 support.
