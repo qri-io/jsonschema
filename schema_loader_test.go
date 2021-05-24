@@ -82,7 +82,7 @@ func TestFetchSchema(t *testing.T) {
 
 func TestCustomSchemaLoader(t *testing.T) {
 
-	lr := jsonschema.GetGlobalLoaderRegistry()
+	lr := jsonschema.GetSchemaLoaderRegistry()
 	lr.Register("special", func(ctx context.Context, uri *url.URL, schema *jsonschema.Schema) error {
 
 		path := uri.Host + uri.Path

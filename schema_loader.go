@@ -40,8 +40,8 @@ func (r *LoaderRegistry) Get(scheme string) (SchemaLoaderFunc, bool) {
 	return l, exists
 }
 
-// GetGlobalLoaderRegistry provides an accessor to a globally available (schema) loader registry
-func GetGlobalLoaderRegistry() *LoaderRegistry {
+// GetSchemaLoaderRegistry provides an accessor to a globally available (schema) loader registry
+func GetSchemaLoaderRegistry() *LoaderRegistry {
 	if lr == nil {
 		lr = NewLoaderRegistry()
 	}
@@ -56,7 +56,7 @@ func FetchSchema(ctx context.Context, uri string, schema *Schema) error {
 		return err
 	}
 
-	registry := GetGlobalLoaderRegistry()
+	registry := GetSchemaLoaderRegistry()
 
 	loader, exists := registry.Get(u.Scheme)
 
