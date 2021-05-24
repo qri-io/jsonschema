@@ -11,12 +11,15 @@ import (
 
 var lr *LoaderRegistry
 
+// LoaderRegistry maintains a lookup table between uri schemes and associated loader
 type LoaderRegistry struct {
 	loaderLookup map[string]SchemaLoaderFunc
 }
 
+// SchemaLoaderFunc is a function that loads a schema for a specific URI Scheme
 type SchemaLoaderFunc func(ctx context.Context, uri *url.URL, schema *Schema) error
 
+// NewLoaderRegistry allocates a new schema loader registry
 func NewLoaderRegistry() *LoaderRegistry {
 	r := &LoaderRegistry{
 		loaderLookup: map[string]SchemaLoaderFunc{},
