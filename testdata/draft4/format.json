@@ -214,5 +214,51 @@
                 "valid": true
             }
         ]
+    },
+    {
+        "description": "validation of UUIDs",
+        "schema": {"format": "uuid"},
+        "tests": [
+            {
+                "description": "upper case",
+                "data": "F4D7F08C-1A3B-4B2F-8622-2FBEDEDFD4AC",
+                "valid": true
+            },
+            {
+                "description": "lower case",
+                "data": "9b60481c-8a1e-460f-b004-d9c0f1f1502d",
+                "valid": true
+            },
+            {
+                "description": "ignores integers",
+                "data": 12,
+                "valid": true
+            },
+            {
+                "description": "ignores floats",
+                "data": 13.7,
+                "valid": true
+            },
+            {
+                "description": "ignores objects",
+                "data": {},
+                "valid": true
+            },
+            {
+                "description": "ignores arrays",
+                "data": [],
+                "valid": true
+            },
+            {
+                "description": "ignores booleans",
+                "data": false,
+                "valid": true
+            },
+            {
+                "description": "ignores null",
+                "data": null,
+                "valid": true
+            }
+        ]
     }
 ]

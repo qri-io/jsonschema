@@ -20,6 +20,7 @@ const (
 	endingTilda           = `\~$`
 	schemePrefix          = `^[^\:]+\:`
 	uriTemplate           = `\{[^\{\}\\]*\}`
+	uuid                  = `^[[:xdigit:]]{8}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{12}$`
 )
 
 var (
@@ -29,6 +30,7 @@ var (
 	endingTildaPattern     = regexp.MustCompile(endingTilda)
 	schemePrefixPattern    = regexp.MustCompile(schemePrefix)
 	uriTemplatePattern     = regexp.MustCompile(uriTemplate)
+	uuidPattern            = regexp.MustCompile(uuid)
 
 	disallowedIdnChars = map[string]bool{"\u0020": true, "\u002D": true, "\u00A2": true, "\u00A3": true, "\u00A4": true, "\u00A5": true, "\u034F": true, "\u0640": true, "\u07FA": true, "\u180B": true, "\u180C": true, "\u180D": true, "\u200B": true, "\u2060": true, "\u2104": true, "\u2108": true, "\u2114": true, "\u2117": true, "\u2118": true, "\u211E": true, "\u211F": true, "\u2123": true, "\u2125": true, "\u2282": true, "\u2283": true, "\u2284": true, "\u2285": true, "\u2286": true, "\u2287": true, "\u2288": true, "\u2616": true, "\u2617": true, "\u2619": true, "\u262F": true, "\u2638": true, "\u266C": true, "\u266D": true, "\u266F": true, "\u2752": true, "\u2756": true, "\u2758": true, "\u275E": true, "\u2761": true, "\u2775": true, "\u2794": true, "\u2798": true, "\u27AF": true, "\u27B1": true, "\u27BE": true, "\u3004": true, "\u3012": true, "\u3013": true, "\u3020": true, "\u302E": true, "\u302F": true, "\u3031": true, "\u3032": true, "\u3035": true, "\u303B": true, "\u3164": true, "\uFFA0": true}
 )
@@ -89,6 +91,8 @@ func (f Format) ValidateKeyword(ctx context.Context, currentState *ValidationSta
 			err = isValidURITemplate(str)
 		case "uri":
 			err = isValidURI(str)
+		case "uuid":
+			err = isValidUUID(str)
 		default:
 			err = nil
 		}
@@ -320,6 +324,17 @@ func isValidURI(uri string) error {
 	}
 	if !schemePrefixPattern.MatchString(uri) {
 		return fmt.Errorf("uri missing scheme prefix")
+	}
+	return nil
+}
+
+// A string instance is valid against "uuid" if it is a valid
+// representation as defined by RFC 4122, section 3 [RFC4122].
+// Format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+// https://tools.ietf.org/html/rfc4122#section-3
+func isValidUUID(uuid string) error {
+	if !uuidPattern.MatchString(uuid) {
+		return fmt.Errorf("invalid uuid string")
 	}
 	return nil
 }
