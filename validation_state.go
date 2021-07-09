@@ -27,6 +27,9 @@ type ValidationState struct {
 	Misc                        map[string]interface{}
 
 	Errs *[]KeyError
+
+	// ExtraData is a shared storage between all substates of a ValidationState
+	ExtraData *map[string]interface{}
 }
 
 // NewValidationState creates a new ValidationState with the provided location pointers and data instance
@@ -46,6 +49,7 @@ func NewValidationState(s *Schema) *ValidationState {
 		LocalEvaluatedPropertyNames: &map[string]bool{},
 		Misc:                        map[string]interface{}{},
 		Errs:                        &[]KeyError{},
+		ExtraData:                   &map[string]interface{}{},
 	}
 }
 
@@ -66,7 +70,19 @@ func (vs *ValidationState) NewSubState() *ValidationState {
 		LocalEvaluatedPropertyNames: vs.LocalEvaluatedPropertyNames,
 		Misc:                        map[string]interface{}{},
 		Errs:                        vs.Errs,
+		ExtraData:                   vs.ExtraData,
 	}
+}
+
+// GetExtraData retrieves a key from the shared validation store(ExtraData).
+func (vs *ValidationState) GetExtraData(key string) (interface{}, bool) {
+	data, exists := (*vs.ExtraData)[key]
+	return data, exists
+}
+
+// SetExtraData stores data into the shared validation store(ExtraData)
+func (vs *ValidationState) SetExtraData(key string, value interface{}) {
+	(*vs.ExtraData)[key] = value
 }
 
 // ClearState resets a schema to it's core elements
