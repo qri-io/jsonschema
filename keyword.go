@@ -28,6 +28,8 @@ var notSupported = map[string]bool{
 var kr *KeywordRegistry
 var krLock sync.Mutex
 
+// KeywordRegistry contains a mapping of jsonschema keywords and their
+// expected behavior.
 type KeywordRegistry struct {
 	keywordRegistry    map[string]KeyMaker
 	keywordOrder       map[string]int
@@ -52,6 +54,7 @@ func copyGlobalKeywordRegistry() *KeywordRegistry {
 	return kr.Copy()
 }
 
+// Copy creates a new KeywordRegistry populated with the same data.
 func (r *KeywordRegistry) Copy() *KeywordRegistry {
 	dest := &KeywordRegistry{
 		keywordRegistry:    make(map[string]KeyMaker, len(r.keywordRegistry)),

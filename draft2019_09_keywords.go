@@ -11,6 +11,8 @@ func LoadDraft2019_09() {
 	r.LoadDraft2019_09()
 }
 
+// DefaultIfEmpty populates the KeywordRegistry with the 2019_09
+// jsonschema draft specification only if the registry is empty.
 func (r *KeywordRegistry) DefaultIfEmpty() {
 	if !r.IsRegistryLoaded() {
 		r.LoadDraft2019_09()
