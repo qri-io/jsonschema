@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync"
 
 	jptr "github.com/qri-io/jsonpointer"
 )
@@ -24,30 +25,76 @@ var notSupported = map[string]bool{
 	"dependencies": true,
 }
 
-var (
-	keywordRegistry    = map[string]KeyMaker{}
-	keywordOrder       = map[string]int{}
-	keywordInsertOrder = map[string]int{}
-)
+var kr *KeywordRegistry
+var krLock sync.Mutex
+
+// KeywordRegistry contains a mapping of jsonschema keywords and their
+// expected behavior.
+type KeywordRegistry struct {
+	keywordRegistry    map[string]KeyMaker
+	keywordOrder       map[string]int
+	keywordInsertOrder map[string]int
+}
+
+func getGlobalKeywordRegistry() (*KeywordRegistry, func()) {
+	krLock.Lock()
+	if kr == nil {
+		kr = &KeywordRegistry{
+			keywordRegistry:    make(map[string]KeyMaker, 0),
+			keywordOrder:       make(map[string]int, 0),
+			keywordInsertOrder: make(map[string]int, 0),
+		}
+	}
+	return kr, func() { krLock.Unlock() }
+}
+
+func copyGlobalKeywordRegistry() *KeywordRegistry {
+	kr, release := getGlobalKeywordRegistry()
+	defer release()
+	return kr.Copy()
+}
+
+// Copy creates a new KeywordRegistry populated with the same data.
+func (r *KeywordRegistry) Copy() *KeywordRegistry {
+	dest := &KeywordRegistry{
+		keywordRegistry:    make(map[string]KeyMaker, len(r.keywordRegistry)),
+		keywordOrder:       make(map[string]int, len(r.keywordOrder)),
+		keywordInsertOrder: make(map[string]int, len(r.keywordInsertOrder)),
+	}
+
+	for k, v := range r.keywordRegistry {
+		dest.keywordRegistry[k] = v
+	}
+
+	for k, v := range r.keywordOrder {
+		dest.keywordOrder[k] = v
+	}
+
+	for k, v := range r.keywordInsertOrder {
+		dest.keywordInsertOrder[k] = v
+	}
+
+	return dest
+}
 
 // IsRegisteredKeyword validates if a given prop string is a registered keyword
-func IsRegisteredKeyword(prop string) bool {
-	_, ok := keywordRegistry[prop]
+func (r *KeywordRegistry) IsRegisteredKeyword(prop string) bool {
+	_, ok := r.keywordRegistry[prop]
 	return ok
 }
 
 // GetKeyword returns a new instance of the keyword
-func GetKeyword(prop string) Keyword {
-	if !IsRegisteredKeyword(prop) {
+func (r *KeywordRegistry) GetKeyword(prop string) Keyword {
+	if !r.IsRegisteredKeyword(prop) {
 		return NewVoid()
 	}
-	return keywordRegistry[prop]()
+	return r.keywordRegistry[prop]()
 }
 
 // GetKeywordOrder returns the order index of
 // the given keyword or defaults to 1
-func GetKeywordOrder(prop string) int {
-	if order, ok := keywordOrder[prop]; ok {
+func (r *KeywordRegistry) GetKeywordOrder(prop string) int {
+	if order, ok := r.keywordOrder[prop]; ok {
 		return order
 	}
 	return 1
@@ -55,35 +102,51 @@ func GetKeywordOrder(prop string) int {
 
 // GetKeywordInsertOrder returns the insert index of
 // the given keyword
-func GetKeywordInsertOrder(prop string) int {
-	if order, ok := keywordInsertOrder[prop]; ok {
+func (r *KeywordRegistry) GetKeywordInsertOrder(prop string) int {
+	if order, ok := r.keywordInsertOrder[prop]; ok {
 		return order
 	}
 	// TODO(arqu): this is an arbitrary max
 	return 1000
 }
 
-// SetKeywordOrder assignes a given order to a keyword
+// SetKeywordOrder assigns a given order to a keyword
+func (r *KeywordRegistry) SetKeywordOrder(prop string, order int) {
+	r.keywordOrder[prop] = order
+}
+
+// SetKeywordOrder assigns a given order to a keyword
 func SetKeywordOrder(prop string, order int) {
-	keywordOrder[prop] = order
+	r, release := getGlobalKeywordRegistry()
+	defer release()
+
+	r.SetKeywordOrder(prop, order)
 }
 
 // IsNotSupportedKeyword is a utility function to clarify when
 // a given keyword, while expected is not supported
-func IsNotSupportedKeyword(prop string) bool {
+func (r *KeywordRegistry) IsNotSupportedKeyword(prop string) bool {
 	_, ok := notSupported[prop]
 	return ok
 }
 
 // IsRegistryLoaded checks if any keywords are present
-func IsRegistryLoaded() bool {
-	return keywordRegistry != nil && len(keywordRegistry) > 0
+func (r *KeywordRegistry) IsRegistryLoaded() bool {
+	return r.keywordRegistry != nil && len(r.keywordRegistry) > 0
+}
+
+// RegisterKeyword registers a keyword with the registry
+func (r *KeywordRegistry) RegisterKeyword(prop string, maker KeyMaker) {
+	r.keywordRegistry[prop] = maker
+	r.keywordInsertOrder[prop] = len(r.keywordInsertOrder)
 }
 
 // RegisterKeyword registers a keyword with the registry
 func RegisterKeyword(prop string, maker KeyMaker) {
-	keywordRegistry[prop] = maker
-	keywordInsertOrder[prop] = len(keywordInsertOrder)
+	r, release := getGlobalKeywordRegistry()
+	defer release()
+
+	r.RegisterKeyword(prop, maker)
 }
 
 // MaxKeywordErrStringLen sets how long a value can be before it's length is truncated

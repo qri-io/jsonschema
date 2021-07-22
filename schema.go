@@ -64,9 +64,9 @@ func (s *Schema) Register(uri string, registry *SchemaRegistry) {
 	registry.RegisterLocal(s)
 
 	// load default keyset if no other is present
-	if !IsRegistryLoaded() {
-		LoadDraft2019_09()
-	}
+	globalRegistry, release := getGlobalKeywordRegistry()
+	globalRegistry.DefaultIfEmpty()
+	release()
 
 	address := s.id
 	if uri != "" && address != "" {
@@ -179,9 +179,8 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	if !IsRegistryLoaded() {
-		LoadDraft2019_09()
-	}
+	keywordRegistry := copyGlobalKeywordRegistry()
+	keywordRegistry.DefaultIfEmpty()
 
 	_s := _schema{}
 	if err := json.Unmarshal(data, &_s); err != nil {
@@ -200,9 +199,9 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 
 	for prop, rawmsg := range valprops {
 		var keyword Keyword
-		if IsRegisteredKeyword(prop) {
-			keyword = GetKeyword(prop)
-		} else if IsNotSupportedKeyword(prop) {
+		if keywordRegistry.IsRegisteredKeyword(prop) {
+			keyword = keywordRegistry.GetKeyword(prop)
+		} else if keywordRegistry.IsNotSupportedKeyword(prop) {
 			schemaDebug(fmt.Sprintf("[Schema] WARN: '%s' is not supported and will be ignored\n", prop))
 			continue
 		} else {
@@ -226,13 +225,13 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 	for k := range sch.keywords {
 		keyOrders[i] = _keyOrder{
 			Key:   k,
-			Order: GetKeywordOrder(k),
+			Order: keywordRegistry.GetKeywordOrder(k),
 		}
 		i++
 	}
 	sort.SliceStable(keyOrders, func(i, j int) bool {
 		if keyOrders[i].Order == keyOrders[j].Order {
-			return GetKeywordInsertOrder(keyOrders[i].Key) < GetKeywordInsertOrder(keyOrders[j].Key)
+			return keywordRegistry.GetKeywordInsertOrder(keyOrders[i].Key) < keywordRegistry.GetKeywordInsertOrder(keyOrders[j].Key)
 		}
 		return keyOrders[i].Order < keyOrders[j].Order
 	})
