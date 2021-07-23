@@ -2,10 +2,12 @@ package jsonschema
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"testing"
 
+	"github.com/qri-io/jsonpointer"
 	jptr "github.com/qri-io/jsonpointer"
 )
 
@@ -63,7 +65,40 @@ func (f *IsFoo) ValidateKeyword(ctx context.Context, currentState *ValidationSta
 	}
 }
 
+// ContentEncoding represents a "custom" Schema property
+type ContentEncoding string
+
+// newContentEncoding allocates a new ContentEncoding validator
+func newContentEncoding() Keyword {
+	return new(ContentEncoding)
+}
+
+func (c ContentEncoding) Validate(propPath string, data interface{}, errs *[]KeyError) {}
+
+func (c ContentEncoding) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
+	if obj, ok := data.(string); ok {
+		switch c {
+		case "base64":
+			_, err := base64.StdEncoding.DecodeString(obj)
+			if err != nil {
+				currentState.AddError(data, fmt.Sprintf("invalid %s value: %s", c, obj))
+			}
+		// Add validation support for other encodings as needed
+		// See https://json-schema.org/latest/json-schema-validation.html#rfc.section.8.3
+		default:
+			currentState.AddError(data, fmt.Sprintf("unsupported or invalid contentEncoding type of %s", c))
+		}
+	}
+}
+
+func (c ContentEncoding) Register(uri string, registry *SchemaRegistry) {}
+
+func (c ContentEncoding) Resolve(pointer jsonpointer.Pointer, uri string) *Schema {
+	return nil
+}
+
 func ExampleCustomValidator() {
+
 	// register a custom validator by supplying a function
 	// that creates new instances of your Validator.
 	RegisterKeyword("foo", newIsFoo)
@@ -86,6 +121,39 @@ func ExampleCustomValidator() {
 	// Output: /: "bar" should be foo. plz make 'bar' == foo. plz
 }
 
+func ExampleCustomSchemaValidator() {
+
+	// register a custom validator by supplying a function
+	// that creates new instances of your Validator.
+	RegisterKeyword("contentEncoding", newContentEncoding)
+	ctx := context.Background()
+
+	schBytes := []byte(`{
+"type": "object",
+"properties" : {
+	"file" : {
+		"type": "string",
+		"contentEncoding": "base64"
+	}
+},
+"required" : ["file"]
+}`)
+
+	rs := new(Schema)
+	if err := json.Unmarshal(schBytes, rs); err != nil {
+		// Real programs handle errors.
+		panic(err)
+	}
+
+	errs, err := rs.ValidateBytes(ctx, []byte(`{ "file": "abc123" }`))
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(errs[0].Error())
+	// Output: /file: "abc123" invalid base64 value: abc123
+}
+
 type FooKeyword uint8
 
 func (f *FooKeyword) Validate(propPath string, data interface{}, errs *[]KeyError) {}
@@ -106,7 +174,7 @@ func TestRegisterFooKeyword(t *testing.T) {
 
 	RegisterKeyword("foo", newFoo)
 
-	if !IsRegisteredKeyword("foo") {
+	if !kr.IsRegisteredKeyword("foo") {
 		t.Errorf("expected %s to be added as a default validator", "foo")
 	}
 }
