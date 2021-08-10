@@ -84,8 +84,8 @@ func (a AllOf) JSONProp(name string) interface{} {
 }
 
 // JSONChildren implements the JSONContainer interface for AllOf
-func (a AllOf) JSONChildren() (res map[string]JSONPather) {
-	res = map[string]JSONPather{}
+func (a AllOf) JSONChildren() (res map[string]interface{}) {
+	res = map[string]interface{}{}
 	for i, sch := range a {
 		res[strconv.Itoa(i)] = sch
 	}
@@ -163,8 +163,8 @@ func (a AnyOf) JSONProp(name string) interface{} {
 }
 
 // JSONChildren implements the JSONContainer interface for AnyOf
-func (a AnyOf) JSONChildren() (res map[string]JSONPather) {
-	res = map[string]JSONPather{}
+func (a AnyOf) JSONChildren() (res map[string]interface{}) {
+	res = map[string]interface{}{}
 	for i, sch := range a {
 		res[strconv.Itoa(i)] = sch
 	}
@@ -252,8 +252,8 @@ func (o OneOf) JSONProp(name string) interface{} {
 }
 
 // JSONChildren implements the JSONContainer interface for OneOf
-func (o OneOf) JSONChildren() (res map[string]JSONPather) {
-	res = map[string]JSONPather{}
+func (o OneOf) JSONChildren() (res map[string]interface{}) {
+	res = map[string]interface{}{}
 	for i, sch := range o {
 		res[strconv.Itoa(i)] = sch
 	}
@@ -293,13 +293,18 @@ func (n *Not) ValidateKeyword(ctx context.Context, currentState *ValidationState
 	}
 }
 
+// GetSchema implements the SchemaKeyword for Not
+func (n *Not) GetSchema() *Schema {
+	return (*Schema)(n)
+}
+
 // JSONProp implements the JSONPather for Not
 func (n Not) JSONProp(name string) interface{} {
 	return Schema(n).JSONProp(name)
 }
 
 // JSONChildren implements the JSONContainer interface for Not
-func (n Not) JSONChildren() (res map[string]JSONPather) {
+func (n Not) JSONChildren() (res map[string]interface{}) {
 	return Schema(n).JSONChildren()
 }
 

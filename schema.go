@@ -146,18 +146,20 @@ func (s Schema) JSONProp(name string) interface{} {
 }
 
 // JSONChildren implements the JSONContainer interface for Schema
-func (s Schema) JSONChildren() map[string]JSONPather {
-	ch := map[string]JSONPather{}
+func (s Schema) JSONChildren() map[string]interface{} {
+	ch := map[string]interface{}{}
 
 	if s.keywords != nil {
-		for key, val := range s.keywords {
-			if jp, ok := val.(JSONPather); ok {
-				ch[key] = jp
-			}
+		for _, key := range s.orderedkeywords {
+			ch[key] = s.keywords[key]
 		}
 	}
 
 	return ch
+}
+
+func (s *Schema) GetSchema() *Schema {
+	return s
 }
 
 // _schema is an internal struct for encoding & decoding purposes

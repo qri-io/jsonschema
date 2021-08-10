@@ -49,13 +49,18 @@ func (f *If) ValidateKeyword(ctx context.Context, currentState *ValidationState,
 	currentState.Misc["ifResult"] = subState.IsValid()
 }
 
+// GetSchema implements the SchemaKeyword for If
+func (f *If) GetSchema() *Schema {
+	return (*Schema)(f)
+}
+
 // JSONProp implements the JSONPather for If
 func (f If) JSONProp(name string) interface{} {
 	return Schema(f).JSONProp(name)
 }
 
 // JSONChildren implements the JSONContainer interface for If
-func (f If) JSONChildren() (res map[string]JSONPather) {
+func (f If) JSONChildren() (res map[string]interface{}) {
 	return Schema(f).JSONChildren()
 }
 
@@ -116,13 +121,18 @@ func (t *Then) ValidateKeyword(ctx context.Context, currentState *ValidationStat
 	currentState.UpdateEvaluatedPropsAndItems(subState)
 }
 
+// GetSchema implements the SchemaKeyword for Then
+func (t *Then) GetSchema() *Schema {
+	return (*Schema)(t)
+}
+
 // JSONProp implements the JSONPather for Then
 func (t Then) JSONProp(name string) interface{} {
 	return Schema(t).JSONProp(name)
 }
 
 // JSONChildren implements the JSONContainer interface for Then
-func (t Then) JSONChildren() (res map[string]JSONPather) {
+func (t Then) JSONChildren() (res map[string]interface{}) {
 	return Schema(t).JSONChildren()
 }
 
@@ -180,13 +190,18 @@ func (e *Else) ValidateKeyword(ctx context.Context, currentState *ValidationStat
 	sch.ValidateKeyword(ctx, subState, data)
 }
 
+// GetSchema implements the SchemaKeyword for Else
+func (e *Else) GetSchema() *Schema {
+	return (*Schema)(e)
+}
+
 // JSONProp implements the JSONPather for Else
 func (e Else) JSONProp(name string) interface{} {
 	return Schema(e).JSONProp(name)
 }
 
 // JSONChildren implements the JSONContainer interface for Else
-func (e Else) JSONChildren() (res map[string]JSONPather) {
+func (e Else) JSONChildren() (res map[string]interface{}) {
 	return Schema(e).JSONChildren()
 }
 

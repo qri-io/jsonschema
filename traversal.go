@@ -14,11 +14,11 @@ type JSONPather interface {
 // JSONContainer is an interface that enables tree traversal by listing
 // the immideate children of an object
 type JSONContainer interface {
-	// JSONChildren should return all immidiate children of this element
-	JSONChildren() map[string]JSONPather
+	// JSONChildren should return all immediate children of this element
+	JSONChildren() map[string]interface{}
 }
 
-func walkJSON(elem JSONPather, fn func(elem JSONPather) error) error {
+func walkJSON(elem interface{}, fn func(elem interface{}) error) error {
 	if err := fn(elem); err != nil {
 		return err
 	}

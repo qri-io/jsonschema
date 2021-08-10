@@ -179,6 +179,13 @@ type Keyword interface {
 	Resolve(pointer jptr.Pointer, uri string) *Schema
 }
 
+// SchemaKeyword is a kind of Keyword which exposes a GetSchema method for returning the underlying Schema. This should
+// be implemented by other keywords whose value is a Schema (i.e. via a type definition like `type Not Schema`).
+type SchemaKeyword interface {
+	Keyword
+	GetSchema() *Schema
+}
+
 // KeyMaker is a function that generates instances of a Keyword.
 // Calls to KeyMaker will be passed directly to json.Marshal,
 // so the returned value should be a pointer

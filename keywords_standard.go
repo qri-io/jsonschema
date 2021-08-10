@@ -107,8 +107,8 @@ func (e Enum) JSONProp(name string) interface{} {
 }
 
 // JSONChildren implements the JSONContainer interface for Enum
-func (e Enum) JSONChildren() (res map[string]JSONPather) {
-	res = map[string]JSONPather{}
+func (e Enum) JSONChildren() (res map[string]interface{}) {
+	res = map[string]interface{}{}
 	for i, bs := range e {
 		res[strconv.Itoa(i)] = bs
 	}
