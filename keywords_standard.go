@@ -256,6 +256,12 @@ func (t Type) JSONProp(name string) interface{} {
 	return t.vals[idx]
 }
 
+func (t Type) Values() []string {
+	values := make([]string, len(t.vals))
+	copy(values, t.vals)
+	return values
+}
+
 // UnmarshalJSON implements the json.Unmarshaler interface for Type
 func (t *Type) UnmarshalJSON(data []byte) error {
 	var single string
