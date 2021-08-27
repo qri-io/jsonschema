@@ -48,8 +48,6 @@ func (it *Items) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	}
 
 	return it.Schemas[pos].Resolve(pointer.Tail(), uri)
-
-	return nil
 }
 
 // ValidateKeyword implements the Keyword interface for Items
