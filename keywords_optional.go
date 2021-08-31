@@ -284,7 +284,6 @@ func isValidTime(time string) error {
 	arbitraryDate := "1963-06-19"
 	dateTime := fmt.Sprintf("%sT%s", arbitraryDate, time)
 	return isValidDateTime(dateTime)
-	return nil
 }
 
 // A string instance is a valid against "uri-reference" if it is a

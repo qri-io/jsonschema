@@ -43,8 +43,6 @@ func (a *AllOf) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	}
 
 	return (*a)[pos].Resolve(pointer.Tail(), uri)
-
-	return nil
 }
 
 // ValidateKeyword implements the Keyword interface for AllOf
@@ -127,8 +125,6 @@ func (a *AnyOf) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	}
 
 	return (*a)[pos].Resolve(pointer.Tail(), uri)
-
-	return nil
 }
 
 // ValidateKeyword implements the Keyword interface for AnyOf
@@ -206,8 +202,6 @@ func (o *OneOf) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	}
 
 	return (*o)[pos].Resolve(pointer.Tail(), uri)
-
-	return nil
 }
 
 // ValidateKeyword implements the Keyword interface for OneOf
