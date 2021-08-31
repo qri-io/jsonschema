@@ -139,6 +139,11 @@ func (d *Default) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
+// MarshalJSON implements the json.Marshaller interface for Default
+func (d *Default) MarshalJSON() ([]byte, error) {
+	return json.Marshal(d.data)
+}
+
 // UnmarshalJSON implements the json.Unmarshaler interface for Default
 func (d *Default) UnmarshalJSON(data []byte) error {
 	var defaultData interface{}
