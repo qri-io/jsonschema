@@ -49,10 +49,10 @@ func TestReferenceTraversal(t *testing.T) {
 	}
 
 	elements := 0
-	expectElements := 14
+	expectElements := 35
 	refs := 0
-	expectRefs := 6
-	walkJSON(rs, func(elem JSONPather) error {
+	expectRefs := 7
+	walkJSON(rs, func(elem interface{}) error {
 		elements++
 		if sch, ok := elem.(*Schema); ok {
 			if sch.HasKeyword("$ref") {
@@ -74,7 +74,7 @@ func TestReferenceTraversal(t *testing.T) {
 		elements int
 		refs     int
 	}{
-		{`{ "not" : { "$ref":"#" }}`, 2, 0},
+		{`{ "not" : { "$ref":"#" }}`, 3, 1},
 	}
 
 	for i, c := range cases {
@@ -86,10 +86,10 @@ func TestReferenceTraversal(t *testing.T) {
 
 		elements := 0
 		refs := 0
-		walkJSON(rs, func(elem JSONPather) error {
+		walkJSON(rs, func(elem interface{}) error {
 			elements++
-			if sch, ok := elem.(*Schema); ok {
-				if sch.HasKeyword("$ref") {
+			if kw, ok := elem.(SchemaKeyword); ok {
+				if kw.GetSchema().HasKeyword("$ref") {
 					refs++
 				}
 			}

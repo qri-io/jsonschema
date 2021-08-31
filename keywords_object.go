@@ -72,8 +72,8 @@ func (p Properties) JSONProp(name string) interface{} {
 }
 
 // JSONChildren implements the JSONContainer interface for Properties
-func (p Properties) JSONChildren() (res map[string]JSONPather) {
-	res = map[string]JSONPather{}
+func (p Properties) JSONChildren() (res map[string]interface{}) {
+	res = map[string]interface{}{}
 	for key, sch := range p {
 		res[key] = sch
 	}
@@ -252,8 +252,8 @@ func (p PatternProperties) JSONProp(name string) interface{} {
 }
 
 // JSONChildren implements the JSONContainer interface for PatternProperties
-func (p PatternProperties) JSONChildren() (res map[string]JSONPather) {
-	res = map[string]JSONPather{}
+func (p PatternProperties) JSONChildren() (res map[string]interface{}) {
+	res = map[string]interface{}{}
 	for i, pp := range p {
 		res[strconv.Itoa(i)] = pp.schema
 	}
@@ -341,6 +341,11 @@ func (ap *AdditionalProperties) ValidateKeyword(ctx context.Context, currentStat
 	}
 }
 
+// GetSchema implements the SchemaKeyword for AdditionalProperties
+func (ap *AdditionalProperties) GetSchema() *Schema {
+	return (*Schema)(ap)
+}
+
 // UnmarshalJSON implements the json.Unmarshaler interface for AdditionalProperties
 func (ap *AdditionalProperties) UnmarshalJSON(data []byte) error {
 	sch := &Schema{}
@@ -349,6 +354,16 @@ func (ap *AdditionalProperties) UnmarshalJSON(data []byte) error {
 	}
 	*ap = (AdditionalProperties)(*sch)
 	return nil
+}
+
+// JSONProp implements the JSONPather for AdditionalProperties
+func (ap AdditionalProperties) JSONProp(name string) interface{} {
+	return Schema(ap).JSONProp(name)
+}
+
+// JSONChildren implements the JSONContainer interface for AdditionalProperties
+func (ap AdditionalProperties) JSONChildren() (res map[string]interface{}) {
+	return Schema(ap).JSONChildren()
 }
 
 // PropertyNames defines the propertyNames JSON Schema keyword
@@ -383,13 +398,18 @@ func (p *PropertyNames) ValidateKeyword(ctx context.Context, currentState *Valid
 	}
 }
 
+// GetSchema implements the SchemaKeyword for PropertyNames
+func (p *PropertyNames) GetSchema() *Schema {
+	return (*Schema)(p)
+}
+
 // JSONProp implements the JSONPather for PropertyNames
 func (p PropertyNames) JSONProp(name string) interface{} {
 	return Schema(p).JSONProp(name)
 }
 
 // JSONChildren implements the JSONContainer interface for PropertyNames
-func (p PropertyNames) JSONChildren() (res map[string]JSONPather) {
+func (p PropertyNames) JSONChildren() (res map[string]interface{}) {
 	return Schema(p).JSONChildren()
 }
 
@@ -478,8 +498,8 @@ func (d DependentSchemas) JSONProp(name string) interface{} {
 }
 
 // JSONChildren implements the JSONContainer interface for DependentSchemas
-func (d DependentSchemas) JSONChildren() (r map[string]JSONPather) {
-	r = map[string]JSONPather{}
+func (d DependentSchemas) JSONChildren() (r map[string]interface{}) {
+	r = map[string]interface{}{}
 	for key, val := range d {
 		r[key] = val
 	}
@@ -517,6 +537,11 @@ func (d *SchemaDependency) ValidateKeyword(ctx context.Context, currentState *Va
 	subState.DescendBase(d.prop)
 	subState.DescendRelative(d.prop)
 	d.schema.ValidateKeyword(ctx, subState, data)
+}
+
+// GetSchema implements the SchemaKeyword for SchemaDependency
+func (d *SchemaDependency) GetSchema() *Schema {
+	return d.schema
 }
 
 // MarshalJSON implements the json.Marshaler interface for SchemaDependency
@@ -591,8 +616,8 @@ func (d DependentRequired) JSONProp(name string) interface{} {
 }
 
 // JSONChildren implements the JSONContainer interface for DependentRequired
-func (d DependentRequired) JSONChildren() (r map[string]JSONPather) {
-	r = map[string]JSONPather{}
+func (d DependentRequired) JSONChildren() (r map[string]interface{}) {
+	r = map[string]interface{}{}
 	for key, val := range d {
 		r[key] = val
 	}
@@ -679,6 +704,11 @@ func (up *UnevaluatedProperties) ValidateKeyword(ctx context.Context, currentSta
 			(*Schema)(up).ValidateKeyword(ctx, subState, obj[key])
 		}
 	}
+}
+
+// GetSchema implements the SchemaKeyword for UnevaluatedProperties
+func (up *UnevaluatedProperties) GetSchema() *Schema {
+	return (*Schema)(up)
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface for UnevaluatedProperties

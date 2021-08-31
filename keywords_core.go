@@ -661,8 +661,8 @@ func (d Defs) JSONProp(name string) interface{} {
 }
 
 // JSONChildren implements the JSONContainer interface for Defs
-func (d Defs) JSONChildren() (res map[string]JSONPather) {
-	res = map[string]JSONPather{}
+func (d Defs) JSONChildren() (res map[string]interface{}) {
+	res = map[string]interface{}{}
 	for key, sch := range d {
 		res[key] = sch
 	}

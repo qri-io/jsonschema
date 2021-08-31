@@ -98,11 +98,18 @@ func (it Items) JSONProp(name string) interface{} {
 }
 
 // JSONChildren implements the JSONContainer interface for Items
-func (it Items) JSONChildren() (res map[string]JSONPather) {
-	res = map[string]JSONPather{}
+func (it Items) JSONChildren() (res map[string]interface{}) {
+	res = map[string]interface{}{}
+
+	if it.single {
+		res["."] = it.Schemas[0]
+		return
+	}
+
 	for i, sch := range it.Schemas {
 		res[strconv.Itoa(i)] = sch
 	}
+
 	return
 }
 
@@ -263,13 +270,18 @@ func (c *Contains) ValidateKeyword(ctx context.Context, currentState *Validation
 	}
 }
 
+// GetSchema implements the SchemaKeyword for Contains
+func (c *Contains) GetSchema() *Schema {
+	return (*Schema)(c)
+}
+
 // JSONProp implements the JSONPather for Contains
 func (c Contains) JSONProp(name string) interface{} {
 	return Schema(c).JSONProp(name)
 }
 
 // JSONChildren implements the JSONContainer interface for Contains
-func (c Contains) JSONChildren() (res map[string]JSONPather) {
+func (c Contains) JSONChildren() (res map[string]interface{}) {
 	return Schema(c).JSONChildren()
 }
 
@@ -381,6 +393,11 @@ func (ai *AdditionalItems) ValidateKeyword(ctx context.Context, currentState *Va
 	}
 }
 
+// GetSchema implements the SchemaKeyword for AdditionalItems
+func (ai *AdditionalItems) GetSchema() *Schema {
+	return (*Schema)(ai)
+}
+
 // UnmarshalJSON implements the json.Unmarshaler interface for AdditionalItems
 func (ai *AdditionalItems) UnmarshalJSON(data []byte) error {
 	sch := &Schema{}
@@ -429,6 +446,11 @@ func (ui *UnevaluatedItems) ValidateKeyword(ctx context.Context, currentState *V
 			}
 		}
 	}
+}
+
+// GetSchema implements the SchemaKeyword for UnevaluatedItems
+func (ui *UnevaluatedItems) GetSchema() *Schema {
+	return (*Schema)(ui)
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface for UnevaluatedItems
