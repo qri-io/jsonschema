@@ -29,6 +29,7 @@ type ValidationState struct {
 	Errs *[]KeyError
 
 	// AdditionalValidationData is a shared storage between all substates of a ValidationState
+	// Its key space won't be cleared and is shared between all substates of a validation operation.
 	AdditionalValidationData *map[string]interface{}
 }
 
