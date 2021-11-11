@@ -161,6 +161,8 @@ func DataType(data interface{}) string {
 		return "array"
 	case reflect.Map, reflect.Struct:
 		return "object"
+	case reflect.Ptr, reflect.Interface:
+		return "null"
 	default:
 		return "unknown"
 	}

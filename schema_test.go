@@ -567,11 +567,18 @@ func TestDataType(t *testing.T) {
 	type customObject struct{}
 	type customNumber float64
 
+	var nilPoint *struct{}
+	var nilInterface interface{}
+	var nilInterfaceReader interface{ Read() }
+
 	cases := []struct {
 		data   interface{}
 		expect string
 	}{
 		{nil, "null"},
+		{nilPoint, "null"},
+		{nilInterface, "null"},
+		{nilInterfaceReader, "null"},
 		{float64(4), "integer"},
 		{float64(4.0), "integer"},
 		{float64(4.5), "number"},
