@@ -351,6 +351,11 @@ func (ap *AdditionalProperties) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// MarshalJSON implements the json.Marshaler interface for AdditionalProperties
+func (ap *AdditionalProperties) MarshalJSON() ([]byte, error) {
+	return json.Marshal(Schema(*ap))
+}
+
 // PropertyNames defines the propertyNames JSON Schema keyword
 type PropertyNames Schema
 
