@@ -617,6 +617,7 @@ func TestJSONCoding(t *testing.T) {
 		"testdata/coding/numeric.json",
 		"testdata/coding/objects.json",
 		"testdata/coding/strings.json",
+		"testdata/coding/contains.json",
 	}
 
 	for i, c := range cases {

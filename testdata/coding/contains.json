@@ -1,0 +1,6 @@
+{
+  "contains": {
+    "const": "foobar"
+  },
+  "type": "array"
+}
