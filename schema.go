@@ -72,6 +72,7 @@ func (s *Schema) Register(uri string, registry *SchemaRegistry) {
 	if uri != "" && address != "" {
 		address, _ = SafeResolveURL(uri, address)
 	}
+
 	if s.docPath == "" && address != "" && address[0] != '#' {
 		docURI := ""
 		if u, err := url.Parse(address); err != nil {
@@ -326,6 +327,7 @@ func (s *Schema) ValidateBytes(ctx context.Context, data []byte) ([]KeyError, er
 	if err := json.Unmarshal(data, &doc); err != nil {
 		return nil, fmt.Errorf("error parsing JSON bytes: %w", err)
 	}
+
 	vs := s.Validate(ctx, doc)
 	return *vs.Errs, nil
 }
