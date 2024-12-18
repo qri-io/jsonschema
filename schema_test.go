@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -88,6 +89,35 @@ func ExampleBasic() {
 
 	// Output: /: {"firstName":"Prince... "lastName" value is required
 	// /friends/0: {"firstName":"Nas"} "lastName" value is required
+}
+
+func TestRoundTripMarshallingForAdditionalProperties(t *testing.T) {
+	schemaObject := []byte(`{
+    "title": "Car",
+    "type": "object",
+    "properties": {
+        "color": {
+            "type": "string"
+        }
+    },
+    "required": ["color"],
+    "additionalProperties": false
+}`)
+	rs := &Schema{}
+	if err := json.Unmarshal(schemaObject, rs); err != nil {
+		t.Fatalf("failed to unmarshal test data: %s", err.Error())
+	}
+	bytes, err := json.Marshal(rs)
+	if err != nil {
+		t.Fatalf("failed to unmarshal test data: %s", err.Error())
+	}
+	var rs1 Schema
+	if err := json.Unmarshal(bytes, &rs1); err != nil {
+		t.Fatalf("failed to unmarshal test data: %s", err.Error())
+	}
+	if !reflect.DeepEqual(rs, &rs1) {
+		t.Fatalf("not equal")
+	}
 }
 
 func TestTopLevelType(t *testing.T) {
