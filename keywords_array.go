@@ -273,6 +273,23 @@ func (c Contains) JSONChildren() (res map[string]JSONPather) {
 	return Schema(c).JSONChildren()
 }
 
+// MarshalJSON implements the json.Marshaler interface for Schema
+func (c *Contains) MarshalJSON() ([]byte, error) {
+	switch c.schemaType {
+	case schemaTypeFalse:
+		return []byte("false"), nil
+	case schemaTypeTrue:
+		return []byte("true"), nil
+	default:
+		obj := map[string]interface{}{}
+
+		for k, v := range c.keywords {
+			obj[k] = v
+		}
+		return json.Marshal(obj)
+	}
+}
+
 // UnmarshalJSON implements the json.Unmarshaler interface for Contains
 func (c *Contains) UnmarshalJSON(data []byte) error {
 	var sch Schema
