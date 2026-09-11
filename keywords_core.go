@@ -139,6 +139,11 @@ func (d *Default) Resolve(pointer jptr.Pointer, uri string) *Schema {
 	return nil
 }
 
+// Value returns the default value stored in the Default keyword
+func (d *Default) Value() interface{} {
+	return d.data
+}
+
 // UnmarshalJSON implements the json.Unmarshaler interface for Default
 func (d *Default) UnmarshalJSON(data []byte) error {
 	var defaultData interface{}
