@@ -712,6 +712,21 @@ func TestValidateBytes(t *testing.T) {
 			[]string{
 				`/port: {"port":80} additional properties are not allowed`,
 			}},
+		{`{"properties":{"a":{"properties":{"id":{}}}}, "additionalProperties":false}`,
+			`{"a":{"id":1}, "id":1}`,
+			[]string{
+				`/id: {"a":{"id":1},"id":1... additional properties are not allowed`,
+			}},
+		{`{"patternProperties":{"^a":{"properties":{"id":{}}}}, "additionalProperties":false}`,
+			`{"a":{"id":1}, "id":1}`,
+			[]string{
+				`/id: {"a":{"id":1},"id":1... additional properties are not allowed`,
+			}},
+		{`{"additionalProperties":{"type":"object", "properties":{"id":{}}}}`,
+			`{"a":{"id":1}, "b":{"id":1}, "c":{"id":1}, "id":1}`,
+			[]string{
+				`/id: 1 type should be object, got integer`,
+			}},
 	}
 
 	for i, c := range cases {
