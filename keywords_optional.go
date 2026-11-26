@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"net/mail"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -24,7 +23,6 @@ const (
 )
 
 var (
-	// emailPattern           = regexp.MustCompile(email)
 	hostnamePattern        = regexp.MustCompile(hostname)
 	unescaptedTildaPattern = regexp.MustCompile(unescapedTilda)
 	endingTildaPattern     = regexp.MustCompile(endingTilda)
@@ -123,17 +121,65 @@ func isValidDate(date string) error {
 	return isValidDateTime(dateTime)
 }
 
+var (
+	emailPattern    = newEmailPattern(``)
+	idnEmailPattern = newEmailPattern(`\x{80}-\x{10FFFF}`)
+)
+
+// newEmailPattern returns the pattern of an email address: the addr-spec of
+// RFC 5322, section 3.4.1, which is local-part "@" domain. The local part is
+// a dot-atom or a quoted-string, and the domain is a host name or, in
+// brackets, an address literal. The mailbox of a message header is more than
+// an addr-spec, so a display name, angle brackets, comments and white space
+// around the address do not match.
+// nonASCII is the class of the characters that are allowed besides the ASCII
+// ones: none, or those that RFC 6531 adds for an internationalized address.
+func newEmailPattern(nonASCII string) *regexp.Regexp {
+	atext := `[a-zA-Z0-9!#$%&'*+/=?^_\x60{|}~` + nonASCII + `-]`
+	qtext := `[\x20\x21\x23-\x5b\x5d-\x7e` + nonASCII + `]`
+	quotedPair := `\\[\x20-\x7e` + nonASCII + `]`
+	letDig := `[a-zA-Z0-9` + nonASCII + `]`
+	label := letDig + `(?:[a-zA-Z0-9` + nonASCII + `-]{0,61}` + letDig + `)?`
+
+	localPart := atext + `+(?:\.` + atext + `+)*|"(?:` + qtext + `|` + quotedPair + `)+"`
+	domain := label + `(?:\.` + label + `)*|\[[^\]]*\]`
+	return regexp.MustCompile(`^(?:` + localPart + `)@(` + domain + `)$`)
+}
+
+// emailDomain returns the domain of email, if email matches pattern and its
+// domain is no longer than a host name and, as an address literal, holds an
+// IP address.
+func emailDomain(pattern *regexp.Regexp, email string) (string, error) {
+	match := pattern.FindStringSubmatch(email)
+	if match == nil {
+		return "", fmt.Errorf("email address incorrectly Formatted")
+	}
+	domain := match[1]
+	if len(domain) > 255 {
+		return "", fmt.Errorf("email address incorrectly Formatted: domain is too long")
+	}
+	if strings.HasPrefix(domain, "[") && !isAddressLiteral(domain[1:len(domain)-1]) {
+		return "", fmt.Errorf("email address incorrectly Formatted: invalid address literal")
+	}
+	return domain, nil
+}
+
+// isAddressLiteral reports whether literal is an IPv4 address, or an IPv6
+// address after the tag "IPv6:", as defined by RFC 5321, section 4.1.3.
+func isAddressLiteral(literal string) bool {
+	const tag = "IPv6:"
+	if len(literal) > len(tag) && strings.EqualFold(literal[:len(tag)], tag) {
+		return isValidIPv6(literal[len(tag):]) == nil
+	}
+	return !strings.Contains(literal, ":") && net.ParseIP(literal) != nil
+}
+
 // A string instance is valid against "email" if it is a valid
 // representation as defined by RFC 5322, section 3.4.1 [RFC5322].
 // https://tools.ietf.org/html/rfc5322#section-3.4.1
 func isValidEmail(email string) error {
-	// if !emailPattern.MatchString(email) {
-	// 	return fmt.Errorf("invalid email Format")
-	// }
-	if _, err := mail.ParseAddress(email); err != nil {
-		return fmt.Errorf("email address incorrectly Formatted: %s", err.Error())
-	}
-	return nil
+	_, err := emailDomain(emailPattern, email)
+	return err
 }
 
 // A string instance is valid against "hostname" if it is a valid
@@ -153,10 +199,11 @@ func isValidHostname(hostname string) error {
 // representation as defined by RFC 6531 [RFC6531]
 // https://tools.ietf.org/html/rfc6531
 func isValidIDNEmail(idnEmail string) error {
-	if _, err := mail.ParseAddress(idnEmail); err != nil {
-		return fmt.Errorf("email address incorrectly Formatted: %s", err.Error())
+	domain, err := emailDomain(idnEmailPattern, idnEmail)
+	if err != nil {
+		return err
 	}
-	return nil
+	return isValidIDNHostname(domain)
 }
 
 // A string instance is valid against "hostname" if it is a valid
