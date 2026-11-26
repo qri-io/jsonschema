@@ -166,13 +166,13 @@ func (o *OneOf) ValidateKeyword(ctx context.Context, currentState *ValidationSta
 		subState.DescendRelative("oneOf", strconv.Itoa(i))
 		subState.Errs = &[]KeyError{}
 		sch.ValidateKeyword(ctx, subState, data)
-		stateCopy.UpdateEvaluatedPropsAndItems(subState)
 		if subState.IsValid() {
 			if matched {
 				currentState.AddError(data, "matched more than one specified OneOf schemas")
 				return
 			}
 			matched = true
+			stateCopy.UpdateEvaluatedPropsAndItems(subState)
 		}
 	}
 	if !matched {
