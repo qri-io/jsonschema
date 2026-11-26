@@ -15,7 +15,7 @@ import (
 	"github.com/sergi/go-diff/diffmatchpatch"
 )
 
-func ExampleBasic() {
+func Example_basic() {
 	ctx := context.Background()
 	var schemaData = []byte(`{
 	"title": "Person",
