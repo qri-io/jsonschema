@@ -4,6 +4,8 @@ import (
 	"context"
 	"io/ioutil"
 	"testing"
+
+	jptr "github.com/qri-io/jsonpointer"
 )
 
 func TestSchemaDeref(t *testing.T) {
@@ -103,4 +105,65 @@ func TestReferenceTraversal(t *testing.T) {
 		}
 	}
 
+}
+
+func TestKeywordResolve(t *testing.T) {
+	const uri = "https://example.com/root.json"
+	list := `[{"title": "0"}, {"properties": {"p": {"title": "1/properties/p"}}}]`
+	dict := `{"a": {"title": "a"}, "b": {"properties": {"p": {"title": "b/properties/p"}}}}`
+	rs := Must(`{
+		"allOf": ` + list + `,
+		"anyOf": ` + list + `,
+		"oneOf": ` + list + `,
+		"items": ` + list + `,
+		"$defs": ` + dict + `,
+		"properties": ` + dict + `
+	}`)
+
+	type resolveCase struct {
+		keyword string
+		pointer jptr.Pointer
+		title   string // title of the schema expected back, "" for no schema
+	}
+	cases := []resolveCase{}
+	for _, kw := range []string{"allOf", "anyOf", "oneOf", "items"} {
+		cases = append(cases,
+			resolveCase{kw, jptr.Pointer{"0"}, "0"},
+			resolveCase{kw, jptr.Pointer{"1", "properties", "p"}, "1/properties/p"},
+			resolveCase{kw, jptr.Pointer{"2"}, ""},
+			resolveCase{kw, jptr.Pointer{"-1"}, ""},
+			resolveCase{kw, jptr.Pointer{"a"}, ""},
+			resolveCase{kw, jptr.Pointer{}, ""},
+			resolveCase{kw, nil, ""},
+		)
+	}
+	for _, kw := range []string{"$defs", "properties"} {
+		cases = append(cases,
+			resolveCase{kw, jptr.Pointer{"a"}, "a"},
+			resolveCase{kw, jptr.Pointer{"b", "properties", "p"}, "b/properties/p"},
+			resolveCase{kw, jptr.Pointer{"c"}, ""},
+			resolveCase{kw, jptr.Pointer{}, ""},
+			resolveCase{kw, nil, ""},
+		)
+	}
+
+	for _, c := range cases {
+		got := rs.keywords[c.keyword].Resolve(c.pointer, uri)
+		if c.title == "" {
+			if got != nil {
+				t.Errorf("%s %q: expected no schema, got: %v", c.keyword, c.pointer.String(), got)
+			}
+			continue
+		}
+		if got == nil {
+			t.Errorf("%s %q: expected schema titled %q, got nil", c.keyword, c.pointer.String(), c.title)
+			continue
+		}
+		if title, _ := got.keywords["title"].(*Title); title == nil || string(*title) != c.title {
+			t.Errorf("%s %q: expected schema titled %q, got: %v", c.keyword, c.pointer.String(), c.title, got.keywords["title"])
+		}
+		if got.docPath != uri {
+			t.Errorf("%s %q: expected docPath %q, got: %q", c.keyword, c.pointer.String(), uri, got.docPath)
+		}
+	}
 }
