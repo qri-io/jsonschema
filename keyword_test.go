@@ -97,7 +97,7 @@ func (c ContentEncoding) Resolve(pointer jsonpointer.Pointer, uri string) *Schem
 	return nil
 }
 
-func ExampleCustomValidator() {
+func Example_customValidator() {
 
 	// register a custom validator by supplying a function
 	// that creates new instances of your Validator.
@@ -121,7 +121,7 @@ func ExampleCustomValidator() {
 	// Output: /: "bar" should be foo. plz make 'bar' == foo. plz
 }
 
-func ExampleCustomSchemaValidator() {
+func Example_customSchemaValidator() {
 
 	// register a custom validator by supplying a function
 	// that creates new instances of your Validator.
