@@ -147,6 +147,62 @@ func TestEnumMatchesConst(t *testing.T) {
 	}
 }
 
+func TestPlainJSONString(t *testing.T) {
+	cases := []struct {
+		raw   string
+		plain bool
+	}{
+		{`""`, true},
+		{`"a"`, true},
+		{`"red"`, true},
+		{`"a b ~ / {}[]:,'"`, true},
+		{"\"del\x7f\"", true},
+		// escape sequences
+		{`"a\"b"`, false},
+		{`"a\\b"`, false},
+		{`"a\/b"`, false},
+		{`"tab\there"`, false},
+		{`"sn\u00f8"`, false},
+		// not ASCII
+		{`"snø"`, false},
+		{"\"\xff\"", false},
+		// not a JSON string
+		{"\"a\tb\"", false},
+		{"\"a\x00b\"", false},
+		{`"a"b"`, false},
+		{`"`, false},
+		{`"a`, false},
+		{`a"`, false},
+		{``, false},
+		{`1`, false},
+		{`true`, false},
+		{`null`, false},
+		{`["a"]`, false},
+		{`{"a":"b"}`, false},
+		// surrounding whitespace is left to the decoder
+		{` "a"`, false},
+		{`"a" `, false},
+	}
+
+	for _, c := range cases {
+		got, plain := plainJSONString([]byte(c.raw))
+		if plain != c.plain {
+			t.Errorf("%s: expected plain: %v, got: %v", c.raw, c.plain, plain)
+			continue
+		}
+		if !plain {
+			continue
+		}
+
+		var decoded string
+		if err := json.Unmarshal([]byte(c.raw), &decoded); err != nil {
+			t.Errorf("%s: plain string does not decode: %s", c.raw, err.Error())
+		} else if decoded != string(got) {
+			t.Errorf("%s: expected the decoded string '%s', got: '%s'", c.raw, decoded, got)
+		}
+	}
+}
+
 // TestEnumValidateKeyword calls the keyword directly: values that are not
 // valid JSON never match, and validating leaves no trace in the validation
 // state other than the error for data that is not listed.
