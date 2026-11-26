@@ -81,12 +81,14 @@ func (e *Enum) Resolve(pointer jptr.Pointer, uri string) *Schema {
 // ValidateKeyword implements the Keyword interface for Enum
 func (e Enum) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[Enum] Validating")
-	subState := currentState.NewSubState()
-	subState.ClearState()
 	for _, v := range e {
-		subState.Errs = &[]KeyError{}
-		v.ValidateKeyword(ctx, subState, data)
-		if subState.IsValid() {
+		// a value that does not match is not an error on its own: compare it
+		// here instead of collecting the errors of Const.ValidateKeyword
+		var con interface{}
+		if err := json.Unmarshal(v, &con); err != nil {
+			continue
+		}
+		if reflect.DeepEqual(con, data) {
 			return
 		}
 	}
