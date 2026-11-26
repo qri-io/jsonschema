@@ -727,6 +727,21 @@ func TestValidateBytes(t *testing.T) {
 			[]string{
 				`/id: 1 type should be object, got integer`,
 			}},
+		{`{"oneOf":[{"properties":{"x":{"type":"integer"}},"required":["x"]},{"properties":{"y":{"type":"string"}},"required":["q"]}], "unevaluatedProperties":false}`,
+			`{"x":1, "y":"s"}`,
+			[]string{
+				`/: {"x":1,"y":"s"} unevaluated properties are not allowed`,
+			}},
+		{`{"properties":{"x":{}}, "oneOf":[{"required":["x"]},{"properties":{"y":{}},"required":["q"]}], "additionalProperties":false}`,
+			`{"x":1, "y":"s"}`,
+			[]string{
+				`/y: {"x":1,"y":"s"} additional properties are not allowed`,
+			}},
+		{`{"oneOf":[{"items":[{"type":"integer"}]},{"items":[{},{},{}],"minItems":5}], "unevaluatedItems":false}`,
+			`[1,2,3]`,
+			[]string{
+				`/: [1,2,3] unevaluated items are not allowed`,
+			}},
 	}
 
 	for i, c := range cases {
