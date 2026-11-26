@@ -700,6 +700,21 @@ func TestValidateBytes(t *testing.T) {
 				`/1: false type should be string, got boolean`,
 				`/2: type should be string, got null`,
 			}},
+		{`{"type":"boolean"}`,
+			`"true"`,
+			[]string{
+				`/: "true" type should be boolean, got string`,
+			}},
+		{`{"type":["boolean","null"]}`,
+			`"0"`,
+			[]string{
+				`/: "0" type should be one of: boolean,null, got string`,
+			}},
+		{`{"properties":{"admin":{"type":"boolean"}}}`,
+			`{"admin":"false"}`,
+			[]string{
+				`/admin: "false" type should be boolean, got string`,
+			}},
 		{`{
 		"type": "object",
 		"properties" : {
