@@ -212,11 +212,6 @@ func (t Type) ValidateKeyword(ctx context.Context, currentState *ValidationState
 		if jt == typestr || jt == "integer" && typestr == "number" {
 			return
 		}
-		if jt == "string" && (typestr == "boolean" || typestr == "number" || typestr == "integer") {
-			if DataTypeWithHint(data, typestr) == typestr {
-				return
-			}
-		}
 		if jt == "null" && (typestr == "string") {
 			if DataTypeWithHint(data, typestr) == typestr {
 				return
