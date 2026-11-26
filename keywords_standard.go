@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	jptr "github.com/qri-io/jsonpointer"
 )
@@ -81,17 +82,47 @@ func (e *Enum) Resolve(pointer jptr.Pointer, uri string) *Schema {
 // ValidateKeyword implements the Keyword interface for Enum
 func (e Enum) ValidateKeyword(ctx context.Context, currentState *ValidationState, data interface{}) {
 	schemaDebug("[Enum] Validating")
-	subState := currentState.NewSubState()
-	subState.ClearState()
+	str, isString := data.(string)
 	for _, v := range e {
-		subState.Errs = &[]KeyError{}
-		v.ValidateKeyword(ctx, subState, data)
-		if subState.IsValid() {
+		if isString {
+			// most enums list plain strings, which compare as they are
+			// instead of being decoded for every validation
+			if plain, ok := plainJSONString(v); ok {
+				if string(plain) == str {
+					return
+				}
+				continue
+			}
+		}
+		// a value that does not match is not an error on its own: compare it
+		// here instead of collecting the errors of Const.ValidateKeyword
+		var con interface{}
+		if err := json.Unmarshal(v, &con); err != nil {
+			continue
+		}
+		if reflect.DeepEqual(con, data) {
 			return
 		}
 	}
 
 	currentState.AddError(data, fmt.Sprintf("should be one of %s", e.String()))
+}
+
+// plainJSONString returns the bytes between the quotes of raw when raw is a
+// JSON string that decodes to exactly those bytes: ASCII characters only and
+// no escape sequences. It reports false for any other JSON string, for other
+// types of values and for invalid JSON.
+func plainJSONString(raw []byte) ([]byte, bool) {
+	if len(raw) < 2 || raw[0] != '"' || raw[len(raw)-1] != '"' {
+		return nil, false
+	}
+	str := raw[1 : len(raw)-1]
+	for _, c := range str {
+		if c < ' ' || c == '"' || c == '\\' || c >= utf8.RuneSelf {
+			return nil, false
+		}
+	}
+	return str, true
 }
 
 // JSONProp implements the JSONPather for Enum
