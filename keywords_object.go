@@ -27,19 +27,7 @@ func (p *Properties) Register(uri string, registry *SchemaRegistry) {
 
 // Resolve implements the Keyword interface for Properties
 func (p *Properties) Resolve(pointer jptr.Pointer, uri string) *Schema {
-	if pointer == nil {
-		return nil
-	}
-	current := pointer.Head()
-	if current == nil {
-		return nil
-	}
-
-	if schema, ok := (*p)[*current]; ok {
-		return schema.Resolve(pointer.Tail(), uri)
-	}
-
-	return nil
+	return resolveSchemaKey(*p, pointer, uri)
 }
 
 // ValidateKeyword implements the Keyword interface for Properties

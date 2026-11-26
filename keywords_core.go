@@ -635,19 +635,7 @@ func (d *Defs) Register(uri string, registry *SchemaRegistry) {
 
 // Resolve implements the Keyword interface for Defs
 func (d *Defs) Resolve(pointer jptr.Pointer, uri string) *Schema {
-	if pointer == nil {
-		return nil
-	}
-	current := pointer.Head()
-	if current == nil {
-		return nil
-	}
-
-	if schema, ok := (*d)[*current]; ok {
-		return schema.Resolve(pointer.Tail(), uri)
-	}
-
-	return nil
+	return resolveSchemaKey(*d, pointer, uri)
 }
 
 // ValidateKeyword implements the Keyword interface for Defs

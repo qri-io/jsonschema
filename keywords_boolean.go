@@ -25,24 +25,7 @@ func (a *AllOf) Register(uri string, registry *SchemaRegistry) {
 
 // Resolve implements the Keyword interface for AllOf
 func (a *AllOf) Resolve(pointer jptr.Pointer, uri string) *Schema {
-	if pointer == nil {
-		return nil
-	}
-	current := pointer.Head()
-	if current == nil {
-		return nil
-	}
-
-	pos, err := strconv.Atoi(*current)
-	if err != nil {
-		return nil
-	}
-
-	if pos < 0 || pos >= len(*a) {
-		return nil
-	}
-
-	return (*a)[pos].Resolve(pointer.Tail(), uri)
+	return resolveSchemaIndex(*a, pointer, uri)
 }
 
 // ValidateKeyword implements the Keyword interface for AllOf
@@ -107,24 +90,7 @@ func (a *AnyOf) Register(uri string, registry *SchemaRegistry) {
 
 // Resolve implements the Keyword interface for AnyOf
 func (a *AnyOf) Resolve(pointer jptr.Pointer, uri string) *Schema {
-	if pointer == nil {
-		return nil
-	}
-	current := pointer.Head()
-	if current == nil {
-		return nil
-	}
-
-	pos, err := strconv.Atoi(*current)
-	if err != nil {
-		return nil
-	}
-
-	if pos < 0 || pos >= len(*a) {
-		return nil
-	}
-
-	return (*a)[pos].Resolve(pointer.Tail(), uri)
+	return resolveSchemaIndex(*a, pointer, uri)
 }
 
 // ValidateKeyword implements the Keyword interface for AnyOf
@@ -184,24 +150,7 @@ func (o *OneOf) Register(uri string, registry *SchemaRegistry) {
 
 // Resolve implements the Keyword interface for OneOf
 func (o *OneOf) Resolve(pointer jptr.Pointer, uri string) *Schema {
-	if pointer == nil {
-		return nil
-	}
-	current := pointer.Head()
-	if current == nil {
-		return nil
-	}
-
-	pos, err := strconv.Atoi(*current)
-	if err != nil {
-		return nil
-	}
-
-	if pos < 0 || pos >= len(*o) {
-		return nil
-	}
-
-	return (*o)[pos].Resolve(pointer.Tail(), uri)
+	return resolveSchemaIndex(*o, pointer, uri)
 }
 
 // ValidateKeyword implements the Keyword interface for OneOf

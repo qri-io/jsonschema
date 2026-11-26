@@ -30,24 +30,7 @@ func (it *Items) Register(uri string, registry *SchemaRegistry) {
 
 // Resolve implements the Keyword interface for Items
 func (it *Items) Resolve(pointer jptr.Pointer, uri string) *Schema {
-	if pointer == nil {
-		return nil
-	}
-	current := pointer.Head()
-	if current == nil {
-		return nil
-	}
-
-	pos, err := strconv.Atoi(*current)
-	if err != nil {
-		return nil
-	}
-
-	if pos < 0 || pos >= len(it.Schemas) {
-		return nil
-	}
-
-	return it.Schemas[pos].Resolve(pointer.Tail(), uri)
+	return resolveSchemaIndex(it.Schemas, pointer, uri)
 }
 
 // ValidateKeyword implements the Keyword interface for Items
