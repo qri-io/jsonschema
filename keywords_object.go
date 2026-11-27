@@ -58,9 +58,6 @@ func (p Properties) ValidateKeyword(ctx context.Context, currentState *Validatio
 				subState.Errs = &[]KeyError{}
 				p[key].ValidateKeyword(ctx, subState, obj[key])
 				currentState.AddSubErrors(*subState.Errs...)
-				if subState.IsValid() {
-					currentState.UpdateEvaluatedPropsAndItems(subState)
-				}
 			}
 		}
 	}
@@ -224,6 +221,7 @@ func (p PatternProperties) ValidateKeyword(ctx context.Context, currentState *Va
 				if ptn.re.Match([]byte(key)) {
 					currentState.SetEvaluatedKey(key)
 					subState := currentState.NewSubState()
+					subState.ClearState()
 					subState.DescendBase("patternProperties", key)
 					subState.DescendRelative("patternProperties", key)
 					subState.DescendInstance(key)
@@ -231,10 +229,6 @@ func (p PatternProperties) ValidateKeyword(ctx context.Context, currentState *Va
 					subState.Errs = &[]KeyError{}
 					ptn.schema.ValidateKeyword(ctx, subState, val)
 					currentState.AddSubErrors(*subState.Errs...)
-
-					if subState.IsValid() {
-						currentState.UpdateEvaluatedPropsAndItems(subState)
-					}
 				}
 			}
 		}
@@ -336,7 +330,6 @@ func (ap *AdditionalProperties) ValidateKeyword(ctx context.Context, currentStat
 			}
 
 			(*Schema)(ap).ValidateKeyword(ctx, subState, obj[key])
-			currentState.UpdateEvaluatedPropsAndItems(subState)
 		}
 	}
 }
